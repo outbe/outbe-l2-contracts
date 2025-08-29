@@ -15,3 +15,5 @@ states/
 .env.local
 /cache
 /out
+/.vscode
+/.claude
