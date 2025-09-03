@@ -6,6 +6,9 @@
 deps/
 states/
 
+# idea
+.idea
+
 # Debug info
 *.dbg.json
 *.tsbuildinfo
