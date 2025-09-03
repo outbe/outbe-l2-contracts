@@ -2,25 +2,55 @@ import { ethers, Contract, Wallet, Provider } from 'ethers';
 
 // Consumption Record ABI - generated from the contract
 const CONSUMPTION_RECORD_ABI = [
-  "function submit(bytes32 crHash, string[] memory keys, string[] memory values) external",
+  // Single submission
+  "function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external",
+  
+  // Batch submission  
+  "function submitBatch(bytes32[] memory crHashes, address[] memory owners, string[][] memory keysArray, string[][] memory valuesArray) external",
+  
+  // Query functions
   "function isExists(bytes32 crHash) external view returns (bool)",
-  "function getDetails(bytes32 crHash) external view returns (tuple(address submittedBy, uint256 submittedAt))",
-  "function getMetadata(bytes32 crHash, string memory key) external view returns (string memory)",
-  "function getMetadataKeys(bytes32 crHash) external view returns (string[] memory)",
+  "function getRecord(bytes32 crHash) external view returns (tuple(address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, string[] metadataValues))",
+  "function getRecordsByOwner(address owner) external view returns (bytes32[] memory)",
+  
+  // Admin functions
   "function setCraRegistry(address _craRegistry) external",
   "function getCraRegistry() external view returns (address)",
   "function getOwner() external view returns (address)",
+  
+  // Constants
+  "function MAX_BATCH_SIZE() external view returns (uint256)",
+  "function VERSION() external view returns (string)",
+  
+  // Events
   "event Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp)",
-  "event MetadataAdded(bytes32 indexed crHash, string key, string value)"
+  "event MetadataAdded(bytes32 indexed crHash, string key, string value)",
+  "event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp)"
 ];
 
 export interface CRRecord {
   submittedBy: string;
   submittedAt: bigint;
+  owner: string;
+  metadataKeys: string[];
+  metadataValues: string[];
 }
 
 export interface ConsumptionMetadata {
   [key: string]: string;
+}
+
+export interface BatchSubmissionRequest {
+  crHash: string;
+  owner: string;
+  metadata: ConsumptionMetadata;
+}
+
+export interface BatchSubmissionResult {
+  success: boolean;
+  batchSize: number;
+  transactionHash: string;
+  submittedRecords: string[];
 }
 
 export class ConsumptionRecordClient {
@@ -41,29 +71,84 @@ export class ConsumptionRecordClient {
    */
   async submit(
     crHash: string,
+    owner: string,
     metadata: ConsumptionMetadata
   ): Promise<void> {
     const keys = Object.keys(metadata);
     const values = Object.values(metadata);
 
     try {
-      const tx = await this.contract.submit(crHash, keys, values);
+      const tx = await this.contract.submit(crHash, owner, keys, values);
       await tx.wait();
-      console.log(`✅ Consumption record submitted: ${crHash}`);
+      console.log(`✅ Consumption record submitted: ${crHash} (owner: ${owner})`);
     } catch (error: any) {
-      if (error.message.includes('AlreadyExists')) {
-        throw new Error(`Consumption record ${crHash} already exists`);
-      } else if (error.message.includes('CRANotActive')) {
-        throw new Error('Only active CRAs can submit consumption records');
-      } else if (error.message.includes('InvalidHash')) {
-        throw new Error('Invalid consumption record hash');
-      } else if (error.message.includes('MetadataKeyValueMismatch')) {
-        throw new Error('Metadata keys and values arrays must have the same length');
-      } else if (error.message.includes('EmptyMetadataKey')) {
-        throw new Error('Metadata keys cannot be empty');
-      }
-      throw error;
+      this.handleSubmissionError(error, crHash);
     }
+  }
+
+  /**
+   * Submit multiple consumption records in a single transaction (active CRA only)
+   */
+  async submitBatch(requests: BatchSubmissionRequest[]): Promise<BatchSubmissionResult> {
+    if (requests.length === 0) {
+      throw new Error('Batch cannot be empty');
+    }
+
+    // Check maximum batch size
+    const maxBatchSize = await this.contract.MAX_BATCH_SIZE();
+    if (requests.length > Number(maxBatchSize)) {
+      throw new Error(`Batch size ${requests.length} exceeds maximum ${maxBatchSize}`);
+    }
+
+    // Prepare batch data
+    const crHashes = requests.map(req => req.crHash);
+    const owners = requests.map(req => req.owner);
+    const keysArray = requests.map(req => Object.keys(req.metadata));
+    const valuesArray = requests.map(req => Object.values(req.metadata));
+
+    try {
+      const tx = await this.contract.submitBatch(crHashes, owners, keysArray, valuesArray);
+      const receipt = await tx.wait();
+      
+      console.log(`✅ Batch submitted: ${requests.length} records`);
+      
+      return {
+        success: true,
+        batchSize: requests.length,
+        transactionHash: receipt.transactionHash,
+        submittedRecords: crHashes
+      };
+    } catch (error: any) {
+      if (error.message.includes('BatchSizeTooLarge')) {
+        throw new Error(`Batch size exceeds maximum allowed (${maxBatchSize})`);
+      } else if (error.message.includes('EmptyBatch')) {
+        throw new Error('Cannot submit empty batch');
+      }
+      this.handleSubmissionError(error);
+      throw error; // This won't be reached due to handleSubmissionError throwing
+    }
+  }
+
+  /**
+   * Handle common submission errors
+   */
+  private handleSubmissionError(error: any, crHash?: string): never {
+    const hashInfo = crHash ? ` (${crHash})` : '';
+    
+    if (error.message.includes('AlreadyExists')) {
+      throw new Error(`Consumption record${hashInfo} already exists`);
+    } else if (error.message.includes('CRANotActive')) {
+      throw new Error('Only active CRAs can submit consumption records');
+    } else if (error.message.includes('InvalidHash')) {
+      throw new Error(`Invalid consumption record hash${hashInfo}`);
+    } else if (error.message.includes('InvalidOwner')) {
+      throw new Error('Invalid owner address (cannot be zero address)');
+    } else if (error.message.includes('MetadataKeyValueMismatch')) {
+      throw new Error('Metadata keys and values arrays must have the same length');
+    } else if (error.message.includes('EmptyMetadataKey')) {
+      throw new Error('Metadata keys cannot be empty');
+    }
+    throw error;
   }
 
   /**
@@ -74,42 +159,60 @@ export class ConsumptionRecordClient {
   }
 
   /**
-   * Get consumption record details
+   * Get complete consumption record data
    */
-  async getDetails(crHash: string): Promise<CRRecord> {
-    const result = await this.contract.getDetails(crHash);
+  async getRecord(crHash: string): Promise<CRRecord> {
+    const result = await this.contract.getRecord(crHash);
     return {
       submittedBy: result.submittedBy,
-      submittedAt: result.submittedAt
+      submittedAt: result.submittedAt,
+      owner: result.owner,
+      metadataKeys: result.metadataKeys,
+      metadataValues: result.metadataValues
     };
   }
 
   /**
-   * Get specific metadata value for a consumption record
+   * Get all consumption record hashes owned by a specific address
    */
-  async getMetadata(crHash: string, key: string): Promise<string> {
-    return await this.contract.getMetadata(crHash, key);
+  async getRecordsByOwner(owner: string): Promise<string[]> {
+    return await this.contract.getRecordsByOwner(owner);
   }
 
   /**
-   * Get all metadata keys for a consumption record
+   * Get complete records for a specific owner
    */
-  async getMetadataKeys(crHash: string): Promise<string[]> {
-    return await this.contract.getMetadataKeys(crHash);
+  async getCompleteRecordsByOwner(owner: string): Promise<CRRecord[]> {
+    const hashes = await this.getRecordsByOwner(owner);
+    const records: CRRecord[] = [];
+    
+    for (const hash of hashes) {
+      const record = await this.getRecord(hash);
+      records.push(record);
+    }
+    
+    return records;
   }
 
   /**
-   * Get all metadata for a consumption record
+   * Get metadata as key-value object from a record
    */
-  async getAllMetadata(crHash: string): Promise<ConsumptionMetadata> {
-    const keys = await this.getMetadataKeys(crHash);
+  getMetadataFromRecord(record: CRRecord): ConsumptionMetadata {
     const metadata: ConsumptionMetadata = {};
     
-    for (const key of keys) {
-      metadata[key] = await this.getMetadata(crHash, key);
+    for (let i = 0; i < record.metadataKeys.length; i++) {
+      metadata[record.metadataKeys[i]] = record.metadataValues[i];
     }
     
     return metadata;
+  }
+
+  /**
+   * Get specific metadata value from a record
+   */
+  getMetadataValue(record: CRRecord, key: string): string | undefined {
+    const index = record.metadataKeys.indexOf(key);
+    return index !== -1 ? record.metadataValues[index] : undefined;
   }
 
   /**
@@ -154,6 +257,13 @@ export class ConsumptionRecordClient {
    */
   onMetadataAdded(callback: (crHash: string, key: string, value: string) => void): void {
     this.contract.on('MetadataAdded', callback);
+  }
+
+  /**
+   * Listen for batch submission events
+   */
+  onBatchSubmitted(callback: (batchSize: bigint, cra: string, timestamp: bigint) => void): void {
+    this.contract.on('BatchSubmitted', callback);
   }
 
   /**
@@ -271,10 +381,13 @@ export async function exampleUsage() {
   const provider = new ethers.JsonRpcProvider('http://localhost:8545');
   const wallet = new Wallet('0x...your-private-key', provider);
   const contractAddress = '0x...contract-address';
+  const recordOwner = '0x...owner-address'; // The actual owner of consumption records
   
   const consumptionRecord = new ConsumptionRecordClient(contractAddress, wallet, provider);
 
   try {
+    console.log('=== Single Record Submission Example ===');
+    
     // Create consumption data
     const consumptionData = {
       deviceId: 'smart-meter-001',
@@ -307,39 +420,148 @@ export async function exampleUsage() {
 
     console.log('Metadata to submit:', metadata);
 
-    // Submit the consumption record
-    await consumptionRecord.submit(crHash, metadata);
+    // Submit the consumption record with owner
+    await consumptionRecord.submit(crHash, recordOwner, metadata);
 
     // Verify the record exists
     const exists = await consumptionRecord.isExists(crHash);
     console.log('Record exists:', exists);
 
-    // Get record details
-    const details = await consumptionRecord.getDetails(crHash);
-    console.log('Record details:', {
-      submittedBy: details.submittedBy,
-      submittedAt: new Date(Number(details.submittedAt) * 1000)
+    // Get complete record data
+    const record = await consumptionRecord.getRecord(crHash);
+    console.log('Complete record:', {
+      submittedBy: record.submittedBy,
+      submittedAt: new Date(Number(record.submittedAt) * 1000),
+      owner: record.owner,
+      metadataCount: record.metadataKeys.length
     });
 
-    // Get all metadata
-    const retrievedMetadata = await consumptionRecord.getAllMetadata(crHash);
+    // Get metadata as key-value object
+    const retrievedMetadata = consumptionRecord.getMetadataFromRecord(record);
     console.log('Retrieved metadata:', retrievedMetadata);
 
-    // Get specific metadata values
-    const source = await consumptionRecord.getMetadata(crHash, 'source');
-    const amount = await consumptionRecord.getMetadata(crHash, 'amount');
+    // Get specific metadata value
+    const source = consumptionRecord.getMetadataValue(record, 'source');
+    const amount = consumptionRecord.getMetadataValue(record, 'amount');
     console.log(`Energy source: ${source}, Amount: ${amount}`);
 
+    console.log('\n=== Batch Submission Example ===');
+    
+    // Prepare batch submission data
+    const batchRequests: BatchSubmissionRequest[] = [];
+    
+    for (let i = 0; i < 5; i++) {
+      const batchData = {
+        deviceId: `smart-meter-${i + 2}`,
+        timestamp: Date.now() + i * 1000,
+        amount: 100 + i * 25,
+        source: i % 2 === 0 ? 'solar' : 'wind'
+      };
+      
+      const batchHash = ConsumptionRecordClient.generateHash(batchData);
+      const batchMetadata = new ConsumptionMetadataBuilder()
+        .setSource(batchData.source)
+        .setAmount(batchData.amount.toString())
+        .setUnit('kWh')
+        .setTimestamp(batchData.timestamp)
+        .setCustom('device_id', batchData.deviceId)
+        .build();
+      
+      batchRequests.push({
+        crHash: batchHash,
+        owner: recordOwner,
+        metadata: batchMetadata
+      });
+    }
+
+    console.log(`Submitting batch of ${batchRequests.length} records...`);
+    
+    // Submit batch
+    const batchResult = await consumptionRecord.submitBatch(batchRequests);
+    console.log('Batch submission result:', batchResult);
+
+    console.log('\n=== Owner Query Example ===');
+    
+    // Get all records owned by the address
+    const ownerRecordHashes = await consumptionRecord.getRecordsByOwner(recordOwner);
+    console.log(`Owner has ${ownerRecordHashes.length} consumption records`);
+
+    // Get complete records for the owner
+    const ownerRecords = await consumptionRecord.getCompleteRecordsByOwner(recordOwner);
+    console.log('Owner records summary:');
+    ownerRecords.forEach((record, index) => {
+      const metadata = consumptionRecord.getMetadataFromRecord(record);
+      console.log(`  ${index + 1}. Device: ${metadata.device_id}, Amount: ${metadata.amount} ${metadata.unit}`);
+    });
+
+    console.log('\n=== Event Listening Example ===');
+    
     // Listen for events
     consumptionRecord.onSubmitted((crHash, cra, timestamp) => {
-      console.log(`🔔 New consumption record: ${crHash} by ${cra}`);
+      console.log(`🔔 New consumption record: ${crHash} by ${cra} at ${new Date(Number(timestamp) * 1000)}`);
+    });
+
+    consumptionRecord.onBatchSubmitted((batchSize, cra, timestamp) => {
+      console.log(`🔔 Batch submitted: ${batchSize} records by ${cra} at ${new Date(Number(timestamp) * 1000)}`);
     });
 
     consumptionRecord.onMetadataAdded((crHash, key, value) => {
       console.log(`🔔 Metadata added to ${crHash}: ${key} = ${value}`);
     });
 
+    console.log('\n=== Contract Information ===');
+    
+    // Get contract information
+    const version = await consumptionRecord.contract.VERSION();
+    const maxBatchSize = await consumptionRecord.contract.MAX_BATCH_SIZE();
+    const craRegistry = await consumptionRecord.getCraRegistry();
+    
+    console.log(`Contract version: ${version}`);
+    console.log(`Maximum batch size: ${maxBatchSize}`);
+    console.log(`CRA Registry: ${craRegistry}`);
+
   } catch (error) {
     console.error('Error:', error);
   }
+}
+
+// Batch submission helper example
+export async function submitLargeDataset(
+  client: ConsumptionRecordClient,
+  data: Array<{hash: string, owner: string, metadata: ConsumptionMetadata}>
+) {
+  const BATCH_SIZE = 50; // Use smaller batches for large datasets
+  const batches: BatchSubmissionRequest[][] = [];
+  
+  // Split data into batches
+  for (let i = 0; i < data.length; i += BATCH_SIZE) {
+    const batch = data.slice(i, i + BATCH_SIZE).map(item => ({
+      crHash: item.hash,
+      owner: item.owner,
+      metadata: item.metadata
+    }));
+    batches.push(batch);
+  }
+  
+  console.log(`Submitting ${data.length} records in ${batches.length} batches...`);
+  
+  const results: BatchSubmissionResult[] = [];
+  
+  for (let i = 0; i < batches.length; i++) {
+    console.log(`Processing batch ${i + 1}/${batches.length}...`);
+    try {
+      const result = await client.submitBatch(batches[i]);
+      results.push(result);
+      console.log(`✅ Batch ${i + 1} completed: ${result.batchSize} records`);
+    } catch (error) {
+      console.error(`❌ Batch ${i + 1} failed:`, error);
+      // Decide whether to continue or abort
+      break;
+    }
+  }
+  
+  const totalSubmitted = results.reduce((sum, result) => sum + result.batchSize, 0);
+  console.log(`🎉 Total records submitted: ${totalSubmitted}/${data.length}`);
+  
+  return results;
 }

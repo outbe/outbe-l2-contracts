@@ -17,3 +17,7 @@ states/
 /out
 /.vscode
 /.claude
+/broadcast
+/examples/node_modules
+.DS_Store
+.DS_Store

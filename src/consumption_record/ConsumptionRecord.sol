@@ -13,15 +13,15 @@ import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 contract ConsumptionRecord is IConsumptionRecord {
     /// @notice Contract version
     string public constant VERSION = "0.0.1";
+
+    /// @notice Maximum number of records that can be submitted in a single batch
+    uint256 public constant MAX_BATCH_SIZE = 100;
     
     /// @dev Mapping from record hash to record details
     mapping(bytes32 => CrRecord) public consumptionRecords;
     
-    /// @dev Mapping from record hash to metadata key-value pairs
-    mapping(bytes32 => mapping(string => string)) public crMetadata;
-    
-    /// @dev Mapping from record hash to array of metadata keys for enumeration
-    mapping(bytes32 => string[]) public crMetadataKeys;
+    /// @dev Mapping from owner address to array of record hashes they own
+    mapping(address => bytes32[]) public ownerRecords;
 
     /// @dev Reference to the CRA Registry contract
     ICRARegistry public craRegistry;
@@ -44,6 +44,11 @@ contract ConsumptionRecord is IConsumptionRecord {
         _;
     }
 
+    modifier validOwner(address _owner) {
+        if (_owner == address(0)) revert InvalidOwner();
+        _;
+    }
+
     /// @notice Initialize the consumption record contract
     /// @dev Sets the CRA registry address and deployer as owner
     /// @param _craRegistry Address of the CRA Registry contract
@@ -52,27 +57,86 @@ contract ConsumptionRecord is IConsumptionRecord {
         owner = msg.sender;
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function submit(bytes32 crHash, string[] memory keys, string[] memory values)
-        external
-        onlyActiveCra
-        validCrHash(crHash)
-    {
+    /// @notice Internal function to add a single consumption record
+    /// @param crHash The hash of the consumption record
+    /// @param recordOwner The owner of the record
+    /// @param keys Array of metadata keys
+    /// @param values Array of metadata values
+    /// @param timestamp The timestamp to use for submission
+    function _addRecord(
+        bytes32 crHash,
+        address recordOwner,
+        string[] memory keys,
+        string[] memory values,
+        uint256 timestamp
+    ) internal {
+        // Validate record parameters
+        if (crHash == bytes32(0)) revert InvalidHash();
+        if (recordOwner == address(0)) revert InvalidOwner();
         if (isExists(crHash)) revert AlreadyExists();
         if (keys.length != values.length) revert MetadataKeyValueMismatch();
 
-        consumptionRecords[crHash] = CrRecord({submittedBy: msg.sender, submittedAt: block.timestamp});
-
+        // Validate metadata keys
         for (uint256 i = 0; i < keys.length; i++) {
             if (bytes(keys[i]).length == 0) revert EmptyMetadataKey();
+        }
 
-            crMetadata[crHash][keys[i]] = values[i];
-            crMetadataKeys[crHash].push(keys[i]);
+        // Store the record
+        consumptionRecords[crHash] = CrRecord({
+            submittedBy: msg.sender,
+            submittedAt: timestamp,
+            owner: recordOwner,
+            metadataKeys: keys,
+            metadataValues: values
+        });
 
+        // Add record hash to owner's list
+        ownerRecords[recordOwner].push(crHash);
+
+        // Emit metadata events
+        for (uint256 i = 0; i < keys.length; i++) {
             emit MetadataAdded(crHash, keys[i], values[i]);
         }
 
-        emit Submitted(crHash, msg.sender, block.timestamp);
+        // Emit submission event
+        emit Submitted(crHash, msg.sender, timestamp);
+    }
+
+    /// @inheritdoc IConsumptionRecord
+    function submit(bytes32 crHash, address recordOwner, string[] memory keys, string[] memory values)
+        external
+        onlyActiveCra
+    {
+        _addRecord(crHash, recordOwner, keys, values, block.timestamp);
+    }
+
+    /// @inheritdoc IConsumptionRecord
+    function submitBatch(
+        bytes32[] memory crHashes,
+        address[] memory owners,
+        string[][] memory keysArray,
+        string[][] memory valuesArray
+    ) external onlyActiveCra {
+        uint256 batchSize = crHashes.length;
+        
+        // Validate batch size
+        if (batchSize == 0) revert EmptyBatch();
+        if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
+        
+        // Validate array lengths match
+        if (owners.length != batchSize) revert MetadataKeyValueMismatch();
+        if (keysArray.length != batchSize) revert MetadataKeyValueMismatch();
+        if (valuesArray.length != batchSize) revert MetadataKeyValueMismatch();
+
+        uint256 timestamp = block.timestamp;
+        
+        // Process each record in the batch using the internal function
+        for (uint256 i = 0; i < batchSize; i++) {
+            _addRecord(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
+        }
+
+        // Emit batch submission event
+        emit BatchSubmitted(batchSize, msg.sender, timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
@@ -81,19 +145,11 @@ contract ConsumptionRecord is IConsumptionRecord {
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getDetails(bytes32 crHash) external view returns (CrRecord memory) {
+    function getRecord(bytes32 crHash) external view returns (CrRecord memory) {
         return consumptionRecords[crHash];
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function getMetadata(bytes32 crHash, string memory key) external view returns (string memory) {
-        return crMetadata[crHash][key];
-    }
 
-    /// @inheritdoc IConsumptionRecord
-    function getMetadataKeys(bytes32 crHash) external view returns (string[] memory) {
-        return crMetadataKeys[crHash];
-    }
 
     /// @inheritdoc IConsumptionRecord
     function setCraRegistry(address _craRegistry) external onlyOwner {
@@ -103,6 +159,11 @@ contract ConsumptionRecord is IConsumptionRecord {
     /// @inheritdoc IConsumptionRecord
     function getCraRegistry() external view returns (address) {
         return address(craRegistry);
+    }
+
+    /// @inheritdoc IConsumptionRecord
+    function getRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
+        return ownerRecords[_owner];
     }
 
     /// @notice Get the current owner of the contract

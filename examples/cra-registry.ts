@@ -159,7 +159,7 @@ export async function exampleUsage() {
 
   try {
     // Register a new CRA
-    const craAddress = '0x1234567890123456789012345678901234567890';
+    const craAddress = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
     await registry.registerCra(craAddress, 'Green Energy CRA');
 
     // Check if CRA is active

@@ -8,7 +8,7 @@ import {ConsumptionRecord} from "../src/consumption_record/ConsumptionRecord.sol
 /// @title Deploy Script
 /// @notice Deployment script for CRA Registry and Consumption Record contracts
 /// @dev Deploys contracts in correct order with proper initialization
-contract DeployScript is Script {
+contract Deploy is Script {
     /// @notice CRA Registry contract instance
     CRARegistry public craRegistry;
 
@@ -206,7 +206,7 @@ contract DeployScript is Script {
 
 /// @title Quick Deploy Script
 /// @notice Simplified deployment script for testing
-contract QuickDeployScript is Script {
+contract QuickDeploy is Script {
     function run() public {
         uint256 deployerPrivateKey;
         try vm.envUint("PRIVATE_KEY") returns (uint256 key) {
