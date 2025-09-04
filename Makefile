@@ -14,6 +14,10 @@ build: ## Build Solidity contracts using forge
 test: ## Test Solidity contracts using forge
 	forge test
 
+.PHONY: fmt
+fmt:  ## Format code
+	forge fmt
+
 .PHONY: coverage
 coverage: build ## Run coverage report
 	forge coverage --report lcov
