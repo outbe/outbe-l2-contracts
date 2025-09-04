@@ -10,12 +10,17 @@ interface IConsumptionRecord {
     /// @notice Record information for a consumption record
     /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
     struct CrRecord {
-        address submittedBy;      /// @dev Address of the CRA that submitted this record
-        uint256 submittedAt;      /// @dev Timestamp when the record was submitted
-        address owner;            /// @dev Address of the owner of this consumption record
-        string[] metadataKeys;    /// @dev Array of metadata keys
-        string[] metadataValues;  /// @dev Array of metadata values (matches keys array)
+        address submittedBy;
+        /// @dev Address of the CRA that submitted this record
+        uint256 submittedAt;
+        /// @dev Timestamp when the record was submitted
+        address owner;
+        /// @dev Address of the owner of this consumption record
+        string[] metadataKeys;
+        /// @dev Array of metadata keys
+        string[] metadataValues;
     }
+    /// @dev Array of metadata values (matches keys array)
 
     /// @notice Emitted when a consumption record is submitted
     /// @param crHash The hash of the consumption record
@@ -37,19 +42,19 @@ interface IConsumptionRecord {
 
     /// @notice Thrown when trying to submit a record that already exists
     error AlreadyExists();
-    
+
     /// @notice Thrown when a non-active CRA tries to submit a record
     error CRANotActive();
-    
+
     /// @notice Thrown when an invalid hash (zero hash) is provided
     error InvalidHash();
-    
+
     /// @notice Thrown when metadata keys and values arrays have different lengths
     error MetadataKeyValueMismatch();
-    
+
     /// @notice Thrown when trying to add metadata with an empty key
     error EmptyMetadataKey();
-    
+
     /// @notice Thrown when an invalid owner address (zero address) is provided
     error InvalidOwner();
 
@@ -76,7 +81,6 @@ interface IConsumptionRecord {
     /// @param crHash The hash of the record
     /// @return CrRecord struct with complete record data
     function getRecord(bytes32 crHash) external view returns (CrRecord memory);
-
 
     /// @notice Set the CRA Registry contract address
     /// @dev Only callable by contract owner

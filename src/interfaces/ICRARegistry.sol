@@ -10,18 +10,24 @@ interface ICRARegistry {
     /// @notice Possible status values for a CRA
     /// @dev Used to control CRA permissions and visibility
     enum CRAStatus {
-        Inactive,   /// @dev CRA is registered but not active
-        Active,     /// @dev CRA is active and can submit consumption records
-        Suspended   /// @dev CRA is temporarily suspended
+        Inactive,
+        /// @dev CRA is registered but not active
+        Active,
+        /// @dev CRA is active and can submit consumption records
+        Suspended
     }
+    /// @dev CRA is temporarily suspended
 
     /// @notice Information about a registered CRA
     /// @dev Stores all relevant data for a CRA
     struct CraInfo {
-        string name;              /// @dev Human-readable name of the CRA
-        CRAStatus status;         /// @dev Current status of the CRA
-        uint256 registeredAt;     /// @dev Timestamp when CRA was registered
+        string name;
+        /// @dev Human-readable name of the CRA
+        CRAStatus status;
+        /// @dev Current status of the CRA
+        uint256 registeredAt;
     }
+    /// @dev Timestamp when CRA was registered
 
     /// @notice Emitted when a new CRA is registered
     /// @param cra The address of the registered CRA
@@ -38,16 +44,16 @@ interface ICRARegistry {
 
     /// @notice Thrown when trying to access a CRA that doesn't exist
     error CRANotFound();
-    
+
     /// @notice Thrown when trying to register a CRA that's already registered
     error CRAAlreadyRegistered();
-    
+
     /// @notice Thrown when an invalid CRA status is provided
     error InvalidCRAStatus();
-    
+
     /// @notice Thrown when an unauthorized address tries to perform an admin action
     error UnauthorizedAccess();
-    
+
     /// @notice Thrown when trying to register a CRA with an empty name
     error EmptyCRAName();
 

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 
-/// @title ConsumptionRecord  
+/// @title ConsumptionRecord
 /// @notice Contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
@@ -16,16 +16,16 @@ contract ConsumptionRecord is IConsumptionRecord {
 
     /// @notice Maximum number of records that can be submitted in a single batch
     uint256 public constant MAX_BATCH_SIZE = 100;
-    
+
     /// @dev Mapping from record hash to record details
     mapping(bytes32 => CrRecord) public consumptionRecords;
-    
+
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
 
     /// @dev Reference to the CRA Registry contract
     ICRARegistry public craRegistry;
-    
+
     /// @dev Contract owner who can update registry address
     address private owner;
 
@@ -121,18 +121,18 @@ contract ConsumptionRecord is IConsumptionRecord {
         string[][] memory valuesArray
     ) external onlyActiveCra {
         uint256 batchSize = crHashes.length;
-        
+
         // Validate batch size
         if (batchSize == 0) revert EmptyBatch();
         if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-        
+
         // Validate array lengths match
         if (owners.length != batchSize) revert MetadataKeyValueMismatch();
         if (keysArray.length != batchSize) revert MetadataKeyValueMismatch();
         if (valuesArray.length != batchSize) revert MetadataKeyValueMismatch();
 
         uint256 timestamp = block.timestamp;
-        
+
         // Process each record in the batch using the internal function
         for (uint256 i = 0; i < batchSize; i++) {
             _addRecord(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
@@ -151,8 +151,6 @@ contract ConsumptionRecord is IConsumptionRecord {
     function getRecord(bytes32 crHash) external view returns (CrRecord memory) {
         return consumptionRecords[crHash];
     }
-
-
 
     /// @inheritdoc IConsumptionRecord
     function setCraRegistry(address _craRegistry) external onlyOwner {
