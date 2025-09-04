@@ -15,10 +15,10 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
-    
+
     /// @dev Mapping from CRA address to their information
     mapping(address => CraInfo) private cras;
-    
+
     /// @dev Array of all registered CRA addresses for enumeration
     address[] private craList;
 

@@ -12,13 +12,13 @@ import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 contract CRARegistry is ICRARegistry {
     /// @notice Contract version
     string public constant VERSION = "0.0.1";
-    
+
     /// @dev Mapping from CRA address to their information
     mapping(address => CraInfo) private cras;
-    
+
     /// @dev Array of all registered CRA addresses for enumeration
     address[] private craList;
-    
+
     /// @dev Contract owner who can register and manage CRAs
     address private owner;
 

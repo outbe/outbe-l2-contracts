@@ -50,7 +50,7 @@ contract UpgradeImplementations is Script {
         console.log("Chain ID:", block.chainid);
         console.log("Block number:", block.number);
         console.log("");
-        
+
         // Validate proxy addresses
         require(config.craRegistryProxy != address(0), "CRA Registry proxy address not set");
         require(config.consumptionRecordProxy != address(0), "Consumption Record proxy address not set");
@@ -98,19 +98,19 @@ contract UpgradeImplementations is Script {
     /// @param version Version suffix for the new implementation
     function upgradeCRARegistry(address proxyAddress, string memory version) internal {
         console.log("Upgrading CRA Registry implementation...");
-        
+
         // Get current implementation info
         CRARegistryUpgradeable proxy = CRARegistryUpgradeable(proxyAddress);
         console.log("Current CRA Registry version:", proxy.VERSION());
-        
+
         // Deploy new implementation
         string memory salt = string.concat("CRARegistryImpl_", version);
         address newImpl = address(new CRARegistryUpgradeable{salt: bytes32(abi.encodePacked(salt))}());
         console.log("New CRA Registry implementation:", newImpl);
-        
+
         // Perform upgrade
         proxy.upgradeTo(newImpl);
-        
+
         console.log("CRA Registry upgrade completed");
         console.log("New version:", proxy.VERSION());
         console.log("");
@@ -121,19 +121,19 @@ contract UpgradeImplementations is Script {
     /// @param version Version suffix for the new implementation
     function upgradeConsumptionRecord(address proxyAddress, string memory version) internal {
         console.log("Upgrading Consumption Record implementation...");
-        
+
         // Get current implementation info
         ConsumptionRecordUpgradeable proxy = ConsumptionRecordUpgradeable(proxyAddress);
         console.log("Current Consumption Record version:", proxy.VERSION());
-        
+
         // Deploy new implementation
         string memory salt = string.concat("ConsumptionRecordImpl_", version);
         address newImpl = address(new ConsumptionRecordUpgradeable{salt: bytes32(abi.encodePacked(salt))}());
         console.log("New Consumption Record implementation:", newImpl);
-        
+
         // Perform upgrade
         proxy.upgradeTo(newImpl);
-        
+
         console.log("Consumption Record upgrade completed");
         console.log("New version:", proxy.VERSION());
         console.log("");
@@ -148,7 +148,7 @@ contract UpgradeImplementations is Script {
             CRARegistryUpgradeable craRegistry = CRARegistryUpgradeable(config.craRegistryProxy);
             console.log("CRA Registry proxy still functional:", address(craRegistry) != address(0));
             console.log("CRA Registry version:", craRegistry.VERSION());
-            
+
             // Test basic functionality
             address[] memory cras = craRegistry.getAllCras();
             console.log("CRA Registry can enumerate CRAs:", cras.length >= 0);
@@ -158,7 +158,7 @@ contract UpgradeImplementations is Script {
             ConsumptionRecordUpgradeable consumptionRecord = ConsumptionRecordUpgradeable(config.consumptionRecordProxy);
             console.log("Consumption Record proxy still functional:", address(consumptionRecord) != address(0));
             console.log("Consumption Record version:", consumptionRecord.VERSION());
-            
+
             // Test basic functionality
             address craRegistry = consumptionRecord.getCraRegistry();
             console.log("Consumption Record still linked to CRA Registry:", craRegistry != address(0));
