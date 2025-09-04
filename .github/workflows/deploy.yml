@@ -3,6 +3,15 @@ name: Deploy smart-contract
 on:
   workflow_dispatch:
     inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+        default: development
       is_latest:
         description: "Mark as latest"
         required: false
@@ -12,7 +21,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy Smart Contracts
-    environment: development
+    environment: ${{ github.event.inputs.environment }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,20 +34,20 @@ jobs:
         run: |
           forge build --sizes
 
+      - name: Predict Contract Addresses
+        run: |
+          forge script script/PredictAddresses.s.sol
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
+
       - name: Deploy Upgradeable Contracts
         run: |
           forge script script/DeployUpgradeable.s.sol \
             --rpc-url ${{ secrets.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --broadcast \
-            --verify \          
+            --verify \
             -vvv
         env:
-          SALT_SUFFIX: contract_${{ github.sha }}
-
-      - name: Predict Contract Addresses
-        run: |
-          forge script script/PredictAddresses.s.sol
-        env:
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-          SALT_SUFFIX: contract_${{ github.sha }}
+          SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
