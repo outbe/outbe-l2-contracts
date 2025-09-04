@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployUpgradeable Script
@@ -15,10 +16,13 @@ contract DeployUpgradeable is Script {
 
     /// @notice Consumption Record proxy instance
     ConsumptionRecordUpgradeable public consumptionRecord;
+    /// @notice Consumption Unit proxy instance
+    ConsumptionUnitUpgradeable public consumptionUnit;
 
     /// @notice Implementation contracts
     address public craRegistryImpl;
     address public consumptionRecordImpl;
+    address public consumptionUnitImpl;
 
     /// @notice Deployment configuration
     struct DeploymentConfig {
@@ -82,6 +86,8 @@ contract DeployUpgradeable is Script {
         string memory craProxySalt = string.concat("CRARegistryProxy_", saltSuffix);
         string memory crImplSalt = string.concat("ConsumptionRecordImpl_", saltSuffix);
         string memory crProxySalt = string.concat("ConsumptionRecordProxy_", saltSuffix);
+        string memory cuImplSalt = string.concat("ConsumptionUnitImpl_", saltSuffix);
+        string memory cuProxySalt = string.concat("ConsumptionUnitProxy_", saltSuffix);
 
         console.log("Using salt suffix:", saltSuffix);
 
@@ -90,6 +96,8 @@ contract DeployUpgradeable is Script {
         bytes32 craProxySaltBytes = keccak256(abi.encodePacked(craProxySalt));
         bytes32 crImplSaltBytes = keccak256(abi.encodePacked(crImplSalt));
         bytes32 crProxySaltBytes = keccak256(abi.encodePacked(crProxySalt));
+        bytes32 cuImplSaltBytes = keccak256(abi.encodePacked(cuImplSalt));
+        bytes32 cuProxySaltBytes = keccak256(abi.encodePacked(cuProxySalt));
 
         // Check if contracts already exist at predicted addresses
         address predictedCraImpl = vm.computeCreate2Address(
@@ -98,6 +106,10 @@ contract DeployUpgradeable is Script {
 
         address predictedCrImpl = vm.computeCreate2Address(
             crImplSaltBytes, keccak256(type(ConsumptionRecordUpgradeable).creationCode), CREATE2_FACTORY
+        );
+
+        address predictedCuImpl = vm.computeCreate2Address(
+            cuImplSaltBytes, keccak256(type(ConsumptionUnitUpgradeable).creationCode), CREATE2_FACTORY
         );
 
         // For proxy addresses, we need to compute with init data
@@ -114,6 +126,13 @@ contract DeployUpgradeable is Script {
         address predictedCrProxy =
             vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
 
+        bytes memory consumptionUnitInitData =
+            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+        bytes memory cuProxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
+        address predictedCuProxy =
+            vm.computeCreate2Address(cuProxySaltBytes, keccak256(cuProxyBytecode), CREATE2_FACTORY);
+
         // Check for existing deployments
         bool hasExistingContracts = false;
 
@@ -127,6 +146,11 @@ contract DeployUpgradeable is Script {
             hasExistingContracts = true;
         }
 
+        if (predictedCuImpl.code.length > 0) {
+            console.log("WARNING: Consumption Unit implementation already exists at:", predictedCuImpl);
+            hasExistingContracts = true;
+        }
+
         if (predictedCraProxy.code.length > 0) {
             console.log("WARNING: CRA Registry proxy already exists at:", predictedCraProxy);
             hasExistingContracts = true;
@@ -134,6 +158,11 @@ contract DeployUpgradeable is Script {
 
         if (predictedCrProxy.code.length > 0) {
             console.log("WARNING: Consumption Record proxy already exists at:", predictedCrProxy);
+            hasExistingContracts = true;
+        }
+
+        if (predictedCuProxy.code.length > 0) {
+            console.log("WARNING: Consumption Unit proxy already exists at:", predictedCuProxy);
             hasExistingContracts = true;
         }
 
@@ -175,6 +204,22 @@ contract DeployUpgradeable is Script {
         console.log("Consumption Record proxy:", address(consumptionRecord));
         console.log("Consumption Record owner:", consumptionRecord.getOwner());
         console.log("Consumption Record CRA Registry:", consumptionRecord.getCraRegistry());
+        console.log("");
+
+        // Deploy Consumption Unit implementation
+        console.log("Deploying Consumption Unit implementation...");
+        consumptionUnitImpl = address(new ConsumptionUnitUpgradeable{salt: cuImplSaltBytes}());
+        console.log("Consumption Unit implementation:", consumptionUnitImpl);
+
+        // Deploy Consumption Unit proxy
+        console.log("Deploying Consumption Unit proxy...");
+        bytes memory cuInitData = abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
+        address consumptionUnitProxy =
+            address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
+        consumptionUnit = ConsumptionUnitUpgradeable(consumptionUnitProxy);
+        console.log("Consumption Unit proxy:", address(consumptionUnit));
+        console.log("Consumption Unit owner:", consumptionUnit.getOwner());
+        console.log("Consumption Unit CRA Registry:", consumptionUnit.getCraRegistry());
         console.log("");
 
         // Setup initial CRAs if environment variable is set
@@ -237,11 +282,19 @@ contract DeployUpgradeable is Script {
         require(consumptionRecord.getCraRegistry() == address(craRegistry), "CRA Registry linkage incorrect");
         console.log("Consumption Record verification passed");
 
+        // Check Consumption Unit
+        require(address(consumptionUnit) != address(0), "Consumption Unit deployment failed");
+        require(consumptionUnit.getOwner() == expectedOwner, "Consumption Unit owner incorrect");
+        require(consumptionUnit.getCraRegistry() == address(craRegistry), "CU CRA Registry linkage incorrect");
+        console.log("Consumption Unit verification passed");
+
         // Check contract versions
         string memory craVersion = craRegistry.VERSION();
         string memory crVersion = consumptionRecord.VERSION();
+        string memory cuVersion = consumptionUnit.VERSION();
         console.log("CRA Registry version:", craVersion);
         console.log("Consumption Record version:", crVersion);
+        console.log("Consumption Unit version:", cuVersion);
         console.log("");
     }
 
@@ -254,17 +307,21 @@ contract DeployUpgradeable is Script {
         console.log("Implementation Addresses:");
         console.log("- CRA Registry Impl:      ", craRegistryImpl);
         console.log("- Consumption Record Impl:", consumptionRecordImpl);
+        console.log("- Consumption Unit Impl:  ", consumptionUnitImpl);
         console.log("");
         console.log("Proxy Addresses (Use these for interactions):");
         console.log("- CRA Registry:      ", address(craRegistry));
         console.log("- Consumption Record:", address(consumptionRecord));
+        console.log("- Consumption Unit:  ", address(consumptionUnit));
         console.log("");
         console.log("Contract Owners:");
         console.log("- CRA Registry:      ", craRegistry.getOwner());
         console.log("- Consumption Record:", consumptionRecord.getOwner());
+        console.log("- Consumption Unit:  ", consumptionUnit.getOwner());
         console.log("");
         console.log("Configuration:");
         console.log("- CR -> CRA Registry:", consumptionRecord.getCraRegistry());
+        console.log("- CU -> CRA Registry:", consumptionUnit.getCraRegistry());
         console.log("");
 
         if (vm.envOr("SETUP_INITIAL_CRAS", false)) {
@@ -286,8 +343,10 @@ contract DeployUpgradeable is Script {
         console.log("Environment Variables for .env:");
         console.log("CRA_REGISTRY_ADDRESS=", address(craRegistry));
         console.log("CONSUMPTION_RECORD_ADDRESS=", address(consumptionRecord));
+        console.log("CONSUMPTION_UNIT_ADDRESS=", address(consumptionUnit));
         console.log("CRA_REGISTRY_IMPL=", craRegistryImpl);
         console.log("CONSUMPTION_RECORD_IMPL=", consumptionRecordImpl);
+        console.log("CONSUMPTION_UNIT_IMPL=", consumptionUnitImpl);
     }
 
     /// @notice Get network name based on chain ID
