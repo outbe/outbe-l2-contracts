@@ -32,10 +32,12 @@ contract CRARegistry is ICRARegistry {
         _;
     }
 
-    /// @notice Initialize the registry with the deployer as owner
-    /// @dev Sets the contract deployer as the initial owner
-    constructor() {
-        owner = msg.sender;
+    /// @notice Initialize the registry with the specified owner
+    /// @dev Sets the provided address as the initial owner
+    /// @param _owner Address of the contract owner
+    constructor(address _owner) {
+        require(_owner != address(0), "Owner cannot be zero address");
+        owner = _owner;
     }
 
     /// @inheritdoc ICRARegistry

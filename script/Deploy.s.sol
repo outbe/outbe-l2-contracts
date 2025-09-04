@@ -63,16 +63,16 @@ contract Deploy is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy CRA Registry first
-        console.log("Deploying CRA Registry...");
-        craRegistry = new CRARegistry();
+        // Deploy CRA Registry first using CREATE2
+        console.log("Deploying CRA Registry with CREATE2...");
+        craRegistry = new CRARegistry{salt: "CRARegistry_v1"}(deployer);
         console.log("CRA Registry deployed at:", address(craRegistry));
         console.log("CRA Registry owner:", craRegistry.getOwner());
         console.log("");
 
-        // Deploy Consumption Record with CRA Registry address
-        console.log("Deploying Consumption Record...");
-        consumptionRecord = new ConsumptionRecord(address(craRegistry));
+        // Deploy Consumption Record with CRA Registry address using CREATE2
+        console.log("Deploying Consumption Record with CREATE2...");
+        consumptionRecord = new ConsumptionRecord{salt: "ConsumptionRecord_v1"}(address(craRegistry), deployer);
         console.log("Consumption Record deployed at:", address(consumptionRecord));
         console.log("Consumption Record owner:", consumptionRecord.getOwner());
         console.log("Consumption Record CRA Registry:", consumptionRecord.getCraRegistry());
@@ -215,11 +215,13 @@ contract QuickDeploy is Script {
             deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
         }
 
+        address deployer = vm.addr(deployerPrivateKey);
+        
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy contracts
-        CRARegistry craRegistry = new CRARegistry();
-        ConsumptionRecord consumptionRecord = new ConsumptionRecord(address(craRegistry));
+        // Deploy contracts using CREATE2
+        CRARegistry craRegistry = new CRARegistry{salt: "CRARegistry_v1"}(deployer);
+        ConsumptionRecord consumptionRecord = new ConsumptionRecord{salt: "ConsumptionRecord_v1"}(address(craRegistry), deployer);
 
         console.log("CRA Registry:", address(craRegistry));
         console.log("Consumption Record:", address(consumptionRecord));

@@ -33,8 +33,8 @@ contract ConsumptionRecordTest is Test {
         recordOwner1 = makeAddr("recordOwner1");
         recordOwner2 = makeAddr("recordOwner2");
 
-        registry = new CRARegistry();
-        crContract = new ConsumptionRecord(address(registry));
+        registry = new CRARegistry(owner);
+        crContract = new ConsumptionRecord(address(registry), owner);
 
         registry.registerCra(cra1, "CRA One");
         registry.registerCra(cra2, "CRA Two");
@@ -197,14 +197,14 @@ contract ConsumptionRecordTest is Test {
     }
 
     function test_SetCRARegistry() public {
-        CRARegistry newRegistry = new CRARegistry();
+        CRARegistry newRegistry = new CRARegistry(owner);
 
         crContract.setCraRegistry(address(newRegistry));
         assertEq(crContract.getCraRegistry(), address(newRegistry));
     }
 
     function test_SetCRARegistry_RevertWhen_NotOwner() public {
-        CRARegistry newRegistry = new CRARegistry();
+        CRARegistry newRegistry = new CRARegistry(owner);
 
         vm.prank(unauthorized);
         vm.expectRevert(IConsumptionRecord.CRANotActive.selector);

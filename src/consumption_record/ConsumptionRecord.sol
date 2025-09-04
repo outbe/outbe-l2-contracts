@@ -50,11 +50,14 @@ contract ConsumptionRecord is IConsumptionRecord {
     }
 
     /// @notice Initialize the consumption record contract
-    /// @dev Sets the CRA registry address and deployer as owner
+    /// @dev Sets the CRA registry address and specified owner
     /// @param _craRegistry Address of the CRA Registry contract
-    constructor(address _craRegistry) {
+    /// @param _owner Address of the contract owner
+    constructor(address _craRegistry, address _owner) {
+        require(_craRegistry != address(0), "CRA Registry cannot be zero address");
+        require(_owner != address(0), "Owner cannot be zero address");
         craRegistry = ICRARegistry(_craRegistry);
-        owner = msg.sender;
+        owner = _owner;
     }
 
     /// @notice Internal function to add a single consumption record

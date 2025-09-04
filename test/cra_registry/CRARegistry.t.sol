@@ -23,7 +23,7 @@ contract CRARegistryTest is Test {
         cra2 = makeAddr("cra2");
         unauthorized = makeAddr("unauthorized");
 
-        registry = new CRARegistry();
+        registry = new CRARegistry(owner);
     }
 
     function test_InitialState() public view {
