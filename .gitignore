@@ -9,6 +9,10 @@ states/
 # idea
 .idea
 
+# lcov
+*.info
+coverage
+
 # Debug info
 *.dbg.json
 *.tsbuildinfo
