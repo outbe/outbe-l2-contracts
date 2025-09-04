@@ -2,22 +2,34 @@
 
 ## Overview
 
-The `ConsumptionRecord` contract is a smart contract designed to store consumption record hashes with associated metadata. It works in conjunction with a CRA Registry to ensure only active Consumption Reflection Agents (CRAs) can submit records.
+The `ConsumptionRecordUpgradeable` contract is an upgradeable smart contract designed to store consumption record hashes with associated metadata. It works in conjunction with a CRA Registry to ensure only active Consumption Reflection Agents (CRAs) can submit records, using the UUPS (Universal Upgradeable Proxy Standard) pattern.
 
 ## Contract Details
 
-- **Version**: 0.0.1
+- **Version**: 1.0.0
 - **License**: MIT
 - **Solidity Version**: ^0.8.13
-- **Location**: `src/consumption_record/ConsumptionRecord.sol`
+- **Location**: `src/consumption_record/ConsumptionRecordUpgradeable.sol`
+- **Pattern**: UUPS Upgradeable Proxy
+- **Deployment**: CREATE2 deterministic addresses
 
 ## Architecture
 
-The contract implements the `IConsumptionRecord` interface and maintains:
+The contract implements the `IConsumptionRecord` interface and uses the UUPS upgradeable pattern:
 
-- A mapping of consumption record hashes to their submission details
+```
+User/Client → Proxy Contract → Implementation Contract
+              (Fixed Address)   (Upgradeable Logic)
+              (Stores State)
+```
+
+**Key Features:**
+- Mapping of consumption record hashes to their submission details
 - Key-value metadata storage for each record
-- Integration with a CRA Registry for access control
+- Integration with upgradeable CRA Registry for access control
+- UUPS upgradeable pattern for seamless updates
+- CREATE2 deterministic deployment addresses
+- Initializer pattern instead of constructor
 
 ## Core Data Structures
 
@@ -34,15 +46,16 @@ struct CrRecord {
 
 ## Constants
 
-- `VERSION`: Contract version (0.0.1)
+- `VERSION`: Contract version (1.0.0)
 - `MAX_BATCH_SIZE`: Maximum number of records that can be submitted in a single batch (100)
 
 ## State Variables
 
 - `consumptionRecords`: Maps record hashes to their complete submission details including metadata
 - `ownerRecords`: Maps owner addresses to arrays of record hashes they own
-- `craRegistry`: Reference to the CRA Registry contract
-- `owner`: Contract owner address
+- `craRegistry`: Reference to the upgradeable CRA Registry contract
+- Inherited from `OwnableUpgradeable`: Owner functionality
+- Inherited from `UUPSUpgradeable`: Upgrade authorization
 
 ## Access Control
 
@@ -54,7 +67,28 @@ struct CrRecord {
 
 ## Core Functions
 
-### submit()
+### Initialization
+
+#### initialize()
+```solidity
+function initialize(address _craRegistry, address _owner) public initializer
+```
+
+Initializes the upgradeable contract (replaces constructor).
+
+**Requirements:**
+- Can only be called once (initializer modifier)
+- CRA Registry cannot be zero address
+- Owner cannot be zero address
+
+**Effects:**
+- Initializes OpenZeppelin upgradeable components
+- Sets the CRA Registry reference
+- Sets the contract owner
+
+### Record Management
+
+#### submit()
 ```solidity
 function submit(
     bytes32 crHash,
@@ -112,7 +146,34 @@ Submits multiple consumption records in a single transaction for gas efficiency.
 
 - `setCraRegistry(address)`: Update CRA Registry address (owner only)
 - `getCraRegistry()`: Get current CRA Registry address
-- `getOwner()`: Get contract owner address
+- `getOwner()`: Get contract owner address (from OwnableUpgradeable)
+
+### Upgrade Functions
+
+#### upgradeTo()
+```solidity
+function upgradeTo(address newImplementation) external onlyOwner
+```
+
+Upgrades the contract to a new implementation.
+
+**Requirements:**
+- Only callable by owner
+- New implementation must be a valid contract
+
+#### upgradeToAndCall()
+```solidity
+function upgradeToAndCall(address newImplementation, bytes calldata data) external payable onlyOwner
+```
+
+Upgrades and calls a function on the new implementation in a single transaction.
+
+#### VERSION()
+```solidity
+function VERSION() external pure returns (string memory)
+```
+
+Returns the current contract version ("1.0.0").
 
 ## Events
 
@@ -144,13 +205,47 @@ event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 tim
 7. **Owner Controls**: Owner can update registry address but cannot modify existing records
 8. **Gas Optimization**: Batch submissions reduce transaction costs for multiple records
 
+## Deployment
+
+### Using DeployUpgradeable Script
+
+```bash
+# Deploy with CREATE2 deterministic addresses
+forge script script/DeployUpgradeable.s.sol --rpc-url <RPC_URL> --broadcast --private-key <PRIVATE_KEY>
+
+# Deploy with custom salt suffix
+SALT_SUFFIX=mainnet_v1 forge script script/DeployUpgradeable.s.sol --rpc-url <RPC_URL> --broadcast --private-key <PRIVATE_KEY>
+
+# Predict addresses before deployment
+forge script script/PredictAddresses.s.sol
+```
+
+### Using Cast for Interactions
+
+```bash
+# Submit a record (as active CRA)
+cast send <PROXY_ADDRESS> "submit(bytes32,address,string[],string[])" <CR_HASH> <RECORD_OWNER> '["source","amount"]' '["renewable","100"]' --private-key <PRIVATE_KEY>
+
+# Check if record exists
+cast call <PROXY_ADDRESS> "isExists(bytes32)" <CR_HASH>
+
+# Get complete record data
+cast call <PROXY_ADDRESS> "getRecord(bytes32)" <CR_HASH>
+
+# Get records by owner
+cast call <PROXY_ADDRESS> "getRecordsByOwner(address)" <OWNER_ADDRESS>
+
+# Get contract version
+cast call <PROXY_ADDRESS> "VERSION()"
+```
+
 ## Usage Examples
 
 ### Single Record Submission
 
 ```solidity
-// Deploy with CRA Registry address
-ConsumptionRecord cr = new ConsumptionRecord(craRegistryAddress);
+// Get the deployed proxy address (not the implementation!)
+ConsumptionRecordUpgradeable cr = ConsumptionRecordUpgradeable(<PROXY_ADDRESS>);
 
 // Submit a record (as an active CRA)
 bytes32 recordHash = keccak256("consumption-data");
@@ -171,6 +266,9 @@ cr.submit(recordHash, recordOwner, keys, values);
 CrRecord memory record = cr.getRecord(recordHash);
 console.log("Owner:", record.owner);
 console.log("Metadata count:", record.metadataKeys.length);
+
+// Upgrade the contract (owner only)
+cr.upgradeTo(newImplementationAddress);
 ```
 
 ### Batch Submission
@@ -216,12 +314,12 @@ console.log("Owner has", ownerRecordHashes.length, "records");
 
 ## Integration with CRA Registry
 
-The contract depends on the CRA Registry to:
+The contract depends on the CRARegistryUpgradeable to:
 - Verify CRA active status before allowing submissions (both single and batch)
 - Maintain centralized CRA management
 - Provide access control for the consumption record system
 
-The registry address can be updated by the owner to allow for upgrades or migrations.
+**Important:** Both contracts use the same UUPS proxy pattern and CREATE2 deployment for consistent addresses across networks. The registry address can be updated by the owner to allow for upgrades or migrations.
 
 ## TypeScript Client Library
 
@@ -257,7 +355,20 @@ The contract includes several gas optimization features:
 
 When upgrading the contract:
 
-1. **CRA Registry Updates**: Owner can update the registry address seamlessly
-2. **Data Migration**: Existing records remain accessible after registry changes
-3. **Backward Compatibility**: New features don't break existing integrations
-4. **Version Tracking**: VERSION constant helps track deployed contract versions
+1. **UUPS Proxy Pattern**: Upgrades preserve proxy address and all stored data
+2. **Storage Layout**: Follow OpenZeppelin guidelines - only add new variables at the end
+3. **CRA Registry Updates**: Owner can update the registry address seamlessly
+4. **Data Persistence**: All existing records remain accessible after upgrades
+5. **Backward Compatibility**: New features don't break existing integrations
+6. **Version Tracking**: VERSION constant helps track deployed contract versions
+7. **Upgrade Authorization**: Only owner can authorize upgrades via UUPS pattern
+
+### Upgrade Process
+
+```bash
+# Deploy new implementation
+forge script script/UpgradeImplementations.s.sol --rpc-url <RPC_URL> --broadcast --private-key <PRIVATE_KEY>
+
+# Or upgrade specific contract only
+UPGRADE_CONSUMPTION_RECORD=true UPGRADE_CRA_REGISTRY=false forge script script/UpgradeImplementations.s.sol --rpc-url <RPC_URL> --broadcast --private-key <PRIVATE_KEY>
+```

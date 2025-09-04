@@ -1,13 +1,24 @@
 import { ethers, Contract, Wallet, Provider } from 'ethers';
 
-// CRA Registry ABI - generated from the contract
+// CRARegistryUpgradeable ABI - generated from the upgradeable contract
 const CRA_REGISTRY_ABI = [
+  // Initialization (only called once during deployment)
+  "function initialize(address _owner) external",
+  
+  // Core functions
   "function registerCra(address cra, string calldata name) external",
   "function updateCraStatus(address cra, uint8 status) external",
   "function isCraActive(address cra) external view returns (bool)",
   "function getCraInfo(address cra) external view returns (tuple(string name, uint8 status, uint256 registeredAt))",
   "function getAllCras() external view returns (address[])",
   "function getOwner() external view returns (address)",
+  
+  // Upgrade functions (owner only)
+  "function upgradeTo(address newImplementation) external",
+  "function upgradeToAndCall(address newImplementation, bytes calldata data) external payable",
+  "function VERSION() external pure returns (string)",
+  
+  // Events
   "event CRARegistered(address indexed cra, string name, uint256 timestamp)",
   "event CRAStatusUpdated(address indexed cra, uint8 oldStatus, uint8 newStatus, uint256 timestamp)"
 ];
@@ -125,6 +136,45 @@ export class CRARegistryClient {
   }
 
   /**
+   * Upgrade contract to new implementation (owner only)
+   */
+  async upgradeTo(newImplementation: string): Promise<void> {
+    try {
+      const tx = await this.contract.upgradeTo(newImplementation);
+      await tx.wait();
+      console.log(`✅ Contract upgraded to: ${newImplementation}`);
+    } catch (error: any) {
+      if (error.message.includes('Ownable')) {
+        throw new Error('Only contract owner can upgrade the contract');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Upgrade contract and call function in single transaction (owner only)
+   */
+  async upgradeToAndCall(newImplementation: string, calldata: string): Promise<void> {
+    try {
+      const tx = await this.contract.upgradeToAndCall(newImplementation, calldata);
+      await tx.wait();
+      console.log(`✅ Contract upgraded to ${newImplementation} with call data`);
+    } catch (error: any) {
+      if (error.message.includes('Ownable')) {
+        throw new Error('Only contract owner can upgrade the contract');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get contract version
+   */
+  async getVersion(): Promise<string> {
+    return await this.contract.VERSION();
+  }
+
+  /**
    * Listen for CRA registration events
    */
   onCRARegistered(callback: (cra: string, name: string, timestamp: bigint) => void): void {
@@ -150,12 +200,12 @@ export class CRARegistryClient {
 
 // Example usage
 export async function exampleUsage() {
-  // Setup
+  // Setup - IMPORTANT: Use proxy address, not implementation address!
   const provider = new ethers.JsonRpcProvider('http://localhost:8545');
   const wallet = new Wallet('0x...your-private-key', provider);
-  const registryAddress = '0x...contract-address';
+  const proxyAddress = '0x...proxy-contract-address'; // Always use proxy address
   
-  const registry = new CRARegistryClient(registryAddress, wallet, provider);
+  const registry = new CRARegistryClient(proxyAddress, wallet, provider);
 
   try {
     // Register a new CRA
@@ -193,6 +243,26 @@ export async function exampleUsage() {
     registry.onCRAStatusUpdated((cra, oldStatus, newStatus, timestamp) => {
       console.log(`🔔 CRA status changed: ${cra} from ${CRAStatus[oldStatus]} to ${CRAStatus[newStatus]}`);
     });
+
+    // Get contract information
+    console.log('\n=== Contract Information ===');
+    const version = await registry.getVersion();
+    const owner = await registry.getOwner();
+    const craCount = await registry.getCraCount();
+    
+    console.log(`Contract version: ${version}`);
+    console.log(`Contract owner: ${owner}`);
+    console.log(`Total CRAs: ${craCount}`);
+
+    console.log('\n=== Upgrade Example (Owner Only) ===');
+    
+    // Note: This would only work if the wallet is the contract owner
+    // const newImplementationAddress = '0x...new-implementation-address';
+    // await registry.upgradeTo(newImplementationAddress);
+    console.log('Upgrade functions available for contract owner:');
+    console.log('- upgradeTo(newImplementation): Upgrade to new implementation');
+    console.log('- upgradeToAndCall(newImplementation, data): Upgrade and call function');
+    console.log('- Address used should be PROXY address, not implementation!');
 
   } catch (error) {
     console.error('Error:', error);

@@ -1,7 +1,10 @@
 import { ethers, Contract, Wallet, Provider } from 'ethers';
 
-// Consumption Record ABI - generated from the contract
+// ConsumptionRecordUpgradeable ABI - generated from the upgradeable contract  
 const CONSUMPTION_RECORD_ABI = [
+  // Initialization (only called once during deployment)
+  "function initialize(address _craRegistry, address _owner) external",
+  
   // Single submission
   "function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external",
   
@@ -17,6 +20,10 @@ const CONSUMPTION_RECORD_ABI = [
   "function setCraRegistry(address _craRegistry) external",
   "function getCraRegistry() external view returns (address)",
   "function getOwner() external view returns (address)",
+  
+  // Upgrade functions (owner only)
+  "function upgradeTo(address newImplementation) external",
+  "function upgradeToAndCall(address newImplementation, bytes calldata data) external payable",
   
   // Constants
   "function MAX_BATCH_SIZE() external view returns (uint256)",
@@ -246,6 +253,45 @@ export class ConsumptionRecordClient {
   }
 
   /**
+   * Upgrade contract to new implementation (owner only)
+   */
+  async upgradeTo(newImplementation: string): Promise<void> {
+    try {
+      const tx = await this.contract.upgradeTo(newImplementation);
+      await tx.wait();
+      console.log(`✅ Contract upgraded to: ${newImplementation}`);
+    } catch (error: any) {
+      if (error.message.includes('Ownable')) {
+        throw new Error('Only contract owner can upgrade the contract');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Upgrade contract and call function in single transaction (owner only)
+   */
+  async upgradeToAndCall(newImplementation: string, calldata: string): Promise<void> {
+    try {
+      const tx = await this.contract.upgradeToAndCall(newImplementation, calldata);
+      await tx.wait();
+      console.log(`✅ Contract upgraded to ${newImplementation} with call data`);
+    } catch (error: any) {
+      if (error.message.includes('Ownable')) {
+        throw new Error('Only contract owner can upgrade the contract');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get contract version
+   */
+  async getVersion(): Promise<string> {
+    return await this.contract.VERSION();
+  }
+
+  /**
    * Listen for consumption record submission events
    */
   onSubmitted(callback: (crHash: string, cra: string, timestamp: bigint) => void): void {
@@ -377,13 +423,13 @@ export class ConsumptionMetadataBuilder {
 
 // Example usage
 export async function exampleUsage() {
-  // Setup
+  // Setup - IMPORTANT: Use proxy address, not implementation address!
   const provider = new ethers.JsonRpcProvider('http://localhost:8545');
   const wallet = new Wallet('0x...your-private-key', provider);
-  const contractAddress = '0x...contract-address';
+  const proxyAddress = '0x...proxy-contract-address'; // Always use proxy address
   const recordOwner = '0x...owner-address'; // The actual owner of consumption records
   
-  const consumptionRecord = new ConsumptionRecordClient(contractAddress, wallet, provider);
+  const consumptionRecord = new ConsumptionRecordClient(proxyAddress, wallet, provider);
 
   try {
     console.log('=== Single Record Submission Example ===');
@@ -512,13 +558,25 @@ export async function exampleUsage() {
     console.log('\n=== Contract Information ===');
     
     // Get contract information
-    const version = await consumptionRecord.contract.VERSION();
+    const version = await consumptionRecord.getVersion();
     const maxBatchSize = await consumptionRecord.contract.MAX_BATCH_SIZE();
     const craRegistry = await consumptionRecord.getCraRegistry();
+    const owner = await consumptionRecord.getOwner();
     
     console.log(`Contract version: ${version}`);
     console.log(`Maximum batch size: ${maxBatchSize}`);
     console.log(`CRA Registry: ${craRegistry}`);
+    console.log(`Contract owner: ${owner}`);
+
+    console.log('\n=== Upgrade Example (Owner Only) ===');
+    
+    // Note: This would only work if the wallet is the contract owner
+    // const newImplementationAddress = '0x...new-implementation-address';
+    // await consumptionRecord.upgradeTo(newImplementationAddress);
+    console.log('Upgrade functions available for contract owner:');
+    console.log('- upgradeTo(newImplementation): Upgrade to new implementation');
+    console.log('- upgradeToAndCall(newImplementation, data): Upgrade and call function');
+    console.log('- Address used should be PROXY address, not implementation!');
 
   } catch (error) {
     console.error('Error:', error);

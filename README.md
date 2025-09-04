@@ -8,6 +8,7 @@ This repository contains the core smart contracts for the Outbe L2 ecosystem, in
 
 - **CRA Registry**: Registry for managing Consumption Reflection Agents (CRAs)
 - **Consumption Record**: Storage system for consumption record hashes with metadata
+- **Upgradeable Contracts**: UUPS upgradeable versions with proxy pattern for seamless updates
 - **Interfaces**: Clean contract interfaces for external integrations
 - **Examples**: TypeScript integration examples
 
@@ -42,15 +43,17 @@ The CRA Registry manages Consumption Reflection Agents with the following featur
 The Consumption Record contract stores consumption record hashes with metadata:
 
 **Core Functions:**
-- `submit(bytes32 crHash, string[] keys, string[] values)` - Submit consumption record (CRA only)
+- `submit(bytes32 crHash, address recordOwner, string[] keys, string[] values)` - Submit consumption record (CRA only)
+- `submitBatch(bytes32[] crHashes, address[] owners, string[][] keysArray, string[][] valuesArray)` - Submit multiple records in batch
 - `isExists(bytes32 crHash)` - Check if record exists
-- `getDetails(bytes32 crHash)` - Get record details
-- `getMetadata(bytes32 crHash, string key)` - Get specific metadata
-- `getMetadataKeys(bytes32 crHash)` - Get all metadata keys
+- `getRecord(bytes32 crHash)` - Get complete record details
+- `getRecordsByOwner(address owner)` - Get all records owned by address
 
 **Features:**
 - Secure storage of consumption data hashes
 - Flexible metadata system with key-value pairs
+- Batch submission support (up to 100 records per batch)
+- Record ownership tracking
 - Integration with CRA Registry for access control
 - Only active CRAs can submit records
 
@@ -62,6 +65,46 @@ Clean, well-documented interfaces for external integrations:
 - `IConsumptionRecord.sol` - Consumption Record interface
 
 **Location**: `src/interfaces/`
+
+## Upgradeable Contracts
+
+The repository provides both standard and upgradeable versions of the contracts:
+
+### Standard Contracts
+- `CRARegistry.sol` - Non-upgradeable registry
+- `ConsumptionRecord.sol` - Non-upgradeable consumption records
+
+### Upgradeable Contracts (Recommended)
+- `CRARegistryUpgradeable.sol` - UUPS upgradeable registry
+- `ConsumptionRecordUpgradeable.sol` - UUPS upgradeable consumption records
+
+**Key Features:**
+- **UUPS Pattern**: Universal Upgradeable Proxy Standard for gas-efficient upgrades
+- **Proxy Addresses**: Contract addresses remain constant across upgrades
+- **State Preservation**: All data and storage layout preserved during upgrades
+- **Owner-Only Upgrades**: Only contract owners can authorize upgrades
+- **Comprehensive Testing**: Full test coverage for upgrade scenarios
+
+**Architecture:**
+```
+┌─────────────────┐    ┌──────────────────────┐
+│   User/Client   │    │    Implementation    │
+│                 │    │     Contract v2      │
+└─────────┬───────┘    └──────────┬───────────┘
+          │                       │
+          │ delegatecall           │
+          ▼                       │
+┌─────────────────┐              │
+│  Proxy Contract │──────────────┘
+│ (Fixed Address) │
+│ (Stores State)  │
+└─────────────────┘
+```
+
+**Usage:**
+- **Deploy**: Use `DeployUpgradeable.s.sol` for initial deployment
+- **Upgrade**: Use `UpgradeImplementations.s.sol` to update contract logic
+- **Interact**: Always use proxy addresses for all interactions
 
 ## Documentation
 
@@ -124,11 +167,26 @@ anvil
 
 **Deploy to local network:**
 ```shell
-# Deploy CRA Registry
-forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast
+# Deploy upgradeable contracts with proxy pattern
+forge script script/DeployUpgradeable.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
 
-# Deploy with verification on testnet
-forge script script/Deploy.s.sol --rpc-url http://rpc.dev.outbe.net:8545 --broadcast --verify
+# Deploy to testnet with verification
+forge script script/DeployUpgradeable.s.sol --rpc-url http://rpc.dev.outbe.net:8545 --broadcast --verify --private-key <PRIVATE_KEY>
+
+# Deploy with custom salt to avoid collisions
+SALT_SUFFIX=prod_v1 forge script script/DeployUpgradeable.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
+
+# Deploy with unique timestamp salt for testing
+USE_TIMESTAMP_SALT=true forge script script/DeployUpgradeable.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
+```
+
+**Upgrade contracts:**
+```shell
+# Upgrade implementations while preserving proxy addresses and data
+CRA_REGISTRY_ADDRESS=<proxy_address> CONSUMPTION_RECORD_ADDRESS=<proxy_address> forge script script/UpgradeImplementations.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
+
+# Upgrade only specific contracts
+UPGRADE_CRA_REGISTRY=true UPGRADE_CONSUMPTION_RECORD=false forge script script/UpgradeImplementations.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
 ```
 
 ### Interacting with Contracts
@@ -142,7 +200,13 @@ cast call <CRA_REGISTRY_ADDRESS> "getCraInfo(address)" <CRA_ADDRESS>
 cast call <CRA_REGISTRY_ADDRESS> "isCraActive(address)" <CRA_ADDRESS>
 
 # Submit consumption record (as CRA)
-cast send <CONSUMPTION_RECORD_ADDRESS> "submit(bytes32,string[],string[])" <CR_HASH> '["key1","key2"]' '["value1","value2"]' --private-key <PRIVATE_KEY>
+cast send <CONSUMPTION_RECORD_ADDRESS> "submit(bytes32,address,string[],string[])" <CR_HASH> <RECORD_OWNER> '["key1","key2"]' '["value1","value2"]' --private-key <PRIVATE_KEY>
+
+# Get records by owner
+cast call <CONSUMPTION_RECORD_ADDRESS> "getRecordsByOwner(address)" <OWNER_ADDRESS>
+
+# Get record details
+cast call <CONSUMPTION_RECORD_ADDRESS> "getRecord(bytes32)" <CR_HASH>
 ```
 
 ## Project Structure
@@ -167,7 +231,9 @@ outbe-l2-contracts/
 │   └── consumption_unit/                  # Utility tests
 │       └── Counter.t.sol                  # Counter tests
 ├── script/                                # Deployment and interaction scripts
-│   └── Counter.s.sol                      # Deployment scripts
+│   ├── DeployUpgradeable.s.sol            # Upgradeable deployment with proxy pattern
+│   ├── UpgradeImplementations.s.sol       # Contract upgrade script
+│   └── PredictAddresses.s.sol             # CREATE2 address prediction script
 ├── docs/                                  # Documentation
 │   ├── cra-registry.md                    # CRA Registry docs
 │   └── consumption-record.md              # Consumption Record docs
@@ -190,7 +256,7 @@ The project includes comprehensive test suites with:
 
 **Test Coverage:**
 - CRARegistry: 15 tests covering registration, status updates, and access control
-- ConsumptionRecord: 19 tests covering submissions, metadata, and validation
+- ConsumptionRecord: 19+ tests covering submissions, batch operations, metadata, ownership tracking, and validation
 - All critical paths and error conditions are tested
 
 ## Security
@@ -202,6 +268,10 @@ This codebase follows Solidity security best practices:
 - **Error Handling**: Custom errors for gas-efficient error reporting
 - **Reentrancy Protection**: Following checks-effects-interactions pattern
 - **Code Quality**: Automated linting and formatting
+- **Deterministic Deployment**: Uses CREATE2 with salt for deterministic contract addresses
+- **Explicit Ownership**: Constructors accept explicit owner parameters to avoid CREATE2 ownership issues
+- **Upgradeable Architecture**: UUPS proxy pattern for seamless contract updates while preserving state and addresses
+- **Comprehensive Testing**: Unit, integration, and upgrade tests ensuring contract reliability
 
 ## Help
 

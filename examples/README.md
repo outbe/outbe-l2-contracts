@@ -1,17 +1,18 @@
 # Outbe Contracts TypeScript Examples
 
-This directory contains TypeScript examples demonstrating how to interact with the Outbe L2 contracts using ethers.js.
+This directory contains TypeScript examples demonstrating how to interact with the **upgradeable** Outbe L2 contracts using ethers.js and the UUPS proxy pattern.
 
 ## Overview
 
 The examples cover:
-- **CRA Registry**: Managing Consumption Reflection Agents
-- **Consumption Record**: Storing consumption record hashes with metadata
+- **CRARegistryUpgradeable**: Managing Consumption Reflection Agents with upgrade capabilities
+- **ConsumptionRecordUpgradeable**: Storing consumption record hashes with metadata and upgrade capabilities
+- **Proxy Pattern**: Working with upgradeable contracts via proxy addresses
 
 ## Files
 
-- `cra-registry.ts` - CRA Registry client with full CRUD operations
-- `consumption-record.ts` - Consumption Record client with metadata handling
+- `cra-registry.ts` - CRA Registry client with full CRUD operations and upgrade functions
+- `consumption-record.ts` - Consumption Record client with metadata handling and upgrade functions
 - `package.json` - Node.js dependencies
 - `tsconfig.json` - TypeScript configuration
 
@@ -36,9 +37,13 @@ const provider = new ethers.JsonRpcProvider('http://localhost:8545');
 const ownerWallet = new Wallet('0x...owner-key', provider);
 const craWallet = new Wallet('0x...cra-key', provider);
 
-// Initialize clients
-const registry = new CRARegistryClient(registryAddress, ownerWallet, provider);
-const records = new ConsumptionRecordClient(recordAddress, craWallet, provider);
+// IMPORTANT: Use proxy addresses, not implementation addresses!
+const registryProxyAddress = '0x...proxy-address';
+const recordProxyAddress = '0x...proxy-address';
+
+// Initialize clients with proxy addresses
+const registry = new CRARegistryClient(registryProxyAddress, ownerWallet, provider);
+const records = new ConsumptionRecordClient(recordProxyAddress, craWallet, provider);
 
 // Register a CRA
 await registry.registerCra(craWallet.address, 'My Energy CRA');
@@ -51,7 +56,11 @@ const metadata = new ConsumptionMetadataBuilder()
   .build();
 
 const hash = ConsumptionRecordClient.generateHash({deviceId: 'meter-001'});
-await records.submit(hash, metadata);
+await records.submit(hash, recordOwnerAddress, metadata);
+
+// Upgrade contract (owner only)
+// const newImplementation = '0x...new-implementation-address';
+// await registry.upgradeTo(newImplementation);
 ```
 
 ## Contract Addresses
