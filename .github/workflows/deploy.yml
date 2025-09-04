@@ -1,17 +1,18 @@
-name: CI
+name: Deploy smart-contract
 
 on:
-  push:
-  pull_request:
   workflow_dispatch:
-
-env:
-  FOUNDRY_PROFILE: ci
+    inputs:
+      is_latest:
+        description: "Mark as latest"
+        required: false
+        type: boolean
 
 jobs:
-  check:
-    name: Foundry project
+  deploy:
     runs-on: ubuntu-latest
+    name: Deploy Smart Contracts
+    environment: development
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,39 +20,10 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
-      - name: Show Forge version
-        run: |
-          forge --version
-
-      - name: Run Forge fmt
-        run: |
-          forge fmt --check
-        id: fmt
 
       - name: Run Forge build
         run: |
           forge build --sizes
-        id: build
-
-      - name: Run Forge tests
-        run: |
-          forge test -vvv
-        id: test
-
-  deploy:
-    name: Deploy Smart Contracts
-    runs-on: ubuntu-latest
-    needs: check
-    if: github.event_name == 'workflow_dispatch'
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
 
       - name: Deploy Upgradeable Contracts
         run: |
