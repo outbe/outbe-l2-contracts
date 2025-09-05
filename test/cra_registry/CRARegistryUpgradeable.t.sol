@@ -10,7 +10,7 @@ contract CRARegistryUpgradeableTest is Test {
     CRARegistryUpgradeable public registry;
     CRARegistryUpgradeable public implementation;
     ERC1967Proxy public proxy;
-    
+
     address public owner;
     address public cra1;
     address public cra2;
@@ -47,9 +47,9 @@ contract CRARegistryUpgradeableTest is Test {
 
     function test_Initialize_RevertWhen_ZeroOwner() public {
         CRARegistryUpgradeable newImpl = new CRARegistryUpgradeable();
-        
+
         bytes memory initData = abi.encodeWithSignature("initialize(address)", address(0));
-        
+
         vm.expectRevert("Owner cannot be zero address");
         new ERC1967Proxy(address(newImpl), initData);
     }
@@ -63,7 +63,7 @@ contract CRARegistryUpgradeableTest is Test {
         registry.registerCra(cra1, name);
 
         assertTrue(registry.isCraActive(cra1));
-        
+
         ICRARegistry.CraInfo memory info = registry.getCraInfo(cra1);
         assertEq(info.name, name);
         assertEq(uint256(info.status), uint256(ICRARegistry.CRAStatus.Active));
@@ -87,28 +87,28 @@ contract CRARegistryUpgradeableTest is Test {
 
     function test_RegisterCRA_RevertWhen_AlreadyRegistered() public {
         registry.registerCra(cra1, "Test CRA");
-        
+
         vm.expectRevert(ICRARegistry.CRAAlreadyRegistered.selector);
         registry.registerCra(cra1, "Another CRA");
     }
 
     function test_UpdateCRAStatus() public {
         registry.registerCra(cra1, "Test CRA");
-        
+
         vm.expectEmit(true, false, false, true);
         emit CRAStatusUpdated(cra1, ICRARegistry.CRAStatus.Active, ICRARegistry.CRAStatus.Suspended, block.timestamp);
-        
+
         registry.updateCraStatus(cra1, ICRARegistry.CRAStatus.Suspended);
-        
+
         assertFalse(registry.isCraActive(cra1));
-        
+
         ICRARegistry.CraInfo memory info = registry.getCraInfo(cra1);
         assertEq(uint256(info.status), uint256(ICRARegistry.CRAStatus.Suspended));
     }
 
     function test_UpdateCRAStatus_RevertWhen_NotOwner() public {
         registry.registerCra(cra1, "Test CRA");
-        
+
         vm.prank(unauthorized);
         vm.expectRevert();
         registry.updateCraStatus(cra1, ICRARegistry.CRAStatus.Suspended);
@@ -121,13 +121,13 @@ contract CRARegistryUpgradeableTest is Test {
 
     function test_IsCraActive() public {
         assertFalse(registry.isCraActive(cra1));
-        
+
         registry.registerCra(cra1, "Test CRA");
         assertTrue(registry.isCraActive(cra1));
-        
+
         registry.updateCraStatus(cra1, ICRARegistry.CRAStatus.Suspended);
         assertFalse(registry.isCraActive(cra1));
-        
+
         registry.updateCraStatus(cra1, ICRARegistry.CRAStatus.Active);
         assertTrue(registry.isCraActive(cra1));
     }
@@ -140,10 +140,10 @@ contract CRARegistryUpgradeableTest is Test {
     function test_GetAllCras() public {
         address[] memory emptyCras = registry.getAllCras();
         assertEq(emptyCras.length, 0);
-        
+
         registry.registerCra(cra1, "CRA One");
         registry.registerCra(cra2, "CRA Two");
-        
+
         address[] memory allCras = registry.getAllCras();
         assertEq(allCras.length, 2);
         assertEq(allCras[0], cra1);
@@ -164,7 +164,7 @@ contract CRARegistryUpgradeableTest is Test {
         // Verify data persisted after upgrade
         assertTrue(registry.isCraActive(cra1));
         assertEq(registry.getOwner(), owner);
-        
+
         address[] memory allCras = registry.getAllCras();
         assertEq(allCras.length, 1);
         assertEq(allCras[0], cra1);
@@ -194,7 +194,7 @@ contract CRARegistryUpgradeableTest is Test {
         // Verify both old and new data exist
         assertTrue(registry.isCraActive(cra1));
         assertTrue(registry.isCraActive(cra2));
-        
+
         address[] memory allCras = registry.getAllCras();
         assertEq(allCras.length, 2);
     }

@@ -50,11 +50,11 @@ contract DeployUpgradeable is Script {
         }
 
         address deployer = vm.addr(deployerPrivateKey);
-        
+
         // Load or generate salt suffix for CREATE2 deterministic addresses
         string memory saltSuffix = vm.envOr("SALT_SUFFIX", string("v1"));
         bool useTimestampSalt = vm.envOr("USE_TIMESTAMP_SALT", false);
-        
+
         if (useTimestampSalt) {
             saltSuffix = vm.toString(block.timestamp);
             console.log("Using timestamp salt:", saltSuffix);
@@ -84,76 +84,59 @@ contract DeployUpgradeable is Script {
         string memory crProxySalt = string.concat("ConsumptionRecordProxy_", saltSuffix);
 
         console.log("Using salt suffix:", saltSuffix);
-        
+
         // Convert salt strings to bytes32
         bytes32 craImplSaltBytes = keccak256(abi.encodePacked(craImplSalt));
         bytes32 craProxySaltBytes = keccak256(abi.encodePacked(craProxySalt));
         bytes32 crImplSaltBytes = keccak256(abi.encodePacked(crImplSalt));
         bytes32 crProxySaltBytes = keccak256(abi.encodePacked(crProxySalt));
-        
+
         // Check if contracts already exist at predicted addresses
         address predictedCraImpl = vm.computeCreate2Address(
-            craImplSaltBytes,
-            keccak256(type(CRARegistryUpgradeable).creationCode),
-            CREATE2_FACTORY
+            craImplSaltBytes, keccak256(type(CRARegistryUpgradeable).creationCode), CREATE2_FACTORY
         );
-        
+
         address predictedCrImpl = vm.computeCreate2Address(
-            crImplSaltBytes,
-            keccak256(type(ConsumptionRecordUpgradeable).creationCode),
-            CREATE2_FACTORY
+            crImplSaltBytes, keccak256(type(ConsumptionRecordUpgradeable).creationCode), CREATE2_FACTORY
         );
 
         // For proxy addresses, we need to compute with init data
         bytes memory craRegistryInitData = abi.encodeWithSignature("initialize(address)", deployer);
-        bytes memory craProxyBytecode = abi.encodePacked(
-            type(ERC1967Proxy).creationCode,
-            abi.encode(predictedCraImpl, craRegistryInitData)
-        );
-        address predictedCraProxy = vm.computeCreate2Address(
-            craProxySaltBytes,
-            keccak256(craProxyBytecode),
-            CREATE2_FACTORY
-        );
+        bytes memory craProxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCraImpl, craRegistryInitData));
+        address predictedCraProxy =
+            vm.computeCreate2Address(craProxySaltBytes, keccak256(craProxyBytecode), CREATE2_FACTORY);
 
-        bytes memory consumptionRecordInitData = abi.encodeWithSignature(
-            "initialize(address,address)",
-            predictedCraProxy,
-            deployer
-        );
-        bytes memory crProxyBytecode = abi.encodePacked(
-            type(ERC1967Proxy).creationCode,
-            abi.encode(predictedCrImpl, consumptionRecordInitData)
-        );
-        address predictedCrProxy = vm.computeCreate2Address(
-            crProxySaltBytes,
-            keccak256(crProxyBytecode),
-            CREATE2_FACTORY
-        );
-        
+        bytes memory consumptionRecordInitData =
+            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+        bytes memory crProxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrImpl, consumptionRecordInitData));
+        address predictedCrProxy =
+            vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
+
         // Check for existing deployments
         bool hasExistingContracts = false;
-        
+
         if (predictedCraImpl.code.length > 0) {
             console.log("WARNING: CRA Registry implementation already exists at:", predictedCraImpl);
             hasExistingContracts = true;
         }
-        
+
         if (predictedCrImpl.code.length > 0) {
             console.log("WARNING: Consumption Record implementation already exists at:", predictedCrImpl);
             hasExistingContracts = true;
         }
-        
+
         if (predictedCraProxy.code.length > 0) {
             console.log("WARNING: CRA Registry proxy already exists at:", predictedCraProxy);
             hasExistingContracts = true;
         }
-        
+
         if (predictedCrProxy.code.length > 0) {
             console.log("WARNING: Consumption Record proxy already exists at:", predictedCrProxy);
             hasExistingContracts = true;
         }
-        
+
         if (hasExistingContracts) {
             console.log("ERROR: Some contracts already exist at predicted addresses!");
             console.log("Solutions:");
@@ -171,9 +154,8 @@ contract DeployUpgradeable is Script {
 
         // Deploy CRA Registry proxy
         console.log("Deploying CRA Registry proxy...");
-        address craRegistryProxy = address(
-            new ERC1967Proxy{salt: craProxySaltBytes}(craRegistryImpl, craRegistryInitData)
-        );
+        address craRegistryProxy =
+            address(new ERC1967Proxy{salt: craProxySaltBytes}(craRegistryImpl, craRegistryInitData));
         craRegistry = CRARegistryUpgradeable(craRegistryProxy);
         console.log("CRA Registry proxy:", address(craRegistry));
         console.log("CRA Registry owner:", craRegistry.getOwner());
@@ -186,14 +168,9 @@ contract DeployUpgradeable is Script {
 
         // Deploy Consumption Record proxy
         console.log("Deploying Consumption Record proxy...");
-        bytes memory crInitData = abi.encodeWithSignature(
-            "initialize(address,address)",
-            address(craRegistry),
-            deployer
-        );
-        address consumptionRecordProxy = address(
-            new ERC1967Proxy{salt: crProxySaltBytes}(consumptionRecordImpl, crInitData)
-        );
+        bytes memory crInitData = abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
+        address consumptionRecordProxy =
+            address(new ERC1967Proxy{salt: crProxySaltBytes}(consumptionRecordImpl, crInitData));
         consumptionRecord = ConsumptionRecordUpgradeable(consumptionRecordProxy);
         console.log("Consumption Record proxy:", address(consumptionRecord));
         console.log("Consumption Record owner:", consumptionRecord.getOwner());

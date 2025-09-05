@@ -9,7 +9,6 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 /// @title CREATE2 Deployment Test
 /// @notice Tests CREATE2 deterministic deployment functionality
 contract CREATE2DeploymentTest is Test {
-    
     address public deployer;
     string public constant SALT_SUFFIX = "test_v1";
 
@@ -23,10 +22,8 @@ contract CREATE2DeploymentTest is Test {
         bytes32 craImplSaltBytes = keccak256(abi.encodePacked(craImplSalt));
 
         // Predict implementation address using vm.computeCreate2Address
-        address predictedCraImpl = vm.computeCreate2Address(
-            craImplSaltBytes,
-            keccak256(type(CRARegistryUpgradeable).creationCode)
-        );
+        address predictedCraImpl =
+            vm.computeCreate2Address(craImplSaltBytes, keccak256(type(CRARegistryUpgradeable).creationCode));
 
         // Deploy actual implementation and verify address matches prediction
         CRARegistryUpgradeable actualCraImpl = new CRARegistryUpgradeable{salt: craImplSaltBytes}();
@@ -36,17 +33,14 @@ contract CREATE2DeploymentTest is Test {
     function test_CREATE2DeterministicAcrossNetworks() public {
         // Test that the same salt produces the same addresses regardless of deployer
         bytes32 salt = keccak256(abi.encodePacked("TestSalt"));
-        
+
         // Predict address for current deployer
-        address predicted1 = vm.computeCreate2Address(
-            salt,
-            keccak256(type(CRARegistryUpgradeable).creationCode)
-        );
+        address predicted1 = vm.computeCreate2Address(salt, keccak256(type(CRARegistryUpgradeable).creationCode));
 
         // Deploy and verify
         CRARegistryUpgradeable impl1 = new CRARegistryUpgradeable{salt: salt}();
         assertEq(address(impl1), predicted1, "First deployment address mismatch");
-        
+
         // Verify the contract is functional
         assertTrue(address(impl1) != address(0), "Implementation address should not be zero");
     }
@@ -57,7 +51,7 @@ contract CREATE2DeploymentTest is Test {
 
         // Deploy with first salt
         CRARegistryUpgradeable impl1 = new CRARegistryUpgradeable{salt: salt1}();
-        
+
         // Deploy with different salt (should succeed)
         CRARegistryUpgradeable impl2 = new CRARegistryUpgradeable{salt: salt2}();
 
@@ -67,14 +61,11 @@ contract CREATE2DeploymentTest is Test {
 
     function testFuzz_CREATE2SaltGeneration(string memory saltSuffix) public {
         vm.assume(bytes(saltSuffix).length > 0 && bytes(saltSuffix).length < 100);
-        
+
         string memory craImplSalt = string.concat("CRARegistryImpl_", saltSuffix);
         bytes32 saltBytes = keccak256(abi.encodePacked(craImplSalt));
-        
-        address predicted = vm.computeCreate2Address(
-            saltBytes,
-            keccak256(type(CRARegistryUpgradeable).creationCode)
-        );
+
+        address predicted = vm.computeCreate2Address(saltBytes, keccak256(type(CRARegistryUpgradeable).creationCode));
 
         CRARegistryUpgradeable actual = new CRARegistryUpgradeable{salt: saltBytes}();
         assertEq(address(actual), predicted, "Fuzz test: predicted vs actual address mismatch");
@@ -104,7 +95,7 @@ contract CREATE2DeploymentTest is Test {
 
         // Verify storage is in proxy, not implementation
         CRARegistryUpgradeable directImpl = CRARegistryUpgradeable(address(implementation));
-        
+
         // Direct implementation shouldn't have initialized state
         // The implementation can be called but won't have the proxy's state
         // This is normal behavior - implementations are uninitialized templates

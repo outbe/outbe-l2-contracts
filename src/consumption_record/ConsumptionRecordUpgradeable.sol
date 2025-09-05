@@ -7,7 +7,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-/// @title ConsumptionRecordUpgradeable  
+/// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
@@ -19,10 +19,10 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
 
     /// @notice Maximum number of records that can be submitted in a single batch
     uint256 public constant MAX_BATCH_SIZE = 100;
-    
+
     /// @dev Mapping from record hash to record details
     mapping(bytes32 => CrRecord) public consumptionRecords;
-    
+
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
 
@@ -123,18 +123,18 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         string[][] memory valuesArray
     ) external onlyActiveCra {
         uint256 batchSize = crHashes.length;
-        
+
         // Validate batch size
         if (batchSize == 0) revert EmptyBatch();
         if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-        
+
         // Validate array lengths match
         if (owners.length != batchSize) revert MetadataKeyValueMismatch();
         if (keysArray.length != batchSize) revert MetadataKeyValueMismatch();
         if (valuesArray.length != batchSize) revert MetadataKeyValueMismatch();
 
         uint256 timestamp = block.timestamp;
-        
+
         // Process each record in the batch using the internal function
         for (uint256 i = 0; i < batchSize; i++) {
             _addRecord(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);

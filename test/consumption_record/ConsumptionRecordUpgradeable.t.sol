@@ -11,13 +11,13 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 contract ConsumptionRecordUpgradeableTest is Test {
     ConsumptionRecordUpgradeable public crContract;
     CRARegistryUpgradeable public registry;
-    
+
     ConsumptionRecordUpgradeable public crImplementation;
     CRARegistryUpgradeable public registryImplementation;
-    
+
     ERC1967Proxy public crProxy;
     ERC1967Proxy public registryProxy;
-    
+
     address public owner;
     address public cra1;
     address public cra2;
@@ -68,18 +68,18 @@ contract ConsumptionRecordUpgradeableTest is Test {
 
     function test_Initialize_RevertWhen_ZeroRegistry() public {
         ConsumptionRecordUpgradeable newImpl = new ConsumptionRecordUpgradeable();
-        
+
         bytes memory initData = abi.encodeWithSignature("initialize(address,address)", address(0), owner);
-        
+
         vm.expectRevert("CRA Registry cannot be zero address");
         new ERC1967Proxy(address(newImpl), initData);
     }
 
     function test_Initialize_RevertWhen_ZeroOwner() public {
         ConsumptionRecordUpgradeable newImpl = new ConsumptionRecordUpgradeable();
-        
+
         bytes memory initData = abi.encodeWithSignature("initialize(address,address)", address(registry), address(0));
-        
+
         vm.expectRevert("Owner cannot be zero address");
         new ERC1967Proxy(address(newImpl), initData);
     }
@@ -95,7 +95,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
         crContract.submit(CR_HASH_1, recordOwner1, keys, values);
 
         assertTrue(crContract.isExists(CR_HASH_1));
-        
+
         IConsumptionRecord.CrRecord memory record = crContract.getRecord(CR_HASH_1);
         assertEq(record.submittedBy, cra1);
         assertEq(record.owner, recordOwner1);
@@ -177,7 +177,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
 
         vm.prank(cra1);
         crContract.submit(CR_HASH_1, recordOwner1, keys, values);
-        
+
         assertTrue(crContract.isExists(CR_HASH_1));
 
         // Deploy new implementation
@@ -190,7 +190,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
         assertTrue(crContract.isExists(CR_HASH_1));
         assertEq(crContract.getOwner(), owner);
         assertEq(crContract.getCraRegistry(), address(registry));
-        
+
         IConsumptionRecord.CrRecord memory record = crContract.getRecord(CR_HASH_1);
         assertEq(record.submittedBy, cra1);
         assertEq(record.owner, recordOwner1);
@@ -218,7 +218,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
         CRARegistryUpgradeable newRegistry = new CRARegistryUpgradeable();
         bytes memory registryInitData = abi.encodeWithSignature("initialize(address)", owner);
         ERC1967Proxy newRegistryProxy = new ERC1967Proxy(address(newRegistry), registryInitData);
-        
+
         bytes memory data = abi.encodeWithSignature("setCraRegistry(address)", address(newRegistryProxy));
 
         // Perform upgrade and call
