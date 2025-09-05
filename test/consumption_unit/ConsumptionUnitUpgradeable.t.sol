@@ -90,9 +90,9 @@ contract ConsumptionUnitUpgradeableTest is Test {
         uint64 nominalBaseQty = 10;
         uint128 nominalAttoQty = 1;
         string memory nominalCurrency = "kWh";
-        string[] memory hashes = new string[](2);
-        hashes[0] = "hashA";
-        hashes[1] = "hashB";
+        bytes32[] memory hashes = new bytes32[](2);
+        hashes[0] = keccak256("MFRGG===");
+        hashes[1] = keccak256("ON2XEZJO");
 
         vm.expectEmit(true, true, false, true);
         emit Submitted(CU_HASH_1, cra1, block.timestamp);
@@ -122,7 +122,6 @@ contract ConsumptionUnitUpgradeableTest is Test {
         assertEq(record.nominalAttoQty, nominalAttoQty);
         assertEq(record.nominalCurrency, nominalCurrency);
         assertEq(record.hashes.length, 2);
-        assertEq(record.hashes[0], "hashA");
         assertEq(record.submittedAt, block.timestamp);
 
         bytes32[] memory ownerRecords = cuContract.getRecordsByOwner(recordOwner1);
@@ -139,7 +138,7 @@ contract ConsumptionUnitUpgradeableTest is Test {
         uint64[] memory nominalBaseQtys = new uint64[](2);
         uint128[] memory nominalAttoQtys = new uint128[](2);
         string[] memory nominalCurrencies = new string[](2);
-        string[][] memory hashesArray = new string[][](2);
+        bytes32[][] memory hashesArray = new bytes32[][](2);
 
         hashes[0] = CU_HASH_1;
         hashes[1] = CU_HASH_2;
@@ -157,9 +156,9 @@ contract ConsumptionUnitUpgradeableTest is Test {
         nominalAttoQtys[1] = 1;
         nominalCurrencies[0] = "kWh";
         nominalCurrencies[1] = "kWh";
-        hashesArray[0] = new string[](1);
-        hashesArray[0][0] = "h1";
-        hashesArray[1] = new string[](0);
+        hashesArray[0] = new bytes32[](1);
+        hashesArray[0][0] = keccak256("MY======"); // base32
+        hashesArray[1] = new bytes32[](0);
 
         vm.expectEmit(true, true, false, true);
         emit BatchSubmitted(2, cra1, block.timestamp);
@@ -182,7 +181,7 @@ contract ConsumptionUnitUpgradeableTest is Test {
     }
 
     function test_Reverts() public {
-        string[] memory emptyHashes = new string[](0);
+        bytes32[] memory emptyHashes = new bytes32[](0);
 
         // not active CRA
         vm.prank(unauthorized);
@@ -208,5 +207,13 @@ contract ConsumptionUnitUpgradeableTest is Test {
         vm.prank(cra1);
         vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
         cuContract.submit(CU_HASH_1, recordOwner1, "USD", 0, 1e18, 0, 0, "kWh", emptyHashes);
+
+        // duplicate hashes in array
+        bytes32[] memory dupHashes = new bytes32[](2);
+        dupHashes[0] = keccak256("MFRGG===");
+        dupHashes[1] = keccak256("MFRGG===");
+        vm.prank(cra1);
+        vm.expectRevert(IConsumptionUnit.CrAlreadyExists.selector);
+        cuContract.submit(CU_HASH_1, recordOwner1, "USD", 0, 0, 0, 0, "kWh", dupHashes);
     }
 }

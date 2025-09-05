@@ -15,6 +15,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
     uint256 public constant MAX_BATCH_SIZE = 100;
 
     mapping(bytes32 => CuRecord) public consumptionUnits;
+    mapping(bytes32 => bool) public consumptionRecordHashes;
     mapping(address => bytes32[]) public ownerRecords;
     ICRARegistry public craRegistry;
 
@@ -54,7 +55,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         uint64 nominalBaseQty,
         uint128 nominalAttoQty,
         string memory nominalCurrency,
-        string[] memory hashes,
+        bytes32[] memory hashes,
         uint256 timestamp
     ) internal {
         if (cuHash == bytes32(0)) revert InvalidHash();
@@ -65,6 +66,14 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         _validateCurrency(nominalCurrency);
         _validateAmounts(settlementBaseAmount, settlementAttoAmount);
         _validateAmounts(nominalBaseQty, nominalAttoQty);
+
+        // check CR hashes uniqueness
+        for (uint256 i = 0; i < hashes.length; i++) {
+            if (consumptionRecordHashes[hashes[i]]) {
+                revert CrAlreadyExists();
+            }
+            consumptionRecordHashes[hashes[i]] = true;
+        }
 
         consumptionUnits[cuHash] = CuRecord({
             owner: recordOwner,
@@ -93,7 +102,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         uint64 nominalBaseQty,
         uint128 nominalAttoQty,
         string memory nominalCurrency,
-        string[] memory hashes
+        bytes32[] memory hashes
     ) external onlyActiveCra {
         _addRecord(
             cuHash,
@@ -118,7 +127,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         uint64[] memory nominalBaseQtys,
         uint128[] memory nominalAttoQtys,
         string[] memory nominalCurrencies,
-        string[][] memory hashesArray
+        bytes32[][] memory hashesArray
     ) external onlyActiveCra {
         uint256 batchSize = cuHashes.length;
         if (batchSize == 0) revert EmptyBatch();
