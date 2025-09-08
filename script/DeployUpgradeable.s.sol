@@ -5,6 +5,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
+import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /// @title DeployUpgradeable Script
@@ -18,11 +19,14 @@ contract DeployUpgradeable is Script {
     ConsumptionRecordUpgradeable public consumptionRecord;
     /// @notice Consumption Unit proxy instance
     ConsumptionUnitUpgradeable public consumptionUnit;
+    /// @notice Tribute Draft proxy instance
+    TributeDraftUpgradeable public tributeDraft;
 
     /// @notice Implementation contracts
     address public craRegistryImpl;
     address public consumptionRecordImpl;
     address public consumptionUnitImpl;
+    address public tributeDraftImpl;
 
     /// @notice Deployment configuration
     struct DeploymentConfig {
@@ -88,6 +92,8 @@ contract DeployUpgradeable is Script {
         string memory crProxySalt = string.concat("ConsumptionRecordProxy_", saltSuffix);
         string memory cuImplSalt = string.concat("ConsumptionUnitImpl_", saltSuffix);
         string memory cuProxySalt = string.concat("ConsumptionUnitProxy_", saltSuffix);
+        string memory tdImplSalt = string.concat("TributeDraftImpl_", saltSuffix);
+        string memory tdProxySalt = string.concat("TributeDraftProxy_", saltSuffix);
 
         console.log("Using salt suffix:", saltSuffix);
 
@@ -98,6 +104,8 @@ contract DeployUpgradeable is Script {
         bytes32 crProxySaltBytes = keccak256(abi.encodePacked(crProxySalt));
         bytes32 cuImplSaltBytes = keccak256(abi.encodePacked(cuImplSalt));
         bytes32 cuProxySaltBytes = keccak256(abi.encodePacked(cuProxySalt));
+        bytes32 tdImplSaltBytes = keccak256(abi.encodePacked(tdImplSalt));
+        bytes32 tdProxySaltBytes = keccak256(abi.encodePacked(tdProxySalt));
 
         // Check if contracts already exist at predicted addresses
         address predictedCraImpl = vm.computeCreate2Address(
@@ -110,6 +118,10 @@ contract DeployUpgradeable is Script {
 
         address predictedCuImpl = vm.computeCreate2Address(
             cuImplSaltBytes, keccak256(type(ConsumptionUnitUpgradeable).creationCode), CREATE2_FACTORY
+        );
+
+        address predictedTdImpl = vm.computeCreate2Address(
+            tdImplSaltBytes, keccak256(type(TributeDraftUpgradeable).creationCode), CREATE2_FACTORY
         );
 
         // For proxy addresses, we need to compute with init data
@@ -133,6 +145,13 @@ contract DeployUpgradeable is Script {
         address predictedCuProxy =
             vm.computeCreate2Address(cuProxySaltBytes, keccak256(cuProxyBytecode), CREATE2_FACTORY);
 
+        // Tribute Draft init and predicted proxy
+        bytes memory tributeDraftInitData = abi.encodeWithSignature("initialize(address)", predictedCuProxy);
+        bytes memory tdProxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedTdImpl, tributeDraftInitData));
+        address predictedTdProxy =
+            vm.computeCreate2Address(tdProxySaltBytes, keccak256(tdProxyBytecode), CREATE2_FACTORY);
+
         // Check for existing deployments
         bool hasExistingContracts = false;
 
@@ -151,6 +170,11 @@ contract DeployUpgradeable is Script {
             hasExistingContracts = true;
         }
 
+        if (predictedTdImpl.code.length > 0) {
+            console.log("WARNING: Tribute Draft implementation already exists at:", predictedTdImpl);
+            hasExistingContracts = true;
+        }
+
         if (predictedCraProxy.code.length > 0) {
             console.log("WARNING: CRA Registry proxy already exists at:", predictedCraProxy);
             hasExistingContracts = true;
@@ -163,6 +187,11 @@ contract DeployUpgradeable is Script {
 
         if (predictedCuProxy.code.length > 0) {
             console.log("WARNING: Consumption Unit proxy already exists at:", predictedCuProxy);
+            hasExistingContracts = true;
+        }
+
+        if (predictedTdProxy.code.length > 0) {
+            console.log("WARNING: Tribute Draft proxy already exists at:", predictedTdProxy);
             hasExistingContracts = true;
         }
 
@@ -220,6 +249,21 @@ contract DeployUpgradeable is Script {
         console.log("Consumption Unit proxy:", address(consumptionUnit));
         console.log("Consumption Unit owner:", consumptionUnit.getOwner());
         console.log("Consumption Unit CRA Registry:", consumptionUnit.getCraRegistry());
+        console.log("");
+
+        // Deploy Tribute Draft implementation
+        console.log("Deploying Tribute Draft implementation...");
+        tributeDraftImpl = address(new TributeDraftUpgradeable{salt: tdImplSaltBytes}());
+        console.log("Tribute Draft implementation:", tributeDraftImpl);
+
+        // Deploy Tribute Draft proxy
+        console.log("Deploying Tribute Draft proxy...");
+        bytes memory tdInitData = abi.encodeWithSignature("initialize(address)", address(consumptionUnit));
+        address tributeDraftProxy =
+            address(new ERC1967Proxy{salt: tdProxySaltBytes}(tributeDraftImpl, tdInitData));
+        tributeDraft = TributeDraftUpgradeable(tributeDraftProxy);
+        console.log("Tribute Draft proxy:", address(tributeDraft));
+        console.log("Tribute Draft CU:", tributeDraft.getConsumptionUnit());
         console.log("");
 
         // Setup initial CRAs if environment variable is set
@@ -288,13 +332,20 @@ contract DeployUpgradeable is Script {
         require(consumptionUnit.getCraRegistry() == address(craRegistry), "CU CRA Registry linkage incorrect");
         console.log("Consumption Unit verification passed");
 
+        // Check Tribute Draft
+        require(address(tributeDraft) != address(0), "Tribute Draft deployment failed");
+        require(tributeDraft.getConsumptionUnit() == address(consumptionUnit), "TD CU linkage incorrect");
+        console.log("Tribute Draft verification passed");
+
         // Check contract versions
         string memory craVersion = craRegistry.VERSION();
         string memory crVersion = consumptionRecord.VERSION();
         string memory cuVersion = consumptionUnit.VERSION();
+        string memory tdVersion = tributeDraft.VERSION();
         console.log("CRA Registry version:", craVersion);
         console.log("Consumption Record version:", crVersion);
         console.log("Consumption Unit version:", cuVersion);
+        console.log("Tribute Draft version:", tdVersion);
         console.log("");
     }
 
@@ -308,20 +359,24 @@ contract DeployUpgradeable is Script {
         console.log("- CRA Registry Impl:      ", craRegistryImpl);
         console.log("- Consumption Record Impl:", consumptionRecordImpl);
         console.log("- Consumption Unit Impl:  ", consumptionUnitImpl);
+        console.log("- Tribute Draft Impl:     ", tributeDraftImpl);
         console.log("");
         console.log("Proxy Addresses (Use these for interactions):");
         console.log("- CRA Registry:      ", address(craRegistry));
         console.log("- Consumption Record:", address(consumptionRecord));
         console.log("- Consumption Unit:  ", address(consumptionUnit));
+        console.log("- Tribute Draft:     ", address(tributeDraft));
         console.log("");
         console.log("Contract Owners:");
         console.log("- CRA Registry:      ", craRegistry.getOwner());
         console.log("- Consumption Record:", consumptionRecord.getOwner());
         console.log("- Consumption Unit:  ", consumptionUnit.getOwner());
+        // Tribute Draft is Ownable but no owner getter; no direct owner method in TD, skip owner here
         console.log("");
         console.log("Configuration:");
         console.log("- CR -> CRA Registry:", consumptionRecord.getCraRegistry());
         console.log("- CU -> CRA Registry:", consumptionUnit.getCraRegistry());
+        console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnit());
         console.log("");
 
         if (vm.envOr("SETUP_INITIAL_CRAS", false)) {
@@ -344,9 +399,11 @@ contract DeployUpgradeable is Script {
         console.log("CRA_REGISTRY_ADDRESS=", address(craRegistry));
         console.log("CONSUMPTION_RECORD_ADDRESS=", address(consumptionRecord));
         console.log("CONSUMPTION_UNIT_ADDRESS=", address(consumptionUnit));
+        console.log("TRIBUTE_DRAFT_ADDRESS=", address(tributeDraft));
         console.log("CRA_REGISTRY_IMPL=", craRegistryImpl);
         console.log("CONSUMPTION_RECORD_IMPL=", consumptionRecordImpl);
         console.log("CONSUMPTION_UNIT_IMPL=", consumptionUnitImpl);
+        console.log("TRIBUTE_DRAFT_IMPL=", tributeDraftImpl);
     }
 
     /// @notice Get network name based on chain ID
