@@ -14,7 +14,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
     string public constant VERSION = "1.0.0";
     uint256 public constant MAX_BATCH_SIZE = 100;
 
-    mapping(bytes32 => CuRecord) public consumptionUnits;
+    mapping(bytes32 => ConsumptionUnitEntity) public consumptionUnits;
     mapping(bytes32 => bool) public consumptionRecordHashes;
     mapping(address => bytes32[]) public ownerRecords;
     ICRARegistry public craRegistry;
@@ -75,7 +75,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
             consumptionRecordHashes[hashes[i]] = true;
         }
 
-        consumptionUnits[cuHash] = CuRecord({
+        consumptionUnits[cuHash] = ConsumptionUnitEntity({
             owner: recordOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
@@ -163,7 +163,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         return consumptionUnits[cuHash].submittedBy != address(0);
     }
 
-    function getRecord(bytes32 cuHash) external view returns (CuRecord memory) {
+    function getRecord(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory) {
         return consumptionUnits[cuHash];
     }
 
