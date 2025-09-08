@@ -4,8 +4,8 @@ pragma solidity ^0.8.13;
 import {Test} from "forge-std/Test.sol";
 import {ConsumptionRecordUpgradeable} from "../../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {CRARegistryUpgradeable} from "../../src/cra_registry/CRARegistryUpgradeable.sol";
-import {ICRARegistry} from "../../src/interfaces/ICRARegistry.sol";
-import {IConsumptionRecord} from "../../src/interfaces/IConsumptionRecord.sol";
+import {ICRARegistry} from "../../src/cra_registry/ICRARegistry.sol";
+import {IConsumptionRecord} from "../../src/consumption_record/IConsumptionRecord.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract ConsumptionRecordUpgradeableTest is Test {
