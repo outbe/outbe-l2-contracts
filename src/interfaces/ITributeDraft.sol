@@ -28,7 +28,6 @@ interface ITributeDraft {
     error NotFound(bytes32 cuHash);
     error NotSameOwner();
     error NotSameCurrency();
-    error AlreadyExists(bytes32 tdId);
 
     function initialize(address consumptionUnit) external;
 

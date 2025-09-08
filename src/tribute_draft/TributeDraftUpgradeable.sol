@@ -37,6 +37,9 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         if (n == 0) revert EmptyArray();
 
         for (uint256 i = 0; i < n; i++) {
+            for (uint256 j = i + 1; j < n; j++) {
+                if (cuHashes[i] == cuHashes[j]) revert DuplicateId();
+            }
             // check it wasn't previously submitted
             if (consumptionUnitHashes[cuHashes[i]]) {
                 revert DuplicateId();
@@ -74,7 +77,6 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
 
         // generate tribute draft id as hash of provided CU hashes
         tdId = keccak256(abi.encode(cuHashes));
-        if (tributeDrafts[tdId].submittedAt != 0) revert AlreadyExists(tdId);
 
         tributeDrafts[tdId] = TributeDraftEntity({
             owner: owner_,
