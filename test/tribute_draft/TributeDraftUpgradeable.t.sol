@@ -25,7 +25,9 @@ contract TributeDraftUpgradeableTest is Test {
     bytes32 public constant CU1 = keccak256("cu1");
     bytes32 public constant CU2 = keccak256("cu2");
 
-    event Minted(bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp);
+    event Minted(
+        bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp
+    );
 
     function setUp() public {
         owner = address(this);

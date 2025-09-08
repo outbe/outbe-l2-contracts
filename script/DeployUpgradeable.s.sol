@@ -259,8 +259,7 @@ contract DeployUpgradeable is Script {
         // Deploy Tribute Draft proxy
         console.log("Deploying Tribute Draft proxy...");
         bytes memory tdInitData = abi.encodeWithSignature("initialize(address)", address(consumptionUnit));
-        address tributeDraftProxy =
-            address(new ERC1967Proxy{salt: tdProxySaltBytes}(tributeDraftImpl, tdInitData));
+        address tributeDraftProxy = address(new ERC1967Proxy{salt: tdProxySaltBytes}(tributeDraftImpl, tdInitData));
         tributeDraft = TributeDraftUpgradeable(tributeDraftProxy);
         console.log("Tribute Draft proxy:", address(tributeDraft));
         console.log("Tribute Draft CU:", tributeDraft.getConsumptionUnit());
