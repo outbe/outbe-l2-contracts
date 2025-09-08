@@ -112,7 +112,7 @@ contract ConsumptionUnitUpgradeableTest is Test {
 
         assertTrue(cuContract.isExists(CU_HASH_1));
 
-        IConsumptionUnit.CuRecord memory record = cuContract.getRecord(CU_HASH_1);
+        IConsumptionUnit.ConsumptionUnitEntity memory record = cuContract.getRecord(CU_HASH_1);
         assertEq(record.submittedBy, cra1);
         assertEq(record.owner, recordOwner1);
         assertEq(record.settlementCurrency, settlementCurrency);

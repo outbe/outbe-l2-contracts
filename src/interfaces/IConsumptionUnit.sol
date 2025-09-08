@@ -8,7 +8,7 @@ pragma solidity ^0.8.13;
 /// @custom:version 0.0.1
 interface IConsumptionUnit {
     /// @notice Record information for a consumption unit
-    struct CuRecord {
+    struct ConsumptionUnitEntity {
         /// @notice owner of the consumption unit
         address owner;
         /// @notice address of the CRA agent who submitted that consumption unit
@@ -71,7 +71,7 @@ interface IConsumptionUnit {
 
     function isExists(bytes32 cuHash) external view returns (bool);
 
-    function getRecord(bytes32 cuHash) external view returns (CuRecord memory);
+    function getRecord(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory);
 
     function setCraRegistry(address _craRegistry) external;
 

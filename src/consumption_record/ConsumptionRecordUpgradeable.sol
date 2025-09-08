@@ -21,7 +21,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     uint256 public constant MAX_BATCH_SIZE = 100;
 
     /// @dev Mapping from record hash to record details
-    mapping(bytes32 => CrRecord) public consumptionRecords;
+    mapping(bytes32 => ConsumptionRecordEntity) public consumptionRecords;
 
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
@@ -87,7 +87,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         }
 
         // Store the record
-        consumptionRecords[crHash] = CrRecord({
+        consumptionRecords[crHash] = ConsumptionRecordEntity({
             submittedBy: msg.sender,
             submittedAt: timestamp,
             owner: recordOwner,
@@ -150,7 +150,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getRecord(bytes32 crHash) external view returns (CrRecord memory) {
+    function getRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
         return consumptionRecords[crHash];
     }
 

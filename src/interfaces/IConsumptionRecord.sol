@@ -9,7 +9,7 @@ pragma solidity ^0.8.13;
 interface IConsumptionRecord {
     /// @notice Record information for a consumption record
     /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
-    struct CrRecord {
+    struct ConsumptionRecordEntity {
         address submittedBy;
         /// @dev Address of the CRA that submitted this record
         uint256 submittedAt;
@@ -80,7 +80,7 @@ interface IConsumptionRecord {
     /// @notice Get a consumption record by hash
     /// @param crHash The hash of the record
     /// @return CrRecord struct with complete record data
-    function getRecord(bytes32 crHash) external view returns (CrRecord memory);
+    function getRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory);
 
     /// @notice Set the CRA Registry contract address
     /// @dev Only callable by contract owner

@@ -96,7 +96,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
 
         assertTrue(crContract.isExists(CR_HASH_1));
 
-        IConsumptionRecord.CrRecord memory record = crContract.getRecord(CR_HASH_1);
+        IConsumptionRecord.ConsumptionRecordEntity memory record = crContract.getRecord(CR_HASH_1);
         assertEq(record.submittedBy, cra1);
         assertEq(record.owner, recordOwner1);
         assertEq(record.submittedAt, block.timestamp);
@@ -126,7 +126,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
         vm.prank(cra1);
         crContract.submit(CR_HASH_1, recordOwner1, keys, values);
 
-        IConsumptionRecord.CrRecord memory record = crContract.getRecord(CR_HASH_1);
+        IConsumptionRecord.ConsumptionRecordEntity memory record = crContract.getRecord(CR_HASH_1);
         assertEq(record.metadataKeys.length, 2);
         assertEq(record.metadataKeys[0], "type");
         assertEq(record.metadataKeys[1], "amount");
@@ -191,7 +191,7 @@ contract ConsumptionRecordUpgradeableTest is Test {
         assertEq(crContract.getOwner(), owner);
         assertEq(crContract.getCraRegistry(), address(registry));
 
-        IConsumptionRecord.CrRecord memory record = crContract.getRecord(CR_HASH_1);
+        IConsumptionRecord.ConsumptionRecordEntity memory record = crContract.getRecord(CR_HASH_1);
         assertEq(record.submittedBy, cra1);
         assertEq(record.owner, recordOwner1);
         assertEq(record.metadataKeys[0], "test");
