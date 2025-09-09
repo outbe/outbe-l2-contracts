@@ -50,6 +50,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         bytes32 cuHash,
         address recordOwner,
         string memory settlementCurrency,
+        string memory worldwideDay,
         uint64 settlementBaseAmount,
         uint128 settlementAttoAmount,
         uint64 nominalBaseQty,
@@ -79,6 +80,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
             owner: recordOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
+            worldwideDay: worldwideDay,
             settlementBaseAmount: settlementBaseAmount,
             settlementAttoAmount: settlementAttoAmount,
             nominalBaseQty: nominalBaseQty,
@@ -97,6 +99,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         bytes32 cuHash,
         address recordOwner,
         string memory settlementCurrency,
+        string memory worldwideDay,
         uint64 settlementBaseAmount,
         uint128 settlementAttoAmount,
         uint64 nominalBaseQty,
@@ -108,6 +111,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
             cuHash,
             recordOwner,
             settlementCurrency,
+            worldwideDay,
             settlementBaseAmount,
             settlementAttoAmount,
             nominalBaseQty,
@@ -122,6 +126,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         bytes32[] memory cuHashes,
         address[] memory owners,
         string[] memory settlementCurrencies,
+        string[] memory worldwideDays,
         uint64[] memory settlementBaseAmounts,
         uint128[] memory settlementAttoAmounts,
         uint64[] memory nominalBaseQtys,
@@ -134,7 +139,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
 
         if (
-            owners.length != batchSize || settlementCurrencies.length != batchSize
+            owners.length != batchSize || settlementCurrencies.length != batchSize || worldwideDays.length != batchSize
                 || settlementBaseAmounts.length != batchSize || settlementAttoAmounts.length != batchSize
                 || nominalBaseQtys.length != batchSize || nominalAttoQtys.length != batchSize
                 || nominalCurrencies.length != batchSize || hashesArray.length != batchSize
@@ -146,6 +151,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
                 cuHashes[i],
                 owners[i],
                 settlementCurrencies[i],
+                worldwideDays[i],
                 settlementBaseAmounts[i],
                 settlementAttoAmounts[i],
                 nominalBaseQtys[i],

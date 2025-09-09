@@ -11,6 +11,8 @@ interface ITributeDraft {
         address owner;
         // currency shared across all consumption units (ISO 4217)
         string settlementCurrency;
+        /// ISO 8601
+        string worldwideDay;
         // aggregated settlement amount
         uint64 settlementBaseAmount;
         uint128 settlementAttoAmount;
@@ -28,6 +30,7 @@ interface ITributeDraft {
     error NotFound(bytes32 cuHash);
     error NotSameOwner();
     error NotSameCurrency();
+    error NotSameDay();
 
     function initialize(address consumptionUnit) external;
 

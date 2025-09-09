@@ -76,6 +76,7 @@ contract TributeDraftUpgradeableTest is Test {
             cuHash,
             recordOwner,
             settlementCurrency,
+            "2025-09-09",
             settlementBaseAmount,
             settlementAttoAmount,
             nominalBaseQty,

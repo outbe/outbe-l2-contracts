@@ -102,6 +102,7 @@ contract ConsumptionUnitUpgradeableTest is Test {
             CU_HASH_1,
             recordOwner1,
             settlementCurrency,
+            "2025-09-09",
             settlementBaseAmount,
             settlementAttoAmount,
             nominalBaseQty,
@@ -133,6 +134,7 @@ contract ConsumptionUnitUpgradeableTest is Test {
         bytes32[] memory hashes = new bytes32[](2);
         address[] memory owners = new address[](2);
         string[] memory settlementCurrencies = new string[](2);
+        string[] memory worldwideDays = new string[](2);
         uint64[] memory settlementBaseAmounts = new uint64[](2);
         uint128[] memory settlementAttoAmounts = new uint128[](2);
         uint64[] memory nominalBaseQtys = new uint64[](2);
@@ -146,6 +148,8 @@ contract ConsumptionUnitUpgradeableTest is Test {
         owners[1] = recordOwner2;
         settlementCurrencies[0] = "USD";
         settlementCurrencies[1] = "EUR";
+        worldwideDays[0] = "2025-09-09";
+        worldwideDays[1] = "2025-09-09";
         settlementBaseAmounts[0] = 100;
         settlementBaseAmounts[1] = 200;
         settlementAttoAmounts[0] = 10;
@@ -168,6 +172,7 @@ contract ConsumptionUnitUpgradeableTest is Test {
             hashes,
             owners,
             settlementCurrencies,
+            worldwideDays,
             settlementBaseAmounts,
             settlementAttoAmounts,
             nominalBaseQtys,
@@ -186,27 +191,27 @@ contract ConsumptionUnitUpgradeableTest is Test {
         // not active CRA
         vm.prank(unauthorized);
         vm.expectRevert(IConsumptionUnit.CRANotActive.selector);
-        cuContract.submit(CU_HASH_1, recordOwner1, "USD", 0, 0, 0, 0, "kWh", emptyHashes);
+        cuContract.submit(CU_HASH_1, recordOwner1, "USD", "2025-09-09", 0, 0, 0, 0, "kWh", emptyHashes);
 
         // zero hash
         vm.prank(cra1);
         vm.expectRevert(IConsumptionUnit.InvalidHash.selector);
-        cuContract.submit(ZERO_HASH, recordOwner1, "USD", 0, 0, 0, 0, "kWh", emptyHashes);
+        cuContract.submit(ZERO_HASH, recordOwner1, "USD", "2025-09-09", 0, 0, 0, 0, "kWh", emptyHashes);
 
         // zero owner
         vm.prank(cra1);
         vm.expectRevert(IConsumptionUnit.InvalidOwner.selector);
-        cuContract.submit(CU_HASH_1, address(0), "USD", 0, 0, 0, 0, "kWh", emptyHashes);
+        cuContract.submit(CU_HASH_1, address(0), "USD", "2025-09-09", 0, 0, 0, 0, "kWh", emptyHashes);
 
         // empty currency
         vm.prank(cra1);
         vm.expectRevert(IConsumptionUnit.InvalidCurrency.selector);
-        cuContract.submit(CU_HASH_1, recordOwner1, "", 0, 0, 0, 0, "kWh", emptyHashes);
+        cuContract.submit(CU_HASH_1, recordOwner1, "", "2025-09-09", 0, 0, 0, 0, "kWh", emptyHashes);
 
         // invalid atto boundary (>= 1e18)
         vm.prank(cra1);
         vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-        cuContract.submit(CU_HASH_1, recordOwner1, "USD", 0, 1e18, 0, 0, "kWh", emptyHashes);
+        cuContract.submit(CU_HASH_1, recordOwner1, "USD", "2025-09-09", 0, 1e18, 0, 0, "kWh", emptyHashes);
 
         // duplicate hashes in array
         bytes32[] memory dupHashes = new bytes32[](2);
@@ -214,6 +219,6 @@ contract ConsumptionUnitUpgradeableTest is Test {
         dupHashes[1] = keccak256("MFRGG===");
         vm.prank(cra1);
         vm.expectRevert(IConsumptionUnit.CrAlreadyExists.selector);
-        cuContract.submit(CU_HASH_1, recordOwner1, "USD", 0, 0, 0, 0, "kWh", dupHashes);
+        cuContract.submit(CU_HASH_1, recordOwner1, "USD", "2025-09-09", 0, 0, 0, 0, "kWh", dupHashes);
     }
 }

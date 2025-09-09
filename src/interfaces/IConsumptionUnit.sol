@@ -15,6 +15,8 @@ interface IConsumptionUnit {
         address submittedBy;
         /// @notice ISO 4217
         string settlementCurrency;
+        /// ISO 8601
+        string worldwideDay;
         /// @notice Amount expressed in natural units, `settlement_base_amount >= 0`
         uint64 settlementBaseAmount;
         /// @notice Amount expressed in fractional units, `0 >= settlement_atto_amount < 1e18`
@@ -49,6 +51,7 @@ interface IConsumptionUnit {
         bytes32 cuHash,
         address owner,
         string memory settlementCurrency,
+        string memory worldwideDay,
         uint64 settlementBaseAmount,
         uint128 settlementAttoAmount,
         uint64 nominalBaseQty,
@@ -61,6 +64,7 @@ interface IConsumptionUnit {
         bytes32[] memory cuHashes,
         address[] memory owners,
         string[] memory settlementCurrencies,
+        string[] memory worldwideDays,
         uint64[] memory settlementBaseAmounts,
         uint128[] memory settlementAttoAmounts,
         uint64[] memory nominalBaseQtys,

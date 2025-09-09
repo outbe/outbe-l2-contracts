@@ -54,6 +54,7 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
 
         address owner_ = first.owner;
         string memory currency_ = first.settlementCurrency;
+        string memory worldwideDay_ = first.worldwideDay;
         uint64 baseAmt = first.settlementBaseAmount;
         uint128 attoAmt = first.settlementAttoAmount;
 
@@ -63,6 +64,7 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
             if (rec.owner != owner_) revert NotSameOwner();
             // compare currency strings by keccak hash
             if (keccak256(bytes(rec.settlementCurrency)) != keccak256(bytes(currency_))) revert NotSameCurrency();
+            if (keccak256(bytes(rec.worldwideDay)) != keccak256(bytes(worldwideDay_))) revert NotSameDay();
 
             // aggregate amount: base + atto with carry (checked arithmetic)
             baseAmt += rec.settlementBaseAmount;
@@ -81,6 +83,7 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         tributeDrafts[tdId] = TributeDraftEntity({
             owner: owner_,
             settlementCurrency: currency_,
+            worldwideDay: worldwideDay_,
             settlementBaseAmount: baseAmt,
             settlementAttoAmount: attoAmt,
             cuHashes: cuHashes,
