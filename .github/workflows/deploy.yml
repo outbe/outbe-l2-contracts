@@ -29,7 +29,10 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-
+      
+      - name: Run Forge build
+        run: echo $${{env.RPC_URL }}
+          
       - name: Run Forge build
         run: |
           forge build --sizes
@@ -37,7 +40,7 @@ jobs:
       - name: Predict Contract Addresses
         run: |
           forge script script/PredictAddresses.s.sol \
-          --rpc-url ${{ vars.RPC_URL }} \
+          --rpc-url ${{ env.RPC_URL }} \
           --private-key ${{ secrets.PRIVATE_KEY }} \
           --broadcast \
           --verify \
@@ -49,7 +52,7 @@ jobs:
       - name: Deploy Upgradeable Contracts
         run: |
           forge script script/DeployUpgradeable.s.sol \
-            --rpc-url ${{ vars.RPC_URL }} \
+            --rpc-url ${{ env.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --broadcast \
             --verify \
