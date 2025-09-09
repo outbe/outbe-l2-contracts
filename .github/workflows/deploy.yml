@@ -5,17 +5,8 @@ on:
     inputs:
       environment:
         description: "Environment to deploy to"
+        type: environment
         required: true
-        type: choice
-        options:
-          - development
-          - staging
-          - production
-        default: development
-      is_latest:
-        description: "Mark as latest"
-        required: false
-        type: boolean
 
 jobs:
   deploy:
@@ -31,7 +22,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
       
       - name: Run Forge build
-        run: echo $${{env.RPC_URL }}
+        run: echo ${{ vars.RPC_URL }}
           
       - name: Run Forge build
         run: |
@@ -40,7 +31,7 @@ jobs:
       - name: Predict Contract Addresses
         run: |
           forge script script/PredictAddresses.s.sol \
-          --rpc-url ${{ env.RPC_URL }} \
+          --rpc-url ${{ vars.RPC_URL }} \
           --private-key ${{ secrets.PRIVATE_KEY }} \
           --broadcast \
           --verify \
@@ -52,7 +43,7 @@ jobs:
       - name: Deploy Upgradeable Contracts
         run: |
           forge script script/DeployUpgradeable.s.sol \
-            --rpc-url ${{ env.RPC_URL }} \
+            --rpc-url ${{ vars.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --broadcast \
             --verify \
