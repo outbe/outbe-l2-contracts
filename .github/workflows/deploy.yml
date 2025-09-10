@@ -34,8 +34,7 @@ jobs:
           --rpc-url ${{ vars.RPC_URL }} \
           --private-key ${{ secrets.PRIVATE_KEY }} \
           --create2-deployer ${{ vars.CREATE2_ADDR }} \
-          --broadcast \
-          --verify
+          --broadcast
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
           SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
@@ -46,7 +45,6 @@ jobs:
             --rpc-url ${{ vars.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --create2-deployer ${{ vars.CREATE2_ADDR }} \
-            --broadcast \
-            --verify
+            --broadcast 
         env:
           SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
