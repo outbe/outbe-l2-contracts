@@ -1,0 +1,36 @@
+name: Deploy CREATE2
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        type: environment
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Smart Contracts
+    environment: ${{ github.event.inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run Forge build
+        run: echo ${{ vars.RPC_URL }}
+
+      - name: Deploy CREATE2
+        run: |
+          forge build --sizes
+
+      - name: Predict Contract Addresses
+        run: |
+          cast send \
+            --rpc-url ${{ vars.RPC_URL }}  \
+            --private-key ${{ secrets.PRIVATE_KEY }} \
+            --create ${{ vars.CREATE2_FACTORY_BYTECODE }}

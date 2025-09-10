@@ -268,3 +268,264 @@ export async function exampleUsage() {
     console.error('Error:', error);
   }
 }
+
+/**
+ * Advanced usage examples
+ */
+
+// Example: Multi-step CRA management workflow
+export async function advancedCRAManagement() {
+  const provider = new ethers.JsonRpcProvider('http://localhost:8545');
+  const ownerWallet = new Wallet('0x...', provider);
+  const registryAddress = '0x...';
+  
+  const registry = new CRARegistryClient(registryAddress, ownerWallet, provider);
+
+  try {
+    // 1. Register multiple CRAs in batch
+    const craAddresses = ['0xCRA1...', '0xCRA2...', '0xCRA3...'];
+    const craNames = ['Solar CRA', 'Wind CRA', 'Hydro CRA'];
+    
+    console.log('🔄 Registering multiple CRAs...');
+    for (let i = 0; i < craAddresses.length; i++) {
+      await registry.registerCra(craAddresses[i], craNames[i]);
+      console.log(`✅ Registered: ${craNames[i]}`);
+    }
+
+    // 2. Monitor CRA status changes
+    console.log('👂 Setting up event listeners...');
+    registry.onCRAStatusUpdated((cra, oldStatus, newStatus, timestamp) => {
+      console.log(`📢 CRA ${cra} status: ${CRAStatus[oldStatus]} → ${CRAStatus[newStatus]} at ${new Date(Number(timestamp) * 1000)}`);
+    });
+
+    // 3. Get comprehensive CRA overview
+    console.log('📊 Generating CRA overview...');
+    const allCras = await registry.getAllCras();
+    const craOverview = [];
+    
+    for (const craAddr of allCras) {
+      const info = await registry.getCraInfo(craAddr);
+      const isActive = await registry.isCraActive(craAddr);
+      
+      craOverview.push({
+        address: craAddr,
+        name: info.name,
+        status: CRAStatus[info.status],
+        isActive,
+        registeredAt: new Date(Number(info.registeredAt) * 1000)
+      });
+    }
+
+    console.table(craOverview);
+
+    // 4. Bulk status management
+    console.log('🔧 Managing CRA statuses...');
+    let activeCount = 0;
+    let suspendedCount = 0;
+    
+    for (const craAddr of allCras) {
+      const isActive = await registry.isCraActive(craAddr);
+      if (isActive) {
+        activeCount++;
+      } else {
+        // Example: Reactivate suspended CRAs after maintenance
+        await registry.updateCraStatus(craAddr, CRAStatus.Active);
+        suspendedCount++;
+      }
+    }
+
+    console.log(`📈 Status Summary: ${activeCount} active, ${suspendedCount} reactivated`);
+
+  } catch (error) {
+    console.error('❌ CRA management workflow failed:', error);
+  }
+}
+
+// Example: Event-driven CRA monitoring service
+export class CRAMonitoringService {
+  private registry: CRARegistryClient;
+  private eventHandlers: Map<string, Function[]> = new Map();
+  private isMonitoring: boolean = false;
+
+  constructor(registryAddress: string, provider: Provider) {
+    // Use read-only provider for monitoring
+    const readOnlyWallet = Wallet.createRandom().connect(provider);
+    this.registry = new CRARegistryClient(registryAddress, readOnlyWallet, provider);
+  }
+
+  public startMonitoring() {
+    if (this.isMonitoring) {
+      console.warn('⚠️ Monitoring already started');
+      return;
+    }
+
+    this.setupEventListeners();
+    this.isMonitoring = true;
+    console.log('👀 CRA monitoring service started');
+  }
+
+  public stopMonitoring() {
+    this.registry.removeAllListeners();
+    this.isMonitoring = false;
+    console.log('⏹️ CRA monitoring service stopped');
+  }
+
+  private setupEventListeners() {
+    // Monitor new CRA registrations
+    this.registry.onCRARegistered((cra, name, timestamp) => {
+      const data = { cra, name, timestamp, type: 'registration' };
+      this.emit('craRegistered', data);
+      console.log(`🆕 New CRA registered: ${name} (${cra})`);
+    });
+
+    // Monitor status changes
+    this.registry.onCRAStatusUpdated((cra, oldStatus, newStatus, timestamp) => {
+      const data = { cra, oldStatus, newStatus, timestamp, type: 'statusUpdate' };
+      this.emit('craStatusChanged', data);
+      console.log(`🔄 CRA ${cra}: ${CRAStatus[oldStatus]} → ${CRAStatus[newStatus]}`);
+    });
+  }
+
+  public on(event: string, handler: Function) {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, []);
+    }
+    this.eventHandlers.get(event)!.push(handler);
+  }
+
+  private emit(event: string, data: any) {
+    const handlers = this.eventHandlers.get(event) || [];
+    handlers.forEach(handler => {
+      try {
+        handler(data);
+      } catch (error) {
+        console.error(`❌ Event handler error for ${event}:`, error);
+      }
+    });
+  }
+
+  public async getSystemStatus() {
+    console.log('📊 Generating system status...');
+    
+    const allCras = await this.registry.getAllCras();
+    const statusCounts = new Map<string, number>();
+    const craDetails = [];
+    
+    for (const craAddr of allCras) {
+      const info = await this.registry.getCraInfo(craAddr);
+      const statusName = CRAStatus[info.status];
+      const currentCount = statusCounts.get(statusName) || 0;
+      statusCounts.set(statusName, currentCount + 1);
+      
+      craDetails.push({
+        address: craAddr,
+        name: info.name,
+        status: statusName,
+        registeredAt: new Date(Number(info.registeredAt) * 1000)
+      });
+    }
+
+    return {
+      totalCras: allCras.length,
+      statusBreakdown: Object.fromEntries(statusCounts),
+      craDetails,
+      isMonitoring: this.isMonitoring,
+      lastUpdated: new Date()
+    };
+  }
+
+  public async getActiveCount(): Promise<number> {
+    const allCras = await this.registry.getAllCras();
+    let activeCount = 0;
+    
+    for (const craAddr of allCras) {
+      if (await this.registry.isCraActive(craAddr)) {
+        activeCount++;
+      }
+    }
+    
+    return activeCount;
+  }
+}
+
+// Example: CRA health checker
+export class CRAHealthChecker {
+  private registry: CRARegistryClient;
+  
+  constructor(registryAddress: string, provider: Provider) {
+    const readOnlyWallet = Wallet.createRandom().connect(provider);
+    this.registry = new CRARegistryClient(registryAddress, readOnlyWallet, provider);
+  }
+
+  public async checkCRAHealth(craAddress: string): Promise<{
+    isHealthy: boolean;
+    issues: string[];
+    info: any;
+  }> {
+    const issues: string[] = [];
+    
+    try {
+      // Check if CRA exists
+      const info = await this.registry.getCraInfo(craAddress);
+      if (!info.name) {
+        issues.push('CRA not found in registry');
+        return { isHealthy: false, issues, info: null };
+      }
+
+      // Check if CRA is active
+      const isActive = await this.registry.isCraActive(craAddress);
+      if (!isActive) {
+        issues.push(`CRA status is ${CRAStatus[info.status]}, not Active`);
+      }
+
+      // Check registration age
+      const registeredAt = new Date(Number(info.registeredAt) * 1000);
+      const daysSinceRegistration = (Date.now() - registeredAt.getTime()) / (1000 * 60 * 60 * 24);
+      
+      if (daysSinceRegistration < 1) {
+        issues.push('CRA registered less than 24 hours ago (may need time to stabilize)');
+      }
+
+      return {
+        isHealthy: issues.length === 0,
+        issues,
+        info: {
+          name: info.name,
+          status: CRAStatus[info.status],
+          isActive,
+          registeredAt,
+          daysSinceRegistration: Math.floor(daysSinceRegistration)
+        }
+      };
+
+    } catch (error) {
+      issues.push(`Failed to check CRA health: ${error}`);
+      return { isHealthy: false, issues, info: null };
+    }
+  }
+
+  public async checkAllCRAHealth(): Promise<{
+    totalCras: number;
+    healthyCras: number;
+    issues: { [address: string]: string[] };
+  }> {
+    const allCras = await this.registry.getAllCras();
+    const issues: { [address: string]: string[] } = {};
+    let healthyCras = 0;
+
+    for (const craAddr of allCras) {
+      const health = await this.checkCRAHealth(craAddr);
+      if (health.isHealthy) {
+        healthyCras++;
+      } else {
+        issues[craAddr] = health.issues;
+      }
+    }
+
+    return {
+      totalCras: allCras.length,
+      healthyCras,
+      issues
+    };
+  }
+}

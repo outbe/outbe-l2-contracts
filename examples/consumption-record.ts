@@ -623,3 +623,316 @@ export async function submitLargeDataset(
   
   return results;
 }
+
+/**
+ * Advanced usage examples and utilities
+ */
+
+// Example: Batch processing with retry logic
+export class BatchConsumptionProcessor {
+  private client: ConsumptionRecordClient;
+  private maxRetries: number = 3;
+  private batchSize: number = 50;
+
+  constructor(client: ConsumptionRecordClient) {
+    this.client = client;
+  }
+
+  public async processBatch(records: Array<{
+    hash: string;
+    owner: string;
+    metadata: ConsumptionMetadata;
+  }>, retryFailures: boolean = true): Promise<{
+    successful: string[];
+    failed: Array<{ hash: string; error: string }>;
+  }> {
+    const successful: string[] = [];
+    const failed: Array<{ hash: string; error: string }> = [];
+    
+    // Process in chunks to avoid gas limit issues
+    for (let i = 0; i < records.length; i += this.batchSize) {
+      const chunk = records.slice(i, i + this.batchSize);
+      console.log(`📦 Processing batch ${Math.floor(i / this.batchSize) + 1}/${Math.ceil(records.length / this.batchSize)}`);
+
+      const batchHashes = chunk.map(r => r.hash);
+      const batchOwners = chunk.map(r => r.owner);
+      const batchKeys = chunk.map(r => r.metadata.keys);
+      const batchValues = chunk.map(r => r.metadata.values);
+
+      try {
+        await this.client.submitBatch(batchHashes, batchOwners, batchKeys, batchValues);
+        successful.push(...batchHashes);
+        console.log(`✅ Successfully processed ${chunk.length} records`);
+      } catch (error) {
+        console.warn(`⚠️ Batch failed, falling back to individual submissions`);
+        
+        // Fallback to individual submissions
+        for (const record of chunk) {
+          try {
+            await this.client.submit(record.hash, record.owner, record.metadata);
+            successful.push(record.hash);
+          } catch (individualError) {
+            failed.push({
+              hash: record.hash,
+              error: individualError instanceof Error ? individualError.message : String(individualError)
+            });
+          }
+        }
+      }
+    }
+
+    // Retry failed records if requested
+    if (retryFailures && failed.length > 0) {
+      console.log(`🔄 Retrying ${failed.length} failed records...`);
+      const retryResults = await this.retryFailed(records.filter(r => 
+        failed.some(f => f.hash === r.hash)
+      ));
+      
+      // Update results with retry outcomes
+      for (const hash of retryResults.successful) {
+        const index = failed.findIndex(f => f.hash === hash);
+        if (index !== -1) {
+          failed.splice(index, 1);
+          successful.push(hash);
+        }
+      }
+    }
+
+    return { successful, failed };
+  }
+
+  private async retryFailed(records: Array<{
+    hash: string;
+    owner: string;
+    metadata: ConsumptionMetadata;
+  }>): Promise<{ successful: string[]; failed: string[] }> {
+    const successful: string[] = [];
+    const stillFailed: string[] = [];
+
+    for (const record of records) {
+      let attempt = 0;
+      let success = false;
+
+      while (attempt < this.maxRetries && !success) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+          await this.client.submit(record.hash, record.owner, record.metadata);
+          successful.push(record.hash);
+          success = true;
+        } catch (error) {
+          attempt++;
+          if (attempt >= this.maxRetries) {
+            stillFailed.push(record.hash);
+            console.error(`❌ Failed to retry ${record.hash} after ${this.maxRetries} attempts`);
+          }
+        }
+      }
+    }
+
+    return { successful, failed: stillFailed };
+  }
+}
+
+// Example: Consumption record analytics
+export class ConsumptionAnalytics {
+  private client: ConsumptionRecordClient;
+
+  constructor(client: ConsumptionRecordClient) {
+    this.client = client;
+  }
+
+  public async analyzeOwnerConsumption(ownerAddress: string): Promise<{
+    totalRecords: number;
+    energySources: Map<string, number>;
+    totalAmount: number;
+    averageAmount: number;
+    timeRange: { earliest: Date; latest: Date };
+    recordsByMonth: Map<string, number>;
+  }> {
+    console.log(`📊 Analyzing consumption for owner: ${ownerAddress}`);
+    
+    const recordHashes = await this.client.getRecordsByOwner(ownerAddress);
+    const records: ConsumptionRecordEntity[] = [];
+    
+    // Fetch all records
+    for (const hash of recordHashes) {
+      const record = await this.client.getRecord(hash);
+      if (record) {
+        records.push(record);
+      }
+    }
+
+    if (records.length === 0) {
+      return {
+        totalRecords: 0,
+        energySources: new Map(),
+        totalAmount: 0,
+        averageAmount: 0,
+        timeRange: { earliest: new Date(), latest: new Date() },
+        recordsByMonth: new Map()
+      };
+    }
+
+    // Analyze data
+    const energySources = new Map<string, number>();
+    const recordsByMonth = new Map<string, number>();
+    let totalAmount = 0;
+    const timestamps = records.map(r => new Date(Number(r.submittedAt) * 1000));
+
+    for (const record of records) {
+      // Analyze metadata
+      const metadata = this.parseMetadata(record.keys, record.values);
+      
+      // Count energy sources
+      const source = metadata.source || 'unknown';
+      energySources.set(source, (energySources.get(source) || 0) + 1);
+      
+      // Sum amounts if available
+      const amount = parseFloat(metadata.amount || '0');
+      if (!isNaN(amount)) {
+        totalAmount += amount;
+      }
+
+      // Group by month
+      const date = new Date(Number(record.submittedAt) * 1000);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      recordsByMonth.set(monthKey, (recordsByMonth.get(monthKey) || 0) + 1);
+    }
+
+    return {
+      totalRecords: records.length,
+      energySources,
+      totalAmount,
+      averageAmount: totalAmount / records.length,
+      timeRange: {
+        earliest: new Date(Math.min(...timestamps.map(d => d.getTime()))),
+        latest: new Date(Math.max(...timestamps.map(d => d.getTime())))
+      },
+      recordsByMonth
+    };
+  }
+
+  private parseMetadata(keys: string[], values: string[]): { [key: string]: string } {
+    const metadata: { [key: string]: string } = {};
+    for (let i = 0; i < keys.length; i++) {
+      metadata[keys[i]] = values[i];
+    }
+    return metadata;
+  }
+
+  public async generateReport(ownerAddress: string): Promise<string> {
+    const analysis = await this.analyzeOwnerConsumption(ownerAddress);
+    
+    let report = `# Consumption Report for ${ownerAddress}\n\n`;
+    report += `**Total Records:** ${analysis.totalRecords}\n`;
+    report += `**Total Amount:** ${analysis.totalAmount.toFixed(2)} units\n`;
+    report += `**Average Amount:** ${analysis.averageAmount.toFixed(2)} units per record\n`;
+    report += `**Time Range:** ${analysis.timeRange.earliest.toDateString()} - ${analysis.timeRange.latest.toDateString()}\n\n`;
+    
+    report += `## Energy Sources\n`;
+    for (const [source, count] of analysis.energySources.entries()) {
+      const percentage = ((count / analysis.totalRecords) * 100).toFixed(1);
+      report += `- **${source}:** ${count} records (${percentage}%)\n`;
+    }
+    
+    report += `\n## Monthly Distribution\n`;
+    for (const [month, count] of analysis.recordsByMonth.entries()) {
+      report += `- **${month}:** ${count} records\n`;
+    }
+    
+    return report;
+  }
+}
+
+// Example: Real-time consumption monitoring
+export class ConsumptionMonitor {
+  private client: ConsumptionRecordClient;
+  private isMonitoring: boolean = false;
+  private eventHandlers: Map<string, Function[]> = new Map();
+
+  constructor(client: ConsumptionRecordClient) {
+    this.client = client;
+  }
+
+  public startMonitoring(ownerAddresses?: string[]) {
+    if (this.isMonitoring) {
+      console.warn('⚠️ Monitoring already active');
+      return;
+    }
+
+    console.log('👀 Starting consumption record monitoring...');
+    this.isMonitoring = true;
+
+    this.client.onSubmitted((hash, cra, timestamp) => {
+      this.handleNewRecord(hash, cra, timestamp, ownerAddresses);
+    });
+
+    this.client.onBatchSubmitted((batchSize, cra, timestamp) => {
+      this.emit('batchProcessed', { batchSize, cra, timestamp });
+      console.log(`📦 Batch of ${batchSize} records processed by ${cra}`);
+    });
+  }
+
+  public stopMonitoring() {
+    this.client.removeAllListeners();
+    this.isMonitoring = false;
+    console.log('⏹️ Monitoring stopped');
+  }
+
+  private async handleNewRecord(hash: string, cra: string, timestamp: bigint, watchAddresses?: string[]) {
+    try {
+      const record = await this.client.getRecord(hash);
+      if (!record) return;
+
+      // Filter by watched addresses if specified
+      if (watchAddresses && !watchAddresses.includes(record.owner)) {
+        return;
+      }
+
+      const metadata = this.parseMetadata(record.keys, record.values);
+      
+      this.emit('newRecord', {
+        hash,
+        cra,
+        timestamp,
+        owner: record.owner,
+        metadata
+      });
+
+      console.log(`🆕 New consumption record: ${hash}`);
+      console.log(`   Owner: ${record.owner}`);
+      console.log(`   CRA: ${cra}`);
+      console.log(`   Amount: ${metadata.amount || 'N/A'} ${metadata.unit || ''}`);
+      console.log(`   Source: ${metadata.source || 'N/A'}`);
+
+    } catch (error) {
+      console.error(`❌ Error processing new record ${hash}:`, error);
+    }
+  }
+
+  private parseMetadata(keys: string[], values: string[]): { [key: string]: string } {
+    const metadata: { [key: string]: string } = {};
+    for (let i = 0; i < keys.length; i++) {
+      metadata[keys[i]] = values[i];
+    }
+    return metadata;
+  }
+
+  public on(event: string, handler: Function) {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, []);
+    }
+    this.eventHandlers.get(event)!.push(handler);
+  }
+
+  private emit(event: string, data: any) {
+    const handlers = this.eventHandlers.get(event) || [];
+    handlers.forEach(handler => {
+      try {
+        handler(data);
+      } catch (error) {
+        console.error(`❌ Event handler error for ${event}:`, error);
+      }
+    });
+  }
+}

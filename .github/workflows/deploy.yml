@@ -20,10 +20,10 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-      
+
       - name: Run Forge build
         run: echo ${{ vars.RPC_URL }}
-          
+
       - name: Run Forge build
         run: |
           forge build --sizes
@@ -33,8 +33,9 @@ jobs:
           forge script script/PredictAddresses.s.sol \
           --rpc-url ${{ vars.RPC_URL }} \
           --private-key ${{ secrets.PRIVATE_KEY }} \
+          --create2-deployer ${{ vars.CREATE2_ADDR }} \
           --broadcast \
-          --verify \
+          --verify \          
           -vvv
         env:
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
@@ -45,6 +46,7 @@ jobs:
           forge script script/DeployUpgradeable.s.sol \
             --rpc-url ${{ vars.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
+            --create2-deployer ${{ vars.CREATE2_ADDR }} \
             --broadcast \
             --verify \
             -vvv
