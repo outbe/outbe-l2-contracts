@@ -26,10 +26,6 @@ jobs:
 
       - name: Deploy CREATE2
         run: |
-          forge build --sizes
-
-      - name: Predict Contract Addresses
-        run: |
           cast send \
             --rpc-url ${{ vars.RPC_URL }}  \
             --private-key ${{ secrets.PRIVATE_KEY }} \
