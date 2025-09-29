@@ -78,9 +78,10 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         }
 
         // generate tribute draft id as hash of provided CU hashes
-        tdId = keccak256(abi.encode(cuHashes));
+        tdId = keccak256(abi.encode(owner_, worldwideDay_, cuHashes));
 
         tributeDrafts[tdId] = TributeDraftEntity({
+            tributeDraftId: tdId,
             owner: owner_,
             settlementCurrency: currency_,
             worldwideDay: worldwideDay_,

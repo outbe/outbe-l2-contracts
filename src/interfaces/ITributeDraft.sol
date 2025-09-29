@@ -7,36 +7,36 @@ import {IConsumptionUnit} from "./IConsumptionUnit.sol";
 /// @notice Aggregates multiple Consumption Units into a single Tribute Draft
 interface ITributeDraft {
     struct TributeDraftEntity {
+        bytes32 tributeDraftId;
         // owner of all aggregated consumption units
         address owner;
         // currency shared across all consumption units (ISO 4217)
-        string settlementCurrency;
+        int8 settlementCurrency;
         /// ISO 8601
-        string worldwideDay;
+        int8 worldwideDay;
         // aggregated settlement amount
-        uint64 settlementBaseAmount;
-        uint128 settlementAttoAmount;
+        uint64 settlementAmountBase;
+        uint128 settlementAmountAtto;
         // source CU ids
         bytes32[] cuHashes;
         uint256 submittedAt;
     }
 
-    event Minted(
+    event Submited(
         bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp
     );
 
     error EmptyArray();
-    error DuplicateId();
+    error AlreadyExists();
     error NotFound(bytes32 cuHash);
     error NotSameOwner();
-    error NotSameCurrency();
-    error NotSameDay();
+    error NotSettlementCurrencyCurrency();
+    error NotSameWorldwideDay();
 
-    function initialize(address consumptionUnit) external;
+    function setConsumptionUnitAddress(address consumptionUnitAddress) external;
+    function getConsumptionUnitAddress() view returns (address);
 
-    function mint(bytes32[] calldata cuHashes) external returns (bytes32 tdId);
+    function submit(int8 worldwideDay) external returns (bytes32 tdId);
 
-    function get(bytes32 tdId) external view returns (TributeDraftEntity memory);
-
-    function getConsumptionUnit() external view returns (address);
+    function getTributeDraft(bytes32 tdId) external view returns (TributeDraftEntity memory);
 }

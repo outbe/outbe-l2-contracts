@@ -10,29 +10,25 @@ interface IConsumptionRecord {
     /// @notice Record information for a consumption record
     /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
     struct ConsumptionRecordEntity {
-        address submittedBy;
+        /// @dev ID of consumption record
+        bytes32 consumptionRecordId;
         /// @dev Address of the CRA that submitted this record
-        uint256 submittedAt;
+        address submittedBy;
         /// @dev Timestamp when the record was submitted
-        address owner;
+        uint256 submittedAt;
         /// @dev Address of the owner of this consumption record
-        string[] metadataKeys;
+        address owner;
         /// @dev Array of metadata keys
+        string[] metadataKeys;
+        /// @dev Array of metadata values (matches keys array)
         string[] metadataValues;
     }
-    /// @dev Array of metadata values (matches keys array)
 
     /// @notice Emitted when a consumption record is submitted
     /// @param crHash The hash of the consumption record
     /// @param cra The address of the CRA that submitted the record
     /// @param timestamp The timestamp when the record was submitted
     event Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp);
-
-    /// @notice Emitted when metadata is added to a consumption record
-    /// @param crHash The hash of the consumption record
-    /// @param key The metadata key
-    /// @param value The metadata value
-    event MetadataAdded(bytes32 indexed crHash, string key, string value);
 
     /// @notice Emitted when a batch of consumption records is submitted
     /// @param batchSize The number of records in the batch
@@ -72,30 +68,6 @@ interface IConsumptionRecord {
     /// @param values Array of metadata values (must match keys array length)
     function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external;
 
-    /// @notice Check if a consumption record exists
-    /// @param crHash The hash to check
-    /// @return true if the record exists, false otherwise
-    function isExists(bytes32 crHash) external view returns (bool);
-
-    /// @notice Get a consumption record by hash
-    /// @param crHash The hash of the record
-    /// @return CrRecord struct with complete record data
-    function getRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory);
-
-    /// @notice Set the CRA Registry contract address
-    /// @dev Only callable by contract owner
-    /// @param _craRegistry The address of the CRA Registry contract
-    function setCraRegistry(address _craRegistry) external;
-
-    /// @notice Get the current CRA Registry contract address
-    /// @return The address of the CRA Registry contract
-    function getCraRegistry() external view returns (address);
-
-    /// @notice Get all consumption record hashes owned by a specific address
-    /// @param owner The address of the owner
-    /// @return Array of consumption record hashes owned by the address
-    function getRecordsByOwner(address owner) external view returns (bytes32[] memory);
-
     /// @notice Submit a batch of consumption records with metadata
     /// @dev Only active CRAs can submit records. Maximum 100 records per batch. All hashes must be unique and non-zero.
     /// @param crHashes Array of consumption record hashes (each must be non-zero)
@@ -108,4 +80,28 @@ interface IConsumptionRecord {
         string[][] memory keysArray,
         string[][] memory valuesArray
     ) external;
+
+    /// @notice Check if a consumption record exists
+    /// @param crHash The hash to check
+    /// @return true if the record exists, false otherwise
+    function isExists(bytes32 crHash) external view returns (bool);
+
+    /// @notice Get a consumption record by hash
+    /// @param crHash The hash of the record
+    /// @return CrRecord struct with complete record data
+    function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory);
+
+    /// @notice Set the CRA Registry contract address
+    /// @dev Only callable by contract owner
+    /// @param _craRegistry The address of the CRA Registry contract
+    function setCRARegistry(address _craRegistry) external;
+
+    /// @notice Get the current CRA Registry contract address
+    /// @return The address of the CRA Registry contract
+    function getCRARegistry() external view returns (address);
+
+    /// @notice Get all consumption record hashes owned by a specific address
+    /// @param owner The address of the owner
+    /// @return Array of consumption record hashes owned by the address
+    function getConsumptionRecordsByOwner(address owner) external view returns (bytes32[] memory);
 }

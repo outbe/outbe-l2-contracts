@@ -17,7 +17,7 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
     string public constant VERSION = "1.0.0";
 
     /// @dev Mapping from CRA address to their information
-    mapping(address => CraInfo) private cras;
+    mapping(address => CRAInfo) private cras;
 
     /// @dev Array of all registered CRA addresses for enumeration
     address[] private craList;
@@ -47,7 +47,7 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
         if (cras[cra].registeredAt != 0) revert CRAAlreadyRegistered();
         if (bytes(name).length == 0) revert EmptyCRAName();
 
-        cras[cra] = CraInfo({name: name, status: CRAStatus.Active, registeredAt: block.timestamp});
+        cras[cra] = CRAInfo({name: name, status: CRAStatus.Active, registeredAt: block.timestamp});
 
         craList.push(cra);
 
@@ -68,7 +68,7 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
     }
 
     /// @inheritdoc ICRARegistry
-    function getCraInfo(address cra) external view craExists(cra) returns (CraInfo memory) {
+    function getCraInfo(address cra) external view craExists(cra) returns (CRAInfo memory) {
         return cras[cra];
     }
 
