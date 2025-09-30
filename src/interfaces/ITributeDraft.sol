@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {IConsumptionUnit} from "./IConsumptionUnit.sol";
-
 /// @title ITributeDraft Interface
 /// @notice Aggregates multiple Consumption Units into a single Tribute Draft
 interface ITributeDraft {
@@ -11,12 +9,12 @@ interface ITributeDraft {
         // owner of all aggregated consumption units
         address owner;
         // currency shared across all consumption units (ISO 4217)
-        int8 settlementCurrency;
+        uint16 settlementCurrency;
         /// ISO 8601
-        int8 worldwideDay;
+        uint32 worldwideDay;
         // aggregated settlement amount
-        uint64 settlementAmountBase;
-        uint128 settlementAmountAtto;
+        uint256 settlementAmountBase;
+        uint256 settlementAmountAtto;
         // source CU ids
         bytes32[] cuHashes;
         uint256 submittedAt;
@@ -34,9 +32,9 @@ interface ITributeDraft {
     error NotSameWorldwideDay();
 
     function setConsumptionUnitAddress(address consumptionUnitAddress) external;
-    function getConsumptionUnitAddress() view returns (address);
+    function getConsumptionUnitAddress() external view returns (address);
 
-    function submit(int8 worldwideDay) external returns (bytes32 tdId);
+    function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId);
 
     function getTributeDraft(bytes32 tdId) external view returns (TributeDraftEntity memory);
 }

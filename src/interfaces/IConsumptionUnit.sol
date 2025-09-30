@@ -18,13 +18,13 @@ interface IConsumptionUnit {
         /// @notice timestamp
         uint256 submittedAt;
         /// ISO 8601
-        string worldwideDay;
+        uint32 worldwideDay;
         /// @notice Amount expressed in natural units, `settlement_base_amount >= 0`
-        uint64 settlementAmountBase;
+        uint256 settlementAmountBase;
         /// @notice Amount expressed in fractional units, `0 >= settlement_atto_amount < 1e18`
-        uint128 settlementAmountAtto;
+        uint256 settlementAmountAtto;
         /// @notice numeric code using ISO 4217
-        uint8 settlementCurrency;
+        uint16 settlementCurrency;
         /// @notice Hashes identifying consumption records batch (base32-encoded, unique per record)
         bytes32[] crHashes;
     }
@@ -46,9 +46,9 @@ interface IConsumptionUnit {
     function submit(
         bytes32 cuHash,
         address owner,
-        string memory settlementCurrency,
-        string memory worldwideDay,
-        uint64 settlementAmountBase,
+        uint16 settlementCurrency,
+        uint32 worldwideDay,
+        uint128 settlementAmountBase,
         uint128 settlementAmountAtto,
         bytes32[] memory hashes
     ) external;
@@ -56,10 +56,10 @@ interface IConsumptionUnit {
     function submitBatch(
         bytes32[] memory cuHashes,
         address[] memory owners,
-        string[] memory settlementCurrencies,
-        string[] memory worldwideDays,
-        uint64[] memory settlementAmountsBase,
-        uint128[] memory settlementAmountsAtto,
+        uint32[] memory worldwideDays,
+        uint16[] memory settlementCurrencies,
+        uint256[] memory settlementAmountsBase,
+        uint256[] memory settlementAmountsAtto,
         bytes32[][] memory crHashesArray
     ) external;
 

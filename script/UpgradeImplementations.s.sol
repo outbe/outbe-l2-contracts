@@ -150,7 +150,7 @@ contract UpgradeImplementations is Script {
             console.log("CRA Registry version:", craRegistry.VERSION());
 
             // Test basic functionality
-            address[] memory cras = craRegistry.getAllCras();
+            address[] memory cras = craRegistry.getAllCRAs();
             console.log("CRA Registry can enumerate CRAs:", cras.length >= 0);
         }
 
@@ -160,7 +160,7 @@ contract UpgradeImplementations is Script {
             console.log("Consumption Record version:", consumptionRecord.VERSION());
 
             // Test basic functionality
-            address craRegistry = consumptionRecord.getCraRegistry();
+            address craRegistry = consumptionRecord.getCRARegistry();
             console.log("Consumption Record still linked to CRA Registry:", craRegistry != address(0));
         }
 

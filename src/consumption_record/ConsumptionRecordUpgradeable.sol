@@ -35,7 +35,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     }
 
     modifier onlyActiveCra() {
-        if (!craRegistry.isCraActive(msg.sender)) revert CRANotActive();
+        if (!craRegistry.isCRAActive(msg.sender)) revert CRANotActive();
         _;
     }
 
@@ -88,6 +88,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
 
         // Store the record
         consumptionRecords[crHash] = ConsumptionRecordEntity({
+            consumptionRecordId: crHash,
             submittedBy: msg.sender,
             submittedAt: timestamp,
             owner: recordOwner,
@@ -97,11 +98,6 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
 
         // Add record hash to owner's list
         ownerRecords[recordOwner].push(crHash);
-
-        // Emit metadata events
-        for (uint256 i = 0; i < keys.length; i++) {
-            emit MetadataAdded(crHash, keys[i], values[i]);
-        }
 
         // Emit submission event
         emit Submitted(crHash, msg.sender, timestamp);
@@ -150,22 +146,22 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
+    function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
         return consumptionRecords[crHash];
     }
 
     /// @inheritdoc IConsumptionRecord
-    function setCraRegistry(address _craRegistry) external onlyOwner {
+    function setCRARegistry(address _craRegistry) external onlyOwner {
         craRegistry = ICRARegistry(_craRegistry);
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getCraRegistry() external view returns (address) {
+    function getCRARegistry() external view returns (address) {
         return address(craRegistry);
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
+    function getConsumptionRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
         return ownerRecords[_owner];
     }
 

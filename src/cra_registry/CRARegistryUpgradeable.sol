@@ -43,7 +43,7 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
     }
 
     /// @inheritdoc ICRARegistry
-    function registerCra(address cra, string calldata name) external onlyOwner {
+    function registerCRA(address cra, string calldata name) external onlyOwner {
         if (cras[cra].registeredAt != 0) revert CRAAlreadyRegistered();
         if (bytes(name).length == 0) revert EmptyCRAName();
 
@@ -55,7 +55,7 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
     }
 
     /// @inheritdoc ICRARegistry
-    function updateCraStatus(address cra, CRAStatus status) external onlyOwner craExists(cra) {
+    function updateCRAStatus(address cra, CRAStatus status) external onlyOwner craExists(cra) {
         CRAStatus oldStatus = cras[cra].status;
         cras[cra].status = status;
 
@@ -63,17 +63,17 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
     }
 
     /// @inheritdoc ICRARegistry
-    function isCraActive(address cra) external view returns (bool) {
+    function isCRAActive(address cra) external view returns (bool) {
         return cras[cra].registeredAt != 0 && cras[cra].status == CRAStatus.Active;
     }
 
     /// @inheritdoc ICRARegistry
-    function getCraInfo(address cra) external view craExists(cra) returns (CRAInfo memory) {
+    function getCRAInfo(address cra) external view craExists(cra) returns (CRAInfo memory) {
         return cras[cra];
     }
 
     /// @inheritdoc ICRARegistry
-    function getAllCras() external view returns (address[] memory) {
+    function getAllCRAs() external view returns (address[] memory) {
         return craList;
     }
 

@@ -32,46 +32,51 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         _transferOwnership(msg.sender);
     }
 
-    function mint(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
+    function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
         uint256 n = cuHashes.length;
         if (n == 0) revert EmptyArray();
 
         for (uint256 i = 0; i < n; i++) {
             for (uint256 j = i + 1; j < n; j++) {
-                if (cuHashes[i] == cuHashes[j]) revert DuplicateId();
+                if (cuHashes[i] == cuHashes[j]) revert AlreadyExists();
             }
             // check it wasn't previously submitted
             if (consumptionUnitHashes[cuHashes[i]]) {
-                revert DuplicateId();
+                revert AlreadyExists();
             }
             consumptionUnitHashes[cuHashes[i]] = true;
         }
 
         // fetch and validate
-        IConsumptionUnit.ConsumptionUnitEntity memory first = consumptionUnit.getRecord(cuHashes[0]);
+        IConsumptionUnit.ConsumptionUnitEntity memory first = consumptionUnit.getConsumptionUnit(cuHashes[0]);
         if (first.submittedBy == address(0)) revert NotFound(cuHashes[0]);
         if (msg.sender != first.owner) revert NotSameOwner();
 
         address owner_ = first.owner;
-        string memory currency_ = first.settlementCurrency;
-        string memory worldwideDay_ = first.worldwideDay;
-        uint64 baseAmt = first.settlementBaseAmount;
-        uint128 attoAmt = first.settlementAttoAmount;
+        uint16 currency_ = first.settlementCurrency;
+        uint32 worldwideDay_ = first.worldwideDay;
+        uint256 baseAmt = first.settlementAmountBase;
+        uint256 attoAmt = first.settlementAmountAtto;
 
         for (uint256 i = 1; i < n; i++) {
-            IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getRecord(cuHashes[i]);
+            IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getConsumptionUnit(cuHashes[i]);
             if (rec.submittedBy == address(0)) revert NotFound(cuHashes[i]);
             if (rec.owner != owner_) revert NotSameOwner();
             // compare currency strings by keccak hash
-            if (keccak256(bytes(rec.settlementCurrency)) != keccak256(bytes(currency_))) revert NotSameCurrency();
-            if (keccak256(bytes(rec.worldwideDay)) != keccak256(bytes(worldwideDay_))) revert NotSameDay();
+            if (keccak256(abi.encode(rec.settlementCurrency)) != keccak256(abi.encode(currency_))) {
+                revert NotSettlementCurrencyCurrency();
+            }
+
+            if (keccak256(abi.encode(rec.worldwideDay)) != keccak256(abi.encode(worldwideDay_))) {
+                revert NotSameWorldwideDay();
+            }
 
             // aggregate amount: base + atto with carry (checked arithmetic)
-            baseAmt += rec.settlementBaseAmount;
-            uint128 attoSum = attoAmt + rec.settlementAttoAmount;
+            baseAmt += rec.settlementAmountBase;
+            uint256 attoSum = attoAmt + rec.settlementAmountAtto;
             if (attoSum >= 1e18) {
-                baseAmt += uint64(attoSum / 1e18);
-                attoAmt = uint128(attoSum % 1e18);
+                baseAmt += uint256(attoSum / 1e18);
+                attoAmt = uint256(attoSum % 1e18);
             } else {
                 attoAmt = attoSum;
             }
@@ -85,21 +90,25 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
             owner: owner_,
             settlementCurrency: currency_,
             worldwideDay: worldwideDay_,
-            settlementBaseAmount: baseAmt,
-            settlementAttoAmount: attoAmt,
+            settlementAmountBase: baseAmt,
+            settlementAmountAtto: attoAmt,
             cuHashes: cuHashes,
             submittedAt: block.timestamp
         });
 
-        emit Minted(tdId, owner_, msg.sender, n, block.timestamp);
+        emit Submited(tdId, owner_, msg.sender, n, block.timestamp);
     }
 
-    function get(bytes32 tdId) external view returns (TributeDraftEntity memory) {
+    function getTributeDraft(bytes32 tdId) external view returns (TributeDraftEntity memory) {
         return tributeDrafts[tdId];
     }
 
-    function getConsumptionUnit() external view returns (address) {
+    function getConsumptionUnitAddress() external view returns (address) {
         return address(consumptionUnit);
+    }
+
+    function setConsumptionUnitAddress(address _consumptionUnitAddress) external {
+        consumptionUnit = IConsumptionUnit(_consumptionUnitAddress);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

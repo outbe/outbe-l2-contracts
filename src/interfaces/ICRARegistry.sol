@@ -61,7 +61,7 @@ interface ICRARegistry {
     /// @dev Only callable by contract owner
     /// @param cra The address of the CRA to register
     /// @param name The name of the CRA (must not be empty)
-    function registeCRA(address cra, string calldata name) external;
+    function registerCRA(address cra, string calldata name) external;
 
     /// @notice Update the status of an existing CRA
     /// @dev Only callable by contract owner, CRA must exist
