@@ -18,7 +18,6 @@
  */
 
 import { ethers, Contract, Wallet, Provider } from 'ethers';
-import { Interface, Fragment } from '@ethersproject/abi';
 
 // ConsumptionUnitUpgradeable ABI (key functions only)
 const CONSUMPTION_UNIT_ABI = [
@@ -311,7 +310,7 @@ export class ConsumptionUnitClient {
 
       const receipt = await tx.wait();
       console.log(`Batch of ${units.length} consumption units submitted`);
-      return receipt.transactionHash;
+      return receipt.hash;
     } catch (error: any) {
       this.handleError(error, 'submitBatch');
       throw error;
@@ -604,10 +603,3 @@ async function exampleUsage() {
     console.error('Example failed:', error);
   }
 }
-
-export {
-  ConsumptionUnitClient,
-  ConsumptionUnitBuilder,
-  type ConsumptionUnitEntity,
-  type ConsumptionUnitParams
-};

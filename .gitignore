@@ -26,6 +26,7 @@ coverage
 /.claude
 /broadcast
 /examples/node_modules
+/examples/scripts/results/*
 .DS_Store
 .DS_Store
 .DS_Store

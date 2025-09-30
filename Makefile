@@ -34,6 +34,21 @@ clean-all: clean ## Clean all build artifacts and caches
 	rm -rf ./build
 	rm -rf ./cache
 
+## Anvil Local Deployment
+.PHONY: anvil
+anvil: ## Start local Anvil node
+	anvil
+
+## Deploy contracts to local Anvil node
+.PHONY: deploy-local
+deploy-local:
+	forge script script/DeployUpgradeable.s.sol:DeployUpgradeable \
+		--rpc-url http://127.0.0.1:8545 \
+		--broadcast \
+		-vvvv
+
+
+
 GREEN  := $(shell tput -Txterm setaf 2)
 YELLOW := $(shell tput -Txterm setaf 3)
 WHITE  := $(shell tput -Txterm setaf 7)

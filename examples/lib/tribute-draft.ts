@@ -17,7 +17,6 @@
  */
 
 import { ethers, Contract, Wallet, Provider } from 'ethers';
-import { Interface, Fragment } from '@ethersproject/abi';
 
 // TributeDraftUpgradeable ABI (key functions only)
 const TRIBUTE_DRAFT_ABI = [
@@ -180,7 +179,7 @@ export class TributeDraftClient {
       let tributeDraftId = '';
       if (mintedEvent) {
         const parsed = this.contract.interface.parseLog(mintedEvent);
-        tributeDraftId = parsed.args.tdId;
+        tributeDraftId = parsed?.args.tdId || '';
       }
 
       console.log(`Tribute draft minted: ${tributeDraftId} (${params.consumptionUnitHashes.length} CUs)`);
@@ -528,11 +527,3 @@ async function exampleUsage() {
     console.error('Example failed:', error);
   }
 }
-
-export {
-  TributeDraftClient,
-  TributeDraftBuilder,
-  TributeDraftAggregator,
-  type TributeDraftEntity,
-  type MintTributeDraftParams
-};

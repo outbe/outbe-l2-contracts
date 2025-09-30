@@ -349,7 +349,7 @@ export class CRAMonitoringService {
 
   constructor(registryAddress: string, provider: Provider) {
     // Use read-only provider for monitoring
-    const readOnlyWallet = Wallet.createRandom().connect(provider);
+    const readOnlyWallet = Wallet.createRandom().connect(provider) as unknown as Wallet;
     this.registry = new CRARegistryClient(registryAddress, readOnlyWallet, provider);
   }
 
@@ -453,7 +453,7 @@ export class CRAHealthChecker {
   private registry: CRARegistryClient;
   
   constructor(registryAddress: string, provider: Provider) {
-    const readOnlyWallet = Wallet.createRandom().connect(provider);
+    const readOnlyWallet = Wallet.createRandom().connect(provider) as unknown as Wallet;
     this.registry = new CRARegistryClient(registryAddress, readOnlyWallet, provider);
   }
 

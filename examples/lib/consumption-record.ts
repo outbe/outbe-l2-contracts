@@ -61,8 +61,8 @@ export interface BatchSubmissionResult {
 }
 
 export class ConsumptionRecordClient {
-  private contract: Contract;
-  private signer: Wallet;
+  public contract: Contract;
+  public signer: Wallet;
 
   constructor(
     contractAddress: string,
@@ -116,13 +116,13 @@ export class ConsumptionRecordClient {
     try {
       const tx = await this.contract.submitBatch(crHashes, owners, keysArray, valuesArray);
       const receipt = await tx.wait();
-      
+
       console.log(`✅ Batch submitted: ${requests.length} records`);
       
       return {
         success: true,
         batchSize: requests.length,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt.hash,
         submittedRecords: crHashes
       };
     } catch (error: any) {
@@ -654,14 +654,15 @@ export class BatchConsumptionProcessor {
       const chunk = records.slice(i, i + this.batchSize);
       console.log(`📦 Processing batch ${Math.floor(i / this.batchSize) + 1}/${Math.ceil(records.length / this.batchSize)}`);
 
-      const batchHashes = chunk.map(r => r.hash);
-      const batchOwners = chunk.map(r => r.owner);
-      const batchKeys = chunk.map(r => r.metadata.keys);
-      const batchValues = chunk.map(r => r.metadata.values);
+      const batchRequests: BatchSubmissionRequest[] = chunk.map(r => ({
+        crHash: r.hash,
+        owner: r.owner,
+        metadata: r.metadata
+      }));
 
       try {
-        await this.client.submitBatch(batchHashes, batchOwners, batchKeys, batchValues);
-        successful.push(...batchHashes);
+        await this.client.submitBatch(batchRequests);
+        successful.push(...chunk.map(r => r.hash));
         console.log(`✅ Successfully processed ${chunk.length} records`);
       } catch (error) {
         console.warn(`⚠️ Batch failed, falling back to individual submissions`);
@@ -750,9 +751,9 @@ export class ConsumptionAnalytics {
     recordsByMonth: Map<string, number>;
   }> {
     console.log(`📊 Analyzing consumption for owner: ${ownerAddress}`);
-    
+
     const recordHashes = await this.client.getRecordsByOwner(ownerAddress);
-    const records: ConsumptionRecordEntity[] = [];
+    const records: CRRecord[] = [];
     
     // Fetch all records
     for (const hash of recordHashes) {
@@ -781,7 +782,7 @@ export class ConsumptionAnalytics {
 
     for (const record of records) {
       // Analyze metadata
-      const metadata = this.parseMetadata(record.keys, record.values);
+      const metadata = this.parseMetadata(record.metadataKeys, record.metadataValues);
       
       // Count energy sources
       const source = metadata.source || 'unknown';
@@ -889,7 +890,7 @@ export class ConsumptionMonitor {
         return;
       }
 
-      const metadata = this.parseMetadata(record.keys, record.values);
+      const metadata = this.parseMetadata(record.metadataKeys, record.metadataValues);
       
       this.emit('newRecord', {
         hash,
