@@ -32,7 +32,8 @@ jobs:
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --create ${{ vars.CREATE2_FACTORY_BYTECODE }} \
           > logs.out
-          cat logs.out | grep contractAddress | awk '{print $2}' >> "$GITHUB_OUTPUT"
+          CREATE2_ADDRESS=$(cat logs.out | grep contractAddress | awk '{print $2}')
+          echo "CREATE2_ADDRESS=$CREATE2_ADDRESS" >> $GITHUB_ENV
       - name: Send message to Deploy channel
         id: matrix-chat-message
         uses: fadenb/matrix-chat-message@v0.0.6
