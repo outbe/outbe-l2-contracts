@@ -40,11 +40,27 @@ jobs:
           SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
 
       - name: Deploy Upgradeable Contracts
+        id: deploy
         run: |
           forge script script/DeployUpgradeable.s.sol \
             --rpc-url ${{ vars.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --create2-deployer ${{ vars.CREATE2_ADDR }} \
-            --broadcast 
+            --broadcast > logs.out
+          cat logs.out >> "$GITHUB_OUTPUT"
         env:
           SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
+      - name: Send message to Deploy channel
+        id: matrix-chat-message
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: ${{ secrets.MATRIC_SERVER }}
+          token: ${{ secrets.MATRIX_TOKEN }}
+          channel: "!SqJrmVXmqVLONxfaDe:matrix.joyslab.org"
+          message: |
+            # 📦 [EVM] L2 Contracts Deployment ✅
+
+            ## Details:
+            ```
+             ${{ steps.deploy.outputs.msg }}
+            ```
