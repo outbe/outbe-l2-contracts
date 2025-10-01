@@ -46,13 +46,14 @@ jobs:
             --rpc-url ${{ vars.RPC_URL }} \
             --private-key ${{ secrets.PRIVATE_KEY }} \
             --create2-deployer ${{ vars.CREATE2_ADDR }} \
-            --broadcast > logs.out
-          DELIM="$(uuidgen || echo __EOF__$$)"
-          {
-            printf 'msg<<%s\n' "$DELIM"     
-            cat logs.out
-            printf '%s\n' "$DELIM"          
-          } >> "$GITHUB_OUTPUT"
+            --broadcast
+        # > logs.out
+        # DELIM="$(uuidgen || echo __EOF__$$)"
+        # {
+        #   printf 'msg<<%s\n' "$DELIM"
+        #   cat logs.out
+        #   printf '%s\n' "$DELIM"
+        # } >> "$GITHUB_OUTPUT"
         env:
           SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
       - name: Send message to Deploy channel
@@ -65,7 +66,8 @@ jobs:
           message: |
             # 📦 [EVM] L2 Contracts Deployment ✅
 
-            ## Details:
-            ```
-             ${{ steps.deploy.outputs.msg }}
-            ```
+            Smart-contract deployed
+          ## Details:
+          # ```
+          #   ${{ steps.deploy.outputs.msg }}
+          # ```
