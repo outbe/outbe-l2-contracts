@@ -9,77 +9,67 @@ pragma solidity ^0.8.13;
 interface IConsumptionUnit {
     /// @notice Record information for a consumption unit
     struct ConsumptionUnitEntity {
+        /// @dev ID of consumption record
+        bytes32 consumptionUnitId;
         /// @notice owner of the consumption unit
         address owner;
         /// @notice address of the CRA agent who submitted that consumption unit
         address submittedBy;
-        /// @notice ISO 4217
-        string settlementCurrency;
-        /// ISO 8601
-        string worldwideDay;
-        /// @notice Amount expressed in natural units, `settlement_base_amount >= 0`
-        uint64 settlementBaseAmount;
-        /// @notice Amount expressed in fractional units, `0 >= settlement_atto_amount < 1e18`
-        uint128 settlementAttoAmount;
-        /// @notice Quantity expressed in natural units, `nominal_base_qty >= 0`
-        uint64 nominalBaseQty;
-        /// @notice Amount expressed in fractional units, `0 >= nominal_atto_qty < 1e18`
-        uint128 nominalAttoQty;
-        /// @notice Nominal currency from Consumption Records
-        string nominalCurrency;
-        /// @notice Hashes identifying consumption records batch (base32-encoded, unique per record)
-        bytes32[] hashes;
         /// @notice timestamp
         uint256 submittedAt;
+        /// ISO 8601
+        uint32 worldwideDay;
+        /// @notice Amount expressed in natural units, `settlement_base_amount >= 0`
+        uint256 settlementAmountBase;
+        /// @notice Amount expressed in fractional units, `0 >= settlement_atto_amount < 1e18`
+        uint256 settlementAmountAtto;
+        /// @notice numeric code using ISO 4217
+        uint16 settlementCurrency;
+        /// @notice Hashes identifying consumption records batch (base32-encoded, unique per record)
+        bytes32[] crHashes;
     }
 
     event Submitted(bytes32 indexed cuHash, address indexed cra, uint256 timestamp);
     event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp);
 
     error AlreadyExists();
-    error CrAlreadyExists();
+    error ConsumptionRecordAlreadyExists();
     error CRANotActive();
     error InvalidHash();
     error InvalidOwner();
     error EmptyBatch();
     error BatchSizeTooLarge();
-    error InvalidCurrency();
+    error InvalidSettlementCurrency();
     error InvalidAmount();
     error ArrayLengthMismatch();
 
     function submit(
         bytes32 cuHash,
         address owner,
-        string memory settlementCurrency,
-        string memory worldwideDay,
-        uint64 settlementBaseAmount,
-        uint128 settlementAttoAmount,
-        uint64 nominalBaseQty,
-        uint128 nominalAttoQty,
-        string memory nominalCurrency,
+        uint16 settlementCurrency,
+        uint32 worldwideDay,
+        uint128 settlementAmountBase,
+        uint128 settlementAmountAtto,
         bytes32[] memory hashes
     ) external;
 
     function submitBatch(
         bytes32[] memory cuHashes,
         address[] memory owners,
-        string[] memory settlementCurrencies,
-        string[] memory worldwideDays,
-        uint64[] memory settlementBaseAmounts,
-        uint128[] memory settlementAttoAmounts,
-        uint64[] memory nominalBaseQtys,
-        uint128[] memory nominalAttoQtys,
-        string[] memory nominalCurrencies,
-        bytes32[][] memory hashesArray
+        uint32[] memory worldwideDays,
+        uint16[] memory settlementCurrencies,
+        uint256[] memory settlementAmountsBase,
+        uint256[] memory settlementAmountsAtto,
+        bytes32[][] memory crHashesArray
     ) external;
 
     function isExists(bytes32 cuHash) external view returns (bool);
 
-    function getRecord(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory);
+    function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory);
 
-    function setCraRegistry(address _craRegistry) external;
+    function setCRARegistry(address _craRegistry) external;
 
-    function getCraRegistry() external view returns (address);
+    function getCRARegistry() external view returns (address);
 
-    function getRecordsByOwner(address owner) external view returns (bytes32[] memory);
+    function getConsumptionUnitsByOwner(address owner) external view returns (bytes32[] memory);
 }

@@ -20,7 +20,7 @@ interface ICRARegistry {
 
     /// @notice Information about a registered CRA
     /// @dev Stores all relevant data for a CRA
-    struct CraInfo {
+    struct CRAInfo {
         string name;
         /// @dev Human-readable name of the CRA
         CRAStatus status;
@@ -61,28 +61,28 @@ interface ICRARegistry {
     /// @dev Only callable by contract owner
     /// @param cra The address of the CRA to register
     /// @param name The name of the CRA (must not be empty)
-    function registerCra(address cra, string calldata name) external;
+    function registerCRA(address cra, string calldata name) external;
 
     /// @notice Update the status of an existing CRA
     /// @dev Only callable by contract owner, CRA must exist
     /// @param cra The address of the CRA
     /// @param status The new status to set
-    function updateCraStatus(address cra, CRAStatus status) external;
+    function updateCRAStatus(address cra, CRAStatus status) external;
 
     /// @notice Check if a CRA is currently active
     /// @dev Returns true only if CRA exists and has Active status
     /// @param cra The address of the CRA to check
     /// @return true if CRA is active, false otherwise
-    function isCraActive(address cra) external view returns (bool);
+    function isCRAActive(address cra) external view returns (bool);
 
     /// @notice Get detailed information about a CRA
     /// @dev Reverts if CRA doesn't exist
     /// @param cra The address of the CRA
     /// @return CraInfo struct containing name, status, and registration timestamp
-    function getCraInfo(address cra) external view returns (CraInfo memory);
+    function getCRAInfo(address cra) external view returns (CRAInfo memory);
 
     /// @notice Get addresses of all registered CRAs
     /// @dev Returns empty array if no CRAs are registered
     /// @return Array of CRA addresses in registration order
-    function getAllCras() external view returns (address[] memory);
+    function getAllCRAs() external view returns (address[] memory);
 }

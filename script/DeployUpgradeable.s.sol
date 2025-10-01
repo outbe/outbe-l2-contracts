@@ -232,7 +232,7 @@ contract DeployUpgradeable is Script {
         consumptionRecord = ConsumptionRecordUpgradeable(consumptionRecordProxy);
         console.log("Consumption Record proxy:", address(consumptionRecord));
         console.log("Consumption Record owner:", consumptionRecord.getOwner());
-        console.log("Consumption Record CRA Registry:", consumptionRecord.getCraRegistry());
+        console.log("Consumption Record CRA Registry:", consumptionRecord.getCRARegistry());
         console.log("");
 
         // Deploy Consumption Unit implementation
@@ -248,7 +248,7 @@ contract DeployUpgradeable is Script {
         consumptionUnit = ConsumptionUnitUpgradeable(consumptionUnitProxy);
         console.log("Consumption Unit proxy:", address(consumptionUnit));
         console.log("Consumption Unit owner:", consumptionUnit.getOwner());
-        console.log("Consumption Unit CRA Registry:", consumptionUnit.getCraRegistry());
+        console.log("Consumption Unit CRA Registry:", consumptionUnit.getCRARegistry());
         console.log("");
 
         // Deploy Tribute Draft implementation
@@ -262,7 +262,7 @@ contract DeployUpgradeable is Script {
         address tributeDraftProxy = address(new ERC1967Proxy{salt: tdProxySaltBytes}(tributeDraftImpl, tdInitData));
         tributeDraft = TributeDraftUpgradeable(tributeDraftProxy);
         console.log("Tribute Draft proxy:", address(tributeDraft));
-        console.log("Tribute Draft CU:", tributeDraft.getConsumptionUnit());
+        console.log("Tribute Draft CU:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
 
         // Setup initial CRAs if environment variable is set
@@ -297,11 +297,11 @@ contract DeployUpgradeable is Script {
 
         for (uint256 i = 0; i < initialCras.length; i++) {
             if (initialCras[i].craAddress != address(0)) {
-                craRegistry.registerCra(initialCras[i].craAddress, initialCras[i].name);
+                craRegistry.registerCRA(initialCras[i].craAddress, initialCras[i].name);
                 console.log("Registered CRA:", initialCras[i].craAddress, "as", initialCras[i].name);
 
                 // Verify registration
-                bool isActive = craRegistry.isCraActive(initialCras[i].craAddress);
+                bool isActive = craRegistry.isCRAActive(initialCras[i].craAddress);
                 console.log("CRA active status:", isActive);
             }
         }
@@ -322,18 +322,18 @@ contract DeployUpgradeable is Script {
         // Check Consumption Record
         require(address(consumptionRecord) != address(0), "Consumption Record deployment failed");
         require(consumptionRecord.getOwner() == expectedOwner, "Consumption Record owner incorrect");
-        require(consumptionRecord.getCraRegistry() == address(craRegistry), "CRA Registry linkage incorrect");
+        require(consumptionRecord.getCRARegistry() == address(craRegistry), "CRA Registry linkage incorrect");
         console.log("Consumption Record verification passed");
 
         // Check Consumption Unit
         require(address(consumptionUnit) != address(0), "Consumption Unit deployment failed");
         require(consumptionUnit.getOwner() == expectedOwner, "Consumption Unit owner incorrect");
-        require(consumptionUnit.getCraRegistry() == address(craRegistry), "CU CRA Registry linkage incorrect");
+        require(consumptionUnit.getCRARegistry() == address(craRegistry), "CU CRA Registry linkage incorrect");
         console.log("Consumption Unit verification passed");
 
         // Check Tribute Draft
         require(address(tributeDraft) != address(0), "Tribute Draft deployment failed");
-        require(tributeDraft.getConsumptionUnit() == address(consumptionUnit), "TD CU linkage incorrect");
+        require(tributeDraft.getConsumptionUnitAddress() == address(consumptionUnit), "TD CU linkage incorrect");
         console.log("Tribute Draft verification passed");
 
         // Check contract versions
@@ -373,13 +373,13 @@ contract DeployUpgradeable is Script {
         // Tribute Draft is Ownable but no owner getter; no direct owner method in TD, skip owner here
         console.log("");
         console.log("Configuration:");
-        console.log("- CR -> CRA Registry:", consumptionRecord.getCraRegistry());
-        console.log("- CU -> CRA Registry:", consumptionUnit.getCraRegistry());
-        console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnit());
+        console.log("- CR -> CRA Registry:", consumptionRecord.getCRARegistry());
+        console.log("- CU -> CRA Registry:", consumptionUnit.getCRARegistry());
+        console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
 
         if (vm.envOr("SETUP_INITIAL_CRAS", false)) {
-            address[] memory allCras = craRegistry.getAllCras();
+            address[] memory allCras = craRegistry.getAllCRAs();
             console.log("Initial CRAs registered:", allCras.length);
             for (uint256 i = 0; i < allCras.length; i++) {
                 console.log("- CRA", i + 1, ":", allCras[i]);

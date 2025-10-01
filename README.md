@@ -152,16 +152,16 @@ All contracts in this repository use the upgradeable pattern for production depl
           │                       │                      │                       │    from CUs
           ▼                       ▼                      ▼                       ▼
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-│                              UUPS Proxy Pattern                                           │
+│                              UUPS Proxy Pattern                                          │
 │  ┌─────────────────┐    ┌──────────────────────┐                                         │
 │  │   User/Client   │    │    Implementation    │                                         │
 │  │                 │    │     Contract v2      │                                         │
 │  └─────────┬───────┘    └──────────┬───────────┘                                         │
 │            │                       │                                                     │
-│            │ delegatecall           │                                                     │
+│            │ delegatecall          │                                                     │
 │            ▼                       │                                                     │
-│  ┌─────────────────┐              │                                                     │
-│  │  Proxy Contract │──────────────┘                                                     │
+│  ┌─────────────────┐               │                                                     │
+│  │  Proxy Contract │───────────────┘                                                     │
 │  │ (Fixed Address) │                                                                     │
 │  │ (Stores State)  │                                                                     │
 │  └─────────────────┘                                                                     │

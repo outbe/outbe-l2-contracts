@@ -25,7 +25,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
     }
 
     modifier onlyActiveCra() {
-        if (!craRegistry.isCraActive(msg.sender)) revert CRANotActive();
+        if (!craRegistry.isCRAActive(msg.sender)) revert CRANotActive();
         _;
     }
 
@@ -38,25 +38,23 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         _transferOwnership(_owner);
     }
 
-    function _validateAmounts(uint64 baseAmt, uint128 attoAmt) internal pure {
+    function _validateAmounts(uint256 baseAmt, uint256 attoAmt) internal pure {
+        if (baseAmt == 0 && attoAmt == 0) revert InvalidAmount();
         if (attoAmt >= 1e18) revert InvalidAmount();
     }
 
-    function _validateCurrency(string memory code) internal pure {
-        if (bytes(code).length == 0) revert InvalidCurrency();
+    function _validateCurrency(uint16 code) internal pure {
+        if (code == 0) revert InvalidSettlementCurrency();
     }
 
     function _addRecord(
         bytes32 cuHash,
         address recordOwner,
-        string memory settlementCurrency,
-        string memory worldwideDay,
-        uint64 settlementBaseAmount,
-        uint128 settlementAttoAmount,
-        uint64 nominalBaseQty,
-        uint128 nominalAttoQty,
-        string memory nominalCurrency,
-        bytes32[] memory hashes,
+        uint16 settlementCurrency,
+        uint32 worldwideDay,
+        uint256 settlementBaseAmount,
+        uint256 settlementAttoAmount,
+        bytes32[] memory crHashes,
         uint256 timestamp
     ) internal {
         if (cuHash == bytes32(0)) revert InvalidHash();
@@ -64,29 +62,25 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         if (isExists(cuHash)) revert AlreadyExists();
 
         _validateCurrency(settlementCurrency);
-        _validateCurrency(nominalCurrency);
         _validateAmounts(settlementBaseAmount, settlementAttoAmount);
-        _validateAmounts(nominalBaseQty, nominalAttoQty);
 
         // check CR hashes uniqueness
-        for (uint256 i = 0; i < hashes.length; i++) {
-            if (consumptionRecordHashes[hashes[i]]) {
-                revert CrAlreadyExists();
+        for (uint256 i = 0; i < crHashes.length; i++) {
+            if (consumptionRecordHashes[crHashes[i]]) {
+                revert ConsumptionRecordAlreadyExists();
             }
-            consumptionRecordHashes[hashes[i]] = true;
+            consumptionRecordHashes[crHashes[i]] = true;
         }
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
+            consumptionUnitId: cuHash,
             owner: recordOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
             worldwideDay: worldwideDay,
-            settlementBaseAmount: settlementBaseAmount,
-            settlementAttoAmount: settlementAttoAmount,
-            nominalBaseQty: nominalBaseQty,
-            nominalAttoQty: nominalAttoQty,
-            nominalCurrency: nominalCurrency,
-            hashes: hashes,
+            settlementAmountBase: settlementBaseAmount,
+            settlementAmountAtto: settlementAttoAmount,
+            crHashes: crHashes,
             submittedAt: timestamp
         });
 
@@ -98,13 +92,10 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
     function submit(
         bytes32 cuHash,
         address recordOwner,
-        string memory settlementCurrency,
-        string memory worldwideDay,
-        uint64 settlementBaseAmount,
+        uint16 settlementCurrency,
+        uint32 worldwideDay,
+        uint128 settlementBaseAmount,
         uint128 settlementAttoAmount,
-        uint64 nominalBaseQty,
-        uint128 nominalAttoQty,
-        string memory nominalCurrency,
         bytes32[] memory hashes
     ) external onlyActiveCra {
         _addRecord(
@@ -114,9 +105,6 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
             worldwideDay,
             settlementBaseAmount,
             settlementAttoAmount,
-            nominalBaseQty,
-            nominalAttoQty,
-            nominalCurrency,
             hashes,
             block.timestamp
         );
@@ -125,14 +113,11 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
     function submitBatch(
         bytes32[] memory cuHashes,
         address[] memory owners,
-        string[] memory settlementCurrencies,
-        string[] memory worldwideDays,
-        uint64[] memory settlementBaseAmounts,
-        uint128[] memory settlementAttoAmounts,
-        uint64[] memory nominalBaseQtys,
-        uint128[] memory nominalAttoQtys,
-        string[] memory nominalCurrencies,
-        bytes32[][] memory hashesArray
+        uint32[] memory worldwideDays,
+        uint16[] memory settlementCurrencies,
+        uint256[] memory settlementAmountsBase,
+        uint256[] memory settlementAmountsAtto,
+        bytes32[][] memory crHashesArray
     ) external onlyActiveCra {
         uint256 batchSize = cuHashes.length;
         if (batchSize == 0) revert EmptyBatch();
@@ -140,9 +125,8 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
 
         if (
             owners.length != batchSize || settlementCurrencies.length != batchSize || worldwideDays.length != batchSize
-                || settlementBaseAmounts.length != batchSize || settlementAttoAmounts.length != batchSize
-                || nominalBaseQtys.length != batchSize || nominalAttoQtys.length != batchSize
-                || nominalCurrencies.length != batchSize || hashesArray.length != batchSize
+                || settlementAmountsBase.length != batchSize || settlementAmountsAtto.length != batchSize
+                || crHashesArray.length != batchSize
         ) revert ArrayLengthMismatch();
 
         uint256 timestamp = block.timestamp;
@@ -152,12 +136,9 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
                 owners[i],
                 settlementCurrencies[i],
                 worldwideDays[i],
-                settlementBaseAmounts[i],
-                settlementAttoAmounts[i],
-                nominalBaseQtys[i],
-                nominalAttoQtys[i],
-                nominalCurrencies[i],
-                hashesArray[i],
+                settlementAmountsBase[i],
+                settlementAmountsAtto[i],
+                crHashesArray[i],
                 timestamp
             );
         }
@@ -169,19 +150,19 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         return consumptionUnits[cuHash].submittedBy != address(0);
     }
 
-    function getRecord(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory) {
+    function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory) {
         return consumptionUnits[cuHash];
     }
 
-    function setCraRegistry(address _craRegistry) external onlyOwner {
+    function setCRARegistry(address _craRegistry) external onlyOwner {
         craRegistry = ICRARegistry(_craRegistry);
     }
 
-    function getCraRegistry() external view returns (address) {
+    function getCRARegistry() external view returns (address) {
         return address(craRegistry);
     }
 
-    function getRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
+    function getConsumptionUnitsByOwner(address _owner) external view returns (bytes32[] memory) {
         return ownerRecords[_owner];
     }
 

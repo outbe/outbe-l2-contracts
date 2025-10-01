@@ -25,8 +25,30 @@ jobs:
         run: echo ${{ vars.RPC_URL }}
 
       - name: Deploy CREATE2
+        id: deploy
         run: |
           cast send \
             --rpc-url ${{ vars.RPC_URL }}  \
             --private-key ${{ secrets.PRIVATE_KEY }} \
-            --create ${{ vars.CREATE2_FACTORY_BYTECODE }}
+            --create ${{ vars.CREATE2_FACTORY_BYTECODE }} \
+          > logs.out
+          CREATE2_ADDRESS=$(cat logs.out | grep contractAddress | awk '{print $2}')
+          echo "CREATE2_ADDRESS=$CREATE2_ADDRESS" >> $GITHUB_ENV
+      - name: Send message to Deploy channel
+        id: matrix-chat-message
+        uses: fadenb/matrix-chat-message@v0.0.6
+        with:
+          homeserver: ${{ secrets.MATRIC_SERVER }}
+          token: ${{ secrets.MATRIX_TOKEN }}
+          channel: ${{ secrets.DEPLOY_ROOM }}
+          message: |
+            # 📦 [EVM] CREATE2 Contracts Deployment ✅
+
+            Env: **${{ github.event.inputs.environment }}**
+
+            Commit: **${{ github.sha }}**
+
+            Branch: **${{ github.ref }}**
+
+            ## Details:
+              - CREATE2 registry address: `${{ env.CREATE2_ADDRESS }}`
