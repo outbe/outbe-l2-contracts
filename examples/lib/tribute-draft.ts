@@ -21,9 +21,10 @@ import { ethers, Contract, Wallet, Provider } from 'ethers';
 // TributeDraftUpgradeable ABI (key functions only)
 const TRIBUTE_DRAFT_ABI = [
   // Core functions
-  'function mint(bytes32[] cuHashes) external returns (bytes32 tdId)',
-  'function get(bytes32 tdId) external view returns (tuple(address owner, string settlementCurrency, string worldwideDay, uint64 settlementBaseAmount, uint128 settlementAttoAmount, bytes32[] cuHashes, uint256 submittedAt))',
-  'function getConsumptionUnit() external view returns (address)',
+  'function submit(bytes32[] cuHashes) external returns (bytes32 tdId)',
+  'function getTributeDraft(bytes32 tdId) external view returns (tuple(bytes32 tributeDraftId, address owner, uint16 settlementCurrency, uint32 worldwideDay, uint256 settlementAmountBase, uint256 settlementAmountAtto, bytes32[] cuHashes, uint256 submittedAt))',
+  'function getConsumptionUnitAddress() external view returns (address)',
+  'function setConsumptionUnitAddress(address consumptionUnitAddress) external',
   
   // Upgrade functions (owner only)
   'function upgradeTo(address newImplementation) external',
@@ -34,27 +35,28 @@ const TRIBUTE_DRAFT_ABI = [
   'function transferOwnership(address newOwner) external',
   
   // Events
-  'event Minted(bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp)',
+  'event Submited(bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp)',
   'event Upgraded(address indexed implementation)',
-  
+
   // Errors
   'error EmptyArray()',
-  'error DuplicateId()',
+  'error AlreadyExists()',
   'error NotFound(bytes32 cuHash)',
   'error NotSameOwner()',
-  'error NotSameCurrency()',
-  'error NotSameDay()'
+  'error NotSettlementCurrencyCurrency()',
+  'error NotSameWorldwideDay()'
 ];
 
 /**
  * TributeDraft data structure
  */
 export interface TributeDraftEntity {
+  tributeDraftId: string;
   owner: string;
-  settlementCurrency: string;
-  worldwideDay: string;
-  settlementBaseAmount: bigint;
-  settlementAttoAmount: bigint;
+  settlementCurrency: number;
+  worldwideDay: number;
+  settlementAmountBase: bigint;
+  settlementAmountAtto: bigint;
   cuHashes: string[];
   submittedAt: bigint;
 }
@@ -150,7 +152,7 @@ export class TributeDraftClient {
   }
 
   /**
-   * Mint a tribute draft from consumption units
+   * Submit a tribute draft from consumption units
    * All consumption units must:
    * - Be owned by the caller
    * - Have the same settlement currency
@@ -163,32 +165,32 @@ export class TributeDraftClient {
     }
 
     try {
-      const tx = await this.contract.mint(params.consumptionUnitHashes);
+      const tx = await this.contract.submit(params.consumptionUnitHashes);
       const receipt = await tx.wait();
 
-      // Extract the TributeDraft ID from the Minted event
-      const mintedEvent = receipt.logs?.find((log: any) => {
+      // Extract the TributeDraft ID from the Submited event
+      const submitedEvent = receipt.logs?.find((log: any) => {
         try {
           const parsed = this.contract.interface.parseLog(log);
-          return parsed && parsed.name === 'Minted';
+          return parsed && parsed.name === 'Submited';
         } catch {
           return false;
         }
       });
 
       let tributeDraftId = '';
-      if (mintedEvent) {
-        const parsed = this.contract.interface.parseLog(mintedEvent);
+      if (submitedEvent) {
+        const parsed = this.contract.interface.parseLog(submitedEvent);
         tributeDraftId = parsed?.args.tdId || '';
       }
 
-      console.log(`Tribute draft minted: ${tributeDraftId} (${params.consumptionUnitHashes.length} CUs)`);
+      console.log(`Tribute draft submitted: ${tributeDraftId} (${params.consumptionUnitHashes.length} CUs)`);
       return {
         tributeDraftId,
         transactionHash: receipt.transactionHash
       };
     } catch (error: any) {
-      this.handleError(error, 'mint');
+      this.handleError(error, 'submit');
       throw error;
     }
   }
@@ -198,19 +200,20 @@ export class TributeDraftClient {
    */
   async get(tributeDraftId: string): Promise<TributeDraftEntity | null> {
     try {
-      const result = await this.contract.get(tributeDraftId);
-      
+      const result = await this.contract.getTributeDraft(tributeDraftId);
+
       // Check if tribute draft exists (owner will be zero address if not found)
       if (result.owner === ethers.ZeroAddress) {
         return null;
       }
 
       return {
+        tributeDraftId: result.tributeDraftId,
         owner: result.owner,
         settlementCurrency: result.settlementCurrency,
         worldwideDay: result.worldwideDay,
-        settlementBaseAmount: result.settlementBaseAmount,
-        settlementAttoAmount: result.settlementAttoAmount,
+        settlementAmountBase: result.settlementAmountBase,
+        settlementAmountAtto: result.settlementAmountAtto,
         cuHashes: result.cuHashes,
         submittedAt: result.submittedAt
       };
@@ -224,7 +227,22 @@ export class TributeDraftClient {
    * Get the ConsumptionUnit contract address
    */
   async getConsumptionUnitAddress(): Promise<string> {
-    return await this.contract.getConsumptionUnit();
+    return await this.contract.getConsumptionUnitAddress();
+  }
+
+  /**
+   * Set the ConsumptionUnit contract address (owner only)
+   */
+  async setConsumptionUnitAddress(consumptionUnitAddress: string): Promise<string> {
+    try {
+      const tx = await this.contract.setConsumptionUnitAddress(consumptionUnitAddress);
+      const receipt = await tx.wait();
+      console.log(`Consumption Unit address updated: ${consumptionUnitAddress}`);
+      return receipt.transactionHash;
+    } catch (error: any) {
+      this.handleError(error, 'setConsumptionUnitAddress');
+      throw error;
+    }
   }
 
   /**
@@ -267,8 +285,8 @@ export class TributeDraftClient {
   /**
    * Set up event listeners
    */
-  onMinted(callback: (tributeDraftId: string, owner: string, submittedBy: string, cuCount: bigint, timestamp: bigint) => void): void {
-    this.contract.on('Minted', (tributeDraftId, owner, submittedBy, cuCount, timestamp, event) => {
+  onSubmited(callback: (tributeDraftId: string, owner: string, submittedBy: string, cuCount: bigint, timestamp: bigint) => void): void {
+    this.contract.on('Submited', (tributeDraftId, owner, submittedBy, cuCount, timestamp, event) => {
       callback(tributeDraftId, owner, submittedBy, cuCount, timestamp);
     });
   }
@@ -343,7 +361,7 @@ export class TributeDraftClient {
         case 'EmptyArray()':
           console.error('Consumption unit array cannot be empty');
           break;
-        case 'DuplicateId()':
+        case 'AlreadyExists()':
           console.error('Duplicate consumption unit hash provided or hash already used in another tribute draft');
           break;
         case 'NotFound(bytes32)':
@@ -352,10 +370,10 @@ export class TributeDraftClient {
         case 'NotSameOwner()':
           console.error('All consumption units must be owned by the caller');
           break;
-        case 'NotSameCurrency()':
+        case 'NotSettlementCurrencyCurrency()':
           console.error('All consumption units must have the same settlement currency');
           break;
-        case 'NotSameDay()':
+        case 'NotSameWorldwideDay()':
           console.error('All consumption units must have the same worldwide day');
           break;
         default:
@@ -375,8 +393,8 @@ export class TributeDraftAggregator {
    */
   static validateAggregation(consumptionUnits: Array<{
     owner: string;
-    settlementCurrency: string;
-    worldwideDay: string;
+    settlementCurrency: number;
+    worldwideDay: number;
   }>, expectedOwner: string): { valid: boolean; error?: string } {
     if (consumptionUnits.length === 0) {
       return { valid: false, error: 'At least one consumption unit required' };
@@ -412,15 +430,15 @@ export class TributeDraftAggregator {
    * Calculate the total settlement amount for a group of consumption units
    */
   static calculateTotalSettlement(consumptionUnits: Array<{
-    settlementBaseAmount: bigint;
-    settlementAttoAmount: bigint;
+    settlementAmountBase: bigint;
+    settlementAmountAtto: bigint;
   }>): { base: bigint; atto: bigint } {
     let totalBase = 0n;
     let totalAtto = 0n;
 
     for (const cu of consumptionUnits) {
-      totalBase += cu.settlementBaseAmount;
-      totalAtto += cu.settlementAttoAmount;
+      totalBase += cu.settlementAmountBase;
+      totalAtto += cu.settlementAmountAtto;
 
       // Handle atto overflow (carry to base)
       if (totalAtto >= BigInt(1e18)) {
@@ -469,9 +487,9 @@ async function exampleUsage() {
       console.log('Tribute Draft Details:');
       console.log(`- Owner: ${tributeDraft.owner}`);
       console.log(`- Settlement: ${TributeDraftClient.formatAmount(
-        tributeDraft.settlementBaseAmount, 
-        tributeDraft.settlementAttoAmount
-      )} ${tributeDraft.settlementCurrency}`);
+        tributeDraft.settlementAmountBase,
+        tributeDraft.settlementAmountAtto
+      )} (Currency: ${tributeDraft.settlementCurrency})`);
       console.log(`- Day: ${tributeDraft.worldwideDay}`);
       console.log(`- Consumption Units: ${tributeDraft.cuHashes.length}`);
       console.log(`- Created: ${new Date(Number(tributeDraft.submittedAt) * 1000).toISOString()}`);
@@ -484,8 +502,8 @@ async function exampleUsage() {
     }
 
     // Set up event monitoring
-    tdClient.onMinted((tributeDraftId, owner, submittedBy, cuCount, timestamp) => {
-      console.log(`New tribute draft minted:`);
+    tdClient.onSubmited((tributeDraftId, owner, submittedBy, cuCount, timestamp) => {
+      console.log(`New tribute draft submitted:`);
       console.log(`  ID: ${tributeDraftId}`);
       console.log(`  Owner: ${owner}`);
       console.log(`  Submitted by: ${submittedBy}`);
@@ -497,17 +515,17 @@ async function exampleUsage() {
     const consumptionUnits = [
       {
         owner: userWallet.address,
-        settlementCurrency: 'USD',
-        worldwideDay: '2024-01-15',
-        settlementBaseAmount: 100n,
-        settlementAttoAmount: 500000000000000000n // 0.5 USD
+        settlementCurrency: 840, // USD
+        worldwideDay: 20240115,
+        settlementAmountBase: 100n,
+        settlementAmountAtto: 500000000000000000n // 0.5 USD
       },
       {
         owner: userWallet.address,
-        settlementCurrency: 'USD',
-        worldwideDay: '2024-01-15',
-        settlementBaseAmount: 200n,
-        settlementAttoAmount: 750000000000000000n // 0.75 USD
+        settlementCurrency: 840, // USD
+        worldwideDay: 20240115,
+        settlementAmountBase: 200n,
+        settlementAmountAtto: 750000000000000000n // 0.75 USD
       }
     ];
 

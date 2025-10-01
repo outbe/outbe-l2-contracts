@@ -13,12 +13,12 @@ const CONSUMPTION_RECORD_ABI = [
   
   // Query functions
   "function isExists(bytes32 crHash) external view returns (bool)",
-  "function getRecord(bytes32 crHash) external view returns (tuple(address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, string[] metadataValues))",
-  "function getRecordsByOwner(address owner) external view returns (bytes32[] memory)",
-  
+  "function getConsumptionRecord(bytes32 crHash) external view returns (tuple(bytes32 consumptionRecordId, address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, string[] metadataValues))",
+  "function getConsumptionRecordsByOwner(address owner) external view returns (bytes32[] memory)",
+
   // Admin functions
-  "function setCraRegistry(address _craRegistry) external",
-  "function getCraRegistry() external view returns (address)",
+  "function setCRARegistry(address _craRegistry) external",
+  "function getCRARegistry() external view returns (address)",
   "function getOwner() external view returns (address)",
   
   // Upgrade functions (owner only)
@@ -31,11 +31,11 @@ const CONSUMPTION_RECORD_ABI = [
   
   // Events
   "event Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp)",
-  "event MetadataAdded(bytes32 indexed crHash, string key, string value)",
   "event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp)"
 ];
 
 export interface CRRecord {
+  consumptionRecordId: string;
   submittedBy: string;
   submittedAt: bigint;
   owner: string;
@@ -169,8 +169,9 @@ export class ConsumptionRecordClient {
    * Get complete consumption record data
    */
   async getRecord(crHash: string): Promise<CRRecord> {
-    const result = await this.contract.getRecord(crHash);
+    const result = await this.contract.getConsumptionRecord(crHash);
     return {
+      consumptionRecordId: result.consumptionRecordId,
       submittedBy: result.submittedBy,
       submittedAt: result.submittedAt,
       owner: result.owner,
@@ -183,7 +184,7 @@ export class ConsumptionRecordClient {
    * Get all consumption record hashes owned by a specific address
    */
   async getRecordsByOwner(owner: string): Promise<string[]> {
-    return await this.contract.getRecordsByOwner(owner);
+    return await this.contract.getConsumptionRecordsByOwner(owner);
   }
 
   /**
@@ -226,7 +227,7 @@ export class ConsumptionRecordClient {
    * Get CRA Registry address
    */
   async getCraRegistry(): Promise<string> {
-    return await this.contract.getCraRegistry();
+    return await this.contract.getCRARegistry();
   }
 
   /**
@@ -234,7 +235,7 @@ export class ConsumptionRecordClient {
    */
   async setCraRegistry(registryAddress: string): Promise<void> {
     try {
-      const tx = await this.contract.setCraRegistry(registryAddress);
+      const tx = await this.contract.setCRARegistry(registryAddress);
       await tx.wait();
       console.log(`✅ CRA Registry updated: ${registryAddress}`);
     } catch (error: any) {
@@ -296,13 +297,6 @@ export class ConsumptionRecordClient {
    */
   onSubmitted(callback: (crHash: string, cra: string, timestamp: bigint) => void): void {
     this.contract.on('Submitted', callback);
-  }
-
-  /**
-   * Listen for metadata addition events
-   */
-  onMetadataAdded(callback: (crHash: string, key: string, value: string) => void): void {
-    this.contract.on('MetadataAdded', callback);
   }
 
   /**
@@ -549,10 +543,6 @@ export async function exampleUsage() {
 
     consumptionRecord.onBatchSubmitted((batchSize, cra, timestamp) => {
       console.log(`🔔 Batch submitted: ${batchSize} records by ${cra} at ${new Date(Number(timestamp) * 1000)}`);
-    });
-
-    consumptionRecord.onMetadataAdded((crHash, key, value) => {
-      console.log(`🔔 Metadata added to ${crHash}: ${key} = ${value}`);
     });
 
     console.log('\n=== Contract Information ===');

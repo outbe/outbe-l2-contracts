@@ -64,8 +64,8 @@ async function loadCUHashes(): Promise<{
     totalCUs: number;
     consumptionUnits: Array<{
       cuHash: string;
-      worldwideDay: string;
-      settlementCurrency: string;
+      worldwideDay: number;
+      settlementCurrency: number;
       crCount: number;
     }>;
   }>;
@@ -89,8 +89,8 @@ async function loadCUHashes(): Promise<{
 function groupCUsForAggregation(
   cus: Array<{
     cuHash: string;
-    worldwideDay: string;
-    settlementCurrency: string;
+    worldwideDay: number;
+    settlementCurrency: number;
     crCount: number;
   }>
 ): Map<string, string[]> {
@@ -117,21 +117,23 @@ function generateTributeDraftsForUser(
   owner: string,
   cus: Array<{
     cuHash: string;
-    worldwideDay: string;
-    settlementCurrency: string;
+    worldwideDay: number;
+    settlementCurrency: number;
     crCount: number;
   }>
-): Array<{ params: MintTributeDraftParams; metadata: { day: string; currency: string; cuCount: number } }> {
+): Array<{ params: MintTributeDraftParams; metadata: { day: number; currency: number; cuCount: number } }> {
   const tributeDrafts: Array<{
     params: MintTributeDraftParams;
-    metadata: { day: string; currency: string; cuCount: number };
+    metadata: { day: number; currency: number; cuCount: number };
   }> = [];
 
   // Group CUs by day and currency
   const groups = groupCUsForAggregation(cus);
 
   for (const [key, cuHashes] of groups.entries()) {
-    const [day, currency] = key.split('_');
+    const [dayStr, currencyStr] = key.split('_');
+    const day = parseInt(dayStr);
+    const currency = parseInt(currencyStr);
 
     // Create one TD per group (day + currency)
     if (cuHashes.length === 0) continue;
@@ -164,7 +166,7 @@ async function submitTributeDraftsForUser(
   userIndex: number,
   tributeDrafts: Array<{
     params: MintTributeDraftParams;
-    metadata: { day: string; currency: string; cuCount: number };
+    metadata: { day: number; currency: number; cuCount: number };
   }>
 ): Promise<{
   userIndex: number;
@@ -241,8 +243,8 @@ async function submitAllTributeDrafts(
       totalCUs: number;
       consumptionUnits: Array<{
         cuHash: string;
-        worldwideDay: string;
-        settlementCurrency: string;
+        worldwideDay: number;
+        settlementCurrency: number;
         crCount: number;
       }>;
     }>;
@@ -463,8 +465,8 @@ async function main() {
       const record = await tdClient.get(td.tdId);
       if (record) {
         const amount = TributeDraftClient.formatAmount(
-          record.settlementBaseAmount,
-          record.settlementAttoAmount
+          record.settlementAmountBase,
+          record.settlementAmountAtto
         );
         console.log(
           `  ${i + 1}. ${td.tdId.slice(0, 10)}... - ✅ ${amount} ${record.settlementCurrency}, ` +

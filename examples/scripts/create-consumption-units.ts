@@ -31,9 +31,8 @@ const CONFIG = {
   // Input file from previous step
   CR_HASHES_FILE: './results/generated-cr-hashes.json',
 
-  // Settlement parameters
-  SETTLEMENT_CURRENCIES: ['USD', 'EUR', 'GBP'],
-  NOMINAL_CURRENCIES: ['kWh', 'MWh'],
+  // Settlement parameters (ISO 4217 numeric codes)
+  SETTLEMENT_CURRENCIES: [840, 978, 826], // USD, EUR, GBP
 };
 
 /**
@@ -66,21 +65,20 @@ function generateConsumptionUnit(
   userIndex: number,
   cuIndex: number
 ): ConsumptionUnitParams {
-  // Generate deterministic worldwide day
+  // Generate deterministic worldwide day in YYYYMMDD format
   const date = new Date();
   date.setDate(date.getDate() - cuIndex); // Different day for each CU
-  const worldwideDay = date.toISOString().split('T')[0];
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const worldwideDay = parseInt(`${year}${month}${day}`); // e.g., 20240115
 
-  // Random settlement currency and amounts
+  // Random settlement currency (ISO 4217 numeric code)
   const settlementCurrency = CONFIG.SETTLEMENT_CURRENCIES[userIndex % CONFIG.SETTLEMENT_CURRENCIES.length];
-  const nominalCurrency = CONFIG.NOMINAL_CURRENCIES[userIndex % CONFIG.NOMINAL_CURRENCIES.length];
 
   // Calculate amounts based on number of CRs
   const baseAmount = BigInt(Math.floor(crHashes.length * 100 + Math.random() * 50)); // $100-150 per CR
   const attoAmount = BigInt(Math.floor(Math.random() * 1e17)); // Random fractional part
-
-  const nominalBase = BigInt(Math.floor(crHashes.length * 50 + Math.random() * 25)); // 50-75 units per CR
-  const nominalAtto = BigInt(Math.floor(Math.random() * 1e17));
 
   // Generate settlement data for hash calculation
   const settlementData = `${settlementCurrency}-${baseAmount}-${attoAmount}`;
@@ -89,7 +87,7 @@ function generateConsumptionUnit(
   const cuHash = ConsumptionUnitClient.generateHash({
     owner,
     settlementData,
-    worldwideDay,
+    worldwideDay: worldwideDay.toString(),
     consumptionRecordHashes: crHashes
   });
 
@@ -100,8 +98,6 @@ function generateConsumptionUnit(
     .setSettlementCurrency(settlementCurrency)
     .setWorldwideDay(worldwideDay)
     .setSettlementAmount(baseAmount, attoAmount)
-    .setNominalQuantity(nominalBase, nominalAtto)
-    .setNominalCurrency(nominalCurrency)
     .setConsumptionRecordHashes(crHashes)
     .build();
 }
@@ -205,8 +201,8 @@ async function saveCUHashesForUsers(consumptionUnits: ConsumptionUnitParams[]): 
   // Group by user
   const userCUs = new Map<string, Array<{
     cuHash: string;
-    worldwideDay: string;
-    settlementCurrency: string;
+    worldwideDay: number;
+    settlementCurrency: number;
     crCount: number;
   }>>();
 

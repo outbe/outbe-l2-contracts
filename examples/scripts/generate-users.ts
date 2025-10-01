@@ -22,7 +22,7 @@ const CONFIG = {
 
   // Test parameters
   TOTAL_USERS: parseInt(process.env.TOTAL_USERS!),
-  FUNDING_AMOUNT: '0.0001', // ETH per user
+  FUNDING_AMOUNT: '1', // ETH per user
 };
 
 /**
