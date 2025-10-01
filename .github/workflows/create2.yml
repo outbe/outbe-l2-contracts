@@ -51,4 +51,4 @@ jobs:
             Branch: **${{ github.ref }}**
 
             ## Details:
-              - CREATE2 registry address: `${{ steps.deploy.outputs.msg }}`
+              - CREATE2 registry address: `${{ env.CREATE2_ADDRESS }}`
