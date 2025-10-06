@@ -10,7 +10,7 @@ interface ITributeDraft {
         address owner;
         // currency shared across all consumption units (ISO 4217)
         uint16 settlementCurrency;
-        /// ISO 8601
+        /// ISO 8601 format: 20250923
         uint32 worldwideDay;
         // aggregated settlement amount
         uint256 settlementAmountBase;
