@@ -20,8 +20,12 @@ interface ITributeDraft {
         uint256 submittedAt;
     }
 
-    event Submited(
-        bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp
+    event Submitted(
+        bytes32 indexed tdId,
+        address indexed owner,
+        address indexed submittedBy,
+        uint256 cuCount,
+        uint256 timestamp
     );
 
     error EmptyArray();

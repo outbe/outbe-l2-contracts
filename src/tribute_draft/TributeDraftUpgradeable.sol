@@ -96,7 +96,7 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
             submittedAt: block.timestamp
         });
 
-        emit Submited(tdId, owner_, msg.sender, n, block.timestamp);
+        emit Submitted(tdId, owner_, msg.sender, n, block.timestamp);
     }
 
     function getTributeDraft(bytes32 tdId) external view returns (TributeDraftEntity memory) {
