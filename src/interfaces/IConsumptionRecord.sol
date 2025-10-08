@@ -21,7 +21,7 @@ interface IConsumptionRecord {
         /// @dev Array of metadata keys
         string[] metadataKeys;
         /// @dev Array of metadata values (matches keys array)
-        string[] metadataValues;
+        bytes32[] metadataValues;
     }
 
     /// @notice Emitted when a consumption record is submitted
@@ -66,7 +66,7 @@ interface IConsumptionRecord {
     /// @param owner The owner of the consumption record (must be non-zero)
     /// @param keys Array of metadata keys (must match values array length)
     /// @param values Array of metadata values (must match keys array length)
-    function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external;
+    function submit(bytes32 crHash, address owner, string[] memory keys, bytes32[] memory values) external;
 
     /// @notice Submit a batch of consumption records with metadata
     /// @dev Only active CRAs can submit records. Maximum 100 records per batch. All hashes must be unique and non-zero.
@@ -78,7 +78,7 @@ interface IConsumptionRecord {
         bytes32[] memory crHashes,
         address[] memory owners,
         string[][] memory keysArray,
-        string[][] memory valuesArray
+        bytes32[][] memory valuesArray
     ) external;
 
     /// @notice Check if a consumption record exists
