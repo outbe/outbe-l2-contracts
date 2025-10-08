@@ -8,15 +8,21 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title ConsumptionUnitUpgradeable
-/// @notice Upgradeable contract for storing consumption unit records with settlement and nominal amounts
-/// @dev Modeled after ConsumptionRecordUpgradeable with adapted CuRecord structure
+/// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
+/// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
 contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+    /// @notice Contract version
     string public constant VERSION = "1.0.0";
+    /// @notice Maximum number of CU records that can be submitted in a single batch
     uint256 public constant MAX_BATCH_SIZE = 100;
 
+    /// @dev Mapping CU hash to CU entity
     mapping(bytes32 => ConsumptionUnitEntity) public consumptionUnits;
+    /// @dev Tracks uniqueness of linked consumption record (CR) hashes across all CU submissions
     mapping(bytes32 => bool) public consumptionRecordHashes;
+    /// @dev Owner address to CU ids owned by the address
     mapping(address => bytes32[]) public ownerRecords;
+    /// @dev CRA Registry reference used to validate CRA activity
     ICRARegistry public craRegistry;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -24,11 +30,17 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         _disableInitializers();
     }
 
+    /// @notice Restricts function to active CRA addresses
+    /// @dev Uses CRARegistry to verify msg.sender status
     modifier onlyActiveCra() {
         if (!craRegistry.isCRAActive(msg.sender)) revert CRANotActive();
         _;
     }
 
+    /// @notice Initialize the Consumption Unit contract
+    /// @dev Sets CRA registry reference and transfers ownership to provided owner
+    /// @param _craRegistry Address of CRARegistry contract (must not be zero)
+    /// @param _owner Address to set as contract owner (must not be zero)
     function initialize(address _craRegistry, address _owner) public initializer {
         require(_craRegistry != address(0), "CRA Registry cannot be zero address");
         require(_owner != address(0), "Owner cannot be zero address");
@@ -47,6 +59,15 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         if (code == 0) revert InvalidSettlementCurrency();
     }
 
+    /// @dev Internal helper to validate and store a CU record and update indexes
+    /// @param cuHash CU id/hash (must be non-zero and unique)
+    /// @param recordOwner Owner address of the CU (must be non-zero)
+    /// @param settlementCurrency ISO-4217 numeric currency code (must be non-zero)
+    /// @param worldwideDay Worldwide day in ISO-8601 compact form, e.g. 20250923
+    /// @param settlementBaseAmount Natural units amount (can be zero only if atto amount is non-zero)
+    /// @param settlementAttoAmount Fractional units amount in 1e-18 units (must be < 1e18)
+    /// @param crHashes Linked consumption record hashes (each must be unique globally)
+    /// @param timestamp Submission timestamp to record
     function _addRecord(
         bytes32 cuHash,
         address recordOwner,
@@ -90,6 +111,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         emit Submitted(cuHash, msg.sender, timestamp);
     }
 
+    /// @inheritdoc IConsumptionUnit
     function submit(
         bytes32 cuHash,
         address recordOwner,
@@ -111,6 +133,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         );
     }
 
+    /// @inheritdoc IConsumptionUnit
     function submitBatch(
         bytes32[] memory cuHashes,
         address[] memory owners,

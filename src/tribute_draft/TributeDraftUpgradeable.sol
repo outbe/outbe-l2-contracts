@@ -62,7 +62,7 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
             IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getConsumptionUnit(cuHashes[i]);
             if (rec.submittedBy == address(0)) revert NotFound(cuHashes[i]);
             if (rec.owner != owner_) revert NotSameOwner();
-            // compare currency strings by keccak hash
+            // compare currency codes by keccak hash of the encoded values
             if (keccak256(abi.encode(rec.settlementCurrency)) != keccak256(abi.encode(currency_))) {
                 revert NotSettlementCurrencyCurrency();
             }
