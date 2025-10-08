@@ -37,7 +37,7 @@ contract PredictAddresses is Script {
         predictUpgradeableAddresses(deployer, saltSuffix);
     }
 
-    function predictUpgradeableAddresses(address deployer, string memory saltSuffix) internal view {
+    function predictUpgradeableAddresses(address deployer, string memory saltSuffix) internal pure {
         console.log("=== Upgradeable Contracts (UUPS Proxy Pattern) ===");
 
         // Generate salt strings matching DeployUpgradeable script
