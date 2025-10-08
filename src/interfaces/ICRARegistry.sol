@@ -10,13 +10,13 @@ interface ICRARegistry {
     /// @notice Possible status values for a CRA
     /// @dev Used to control CRA permissions and visibility
     enum CRAStatus {
-        Inactive,
         /// @dev CRA is registered but not active
-        Active,
+        Inactive,
         /// @dev CRA is active and can submit consumption records
+        Active,
+        /// @dev CRA is temporarily suspended
         Suspended
     }
-    /// @dev CRA is temporarily suspended
 
     /// @notice Information about a registered CRA
     /// @dev Stores all relevant data for a CRA

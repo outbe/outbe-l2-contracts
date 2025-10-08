@@ -20,7 +20,7 @@ interface ITributeDraft {
         uint256 submittedAt;
     }
 
-    event Submited(
+    event Submitted(
         bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp
     );
 

@@ -72,7 +72,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         bytes32 crHash,
         address recordOwner,
         string[] memory keys,
-        string[] memory values,
+        bytes32[] memory values,
         uint256 timestamp
     ) internal {
         // Validate record parameters
@@ -104,7 +104,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     }
 
     /// @inheritdoc IConsumptionRecord
-    function submit(bytes32 crHash, address recordOwner, string[] memory keys, string[] memory values)
+    function submit(bytes32 crHash, address recordOwner, string[] memory keys, bytes32[] memory values)
         external
         onlyActiveCra
     {
@@ -116,7 +116,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         bytes32[] memory crHashes,
         address[] memory owners,
         string[][] memory keysArray,
-        string[][] memory valuesArray
+        bytes32[][] memory valuesArray
     ) external onlyActiveCra {
         uint256 batchSize = crHashes.length;
 
