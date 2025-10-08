@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
+import "../interfaces/ICRAAware.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title CRAAware
 /// @notice Base contract that integrates with a CRA Registry to restrict functions to active CRA addresses
@@ -10,7 +12,7 @@ import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 /// @author Outbe Team
 /// @custom:version 1.0.0
 /// @custom:security-contact security@outbe.io
-abstract contract CRAAware is ContextUpgradeable {
+abstract contract CRAAware is ICRAAware, ContextUpgradeable, OwnableUpgradeable {
     /// @notice Reference to the CRA Registry contract
     /// @dev Must be set via the initializer or _setRegistry before using onlyActiveCRA
     ICRARegistry public craRegistry;
@@ -20,6 +22,7 @@ abstract contract CRAAware is ContextUpgradeable {
     /// @param _craRegistry Address of the CRA Registry implementing ICRARegistry
     function __CRAAware_init(address _craRegistry) internal onlyInitializing {
         _setRegistry(_craRegistry);
+        __Ownable_init();
     }
 
     /// @notice Restricts a function so that only active CRAs in the registry can call it
@@ -32,7 +35,11 @@ abstract contract CRAAware is ContextUpgradeable {
     /// @notice Checks that the caller is an active CRA in the registry
     /// @dev Reverts with "CRA not active" if msg.sender is not active
     function _checkActiveCra() internal view virtual {
-        require(craRegistry.isCRAActive(_msgSender()), "CRA not active");
+        require(craRegistry.isCRAActive(_msgSender()), CRANotActive());
+    }
+
+    function setCRARegistry(address _craRegistry) external onlyOwner {
+        _setRegistry(_craRegistry);
     }
 
     /// @notice Set the CRA registry reference
@@ -41,11 +48,12 @@ abstract contract CRAAware is ContextUpgradeable {
     function _setRegistry(address _craRegistry) internal {
         require(_craRegistry != address(0), "CRARegistry address is zero");
         craRegistry = ICRARegistry(_craRegistry);
+        emit RegistryUpdated(_craRegistry);
     }
 
     /// @notice Get the CRA registry address
     /// @return Address of the CRA Registry contract
-    function registry() external view returns (address) {
+    function getCRARegistry() external view returns (address) {
         return address(craRegistry);
     }
 }

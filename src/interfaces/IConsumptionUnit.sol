@@ -90,15 +90,6 @@ interface IConsumptionUnit {
     /// @return ConsumptionUnitEntity struct with complete record data
     function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory);
 
-    /// @notice Set the CRA Registry contract address
-    /// @dev Only callable by contract owner
-    /// @param _craRegistry Address of the CRA Registry contract
-    function setCRARegistry(address _craRegistry) external;
-
-    /// @notice Get the current CRA Registry contract address
-    /// @return Address of the CRA Registry contract
-    function getCRARegistry() external view returns (address);
-
     /// @notice Get all consumption unit hashes owned by a specific address
     /// @param owner The owner address
     /// @return Array of CU hashes owned by the address

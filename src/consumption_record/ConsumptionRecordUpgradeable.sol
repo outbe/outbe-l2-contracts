@@ -14,11 +14,11 @@ import {CRAAware} from "../utils/CRAAware.sol";
 /// @custom:version 1.0.0
 /// @custom:security-contact security@outbe.io
 contract ConsumptionRecordUpgradeable is
-    IConsumptionRecord,
     Initializable,
-    CRAAware,
+    UUPSUpgradeable,
     OwnableUpgradeable,
-    UUPSUpgradeable
+    CRAAware,
+    IConsumptionRecord
 {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
@@ -146,16 +146,6 @@ contract ConsumptionRecordUpgradeable is
     /// @inheritdoc IConsumptionRecord
     function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
         return consumptionRecords[crHash];
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function setCRARegistry(address _craRegistry) external onlyOwner {
-        _setRegistry(_craRegistry);
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function getCRARegistry() external view returns (address) {
-        return address(craRegistry);
     }
 
     /// @inheritdoc IConsumptionRecord

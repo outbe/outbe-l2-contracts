@@ -90,15 +90,6 @@ interface IConsumptionRecord {
     /// @return CrRecord struct with complete record data
     function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory);
 
-    /// @notice Set the CRA Registry contract address
-    /// @dev Only callable by contract owner
-    /// @param _craRegistry The address of the CRA Registry contract
-    function setCRARegistry(address _craRegistry) external;
-
-    /// @notice Get the current CRA Registry contract address
-    /// @return The address of the CRA Registry contract
-    function getCRARegistry() external view returns (address);
-
     // TODO optimize this call to reduce a number of tokens returned and pagination,
     //      See for example: https://docs.openzeppelin.com/contracts/4.x/api/token/ERC721#ierc721enumerable-2
     /// @notice Get all consumption record hashes owned by a specific address

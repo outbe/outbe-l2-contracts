@@ -10,7 +10,13 @@ import {CRAAware} from "../utils/CRAAware.sol";
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
-contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, CRAAware, OwnableUpgradeable, UUPSUpgradeable {
+contract ConsumptionUnitUpgradeable is
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    CRAAware,
+    IConsumptionUnit
+{
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch
@@ -167,14 +173,6 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, CRAAware
 
     function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory) {
         return consumptionUnits[cuHash];
-    }
-
-    function setCRARegistry(address _craRegistry) external onlyOwner {
-        _setRegistry(_craRegistry);
-    }
-
-    function getCRARegistry() external view returns (address) {
-        return address(craRegistry);
     }
 
     function getConsumptionUnitsByOwner(address _owner) external view returns (bytes32[] memory) {
