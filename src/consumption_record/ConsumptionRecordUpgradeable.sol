@@ -66,7 +66,7 @@ contract ConsumptionRecordUpgradeable is
     /// @param keys Array of metadata keys
     /// @param values Array of metadata values
     /// @param timestamp The timestamp to use for submission
-    function _addRecord(
+    function _addEntity(
         bytes32 crHash,
         address recordOwner,
         string[] memory keys,
@@ -106,7 +106,7 @@ contract ConsumptionRecordUpgradeable is
         external
         onlyActiveCRA
     {
-        _addRecord(crHash, recordOwner, keys, values, block.timestamp);
+        _addEntity(crHash, recordOwner, keys, values, block.timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
@@ -131,7 +131,7 @@ contract ConsumptionRecordUpgradeable is
 
         // Process each record in the batch using the internal function
         for (uint256 i = 0; i < batchSize; i++) {
-            _addRecord(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
+            _addEntity(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
         }
 
         // Emit batch submission event
