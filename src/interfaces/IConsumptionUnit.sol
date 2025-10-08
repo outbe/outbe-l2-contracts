@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 /// @title IConsumptionUnit Interface
 /// @notice Interface for storing and managing consumption unit records with settlement and nominal amounts

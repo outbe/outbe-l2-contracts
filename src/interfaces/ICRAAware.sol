@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 /// @title ICRAAware Interface
 /// @notice Interface for contracts that integrate with a CRA Registry and restrict actions to active CRAs
