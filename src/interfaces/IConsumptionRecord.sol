@@ -39,9 +39,6 @@ interface IConsumptionRecord {
     /// @notice Thrown when trying to submit a record that already exists
     error AlreadyExists();
 
-    /// @notice Thrown when a non-active CRA tries to submit a record
-    error CRANotActive();
-
     /// @notice Thrown when an invalid hash (zero hash) is provided
     error InvalidHash();
 

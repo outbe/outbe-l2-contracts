@@ -34,7 +34,6 @@ interface IConsumptionUnit {
 
     error AlreadyExists();
     error ConsumptionRecordAlreadyExists();
-    error CRANotActive();
     error InvalidHash();
     error InvalidOwner();
     error EmptyBatch();

@@ -67,7 +67,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
         values[0] = bytes32(uint256(456));
 
         vm.prank(craInactive);
-        vm.expectRevert(IConsumptionRecord.CRANotActive.selector);
+        vm.expectRevert("CRA not active");
         cr.submit(crHash, recordOwner, keys, values);
     }
 
@@ -80,8 +80,8 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
 
         address craUnknown = address(0xEF123);
         vm.prank(craUnknown);
-        vm.expectRevert(IConsumptionRecord.CRANotActive.selector);
-        cr.submit(crHash, recordOwner, keys, values);
+        vm.expectRevert("CRA not active");
+    cr.submit(crHash, recordOwner, keys, values);
     }
 
     function test_submitBatch_succeeds_for_activeCRA() public {
@@ -132,7 +132,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
         valuesArray[0][0] = bytes32(uint256(3));
 
         vm.prank(craInactive);
-        vm.expectRevert(IConsumptionRecord.CRANotActive.selector);
-        cr.submitBatch(crHashes, owners, keysArray, valuesArray);
+        vm.expectRevert("CRA not active");
+    cr.submitBatch(crHashes, owners, keysArray, valuesArray);
     }
 }
