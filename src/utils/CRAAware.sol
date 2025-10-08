@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Initializable} from "../../lib/openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
-import {Context} from "../../lib/openzeppelin-contracts/contracts/utils/Context.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 
 /// @title CRAAware
@@ -11,7 +10,7 @@ import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 /// @author Outbe Team
 /// @custom:version 1.0.0
 /// @custom:security-contact security@outbe.io
-abstract contract CRAAware is Context, Initializable {
+abstract contract CRAAware is ContextUpgradeable {
     /// @notice Reference to the CRA Registry contract
     /// @dev Must be set via the initializer or _setRegistry before using onlyActiveCRA
     ICRARegistry public craRegistry;
