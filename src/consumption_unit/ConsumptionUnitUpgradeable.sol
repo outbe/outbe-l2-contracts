@@ -71,6 +71,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
             }
             consumptionRecordHashes[crHashes[i]] = true;
         }
+        // TODO add validation that such CR entity exists and owner is correct
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
             consumptionUnitId: cuHash,
