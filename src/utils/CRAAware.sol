@@ -33,11 +33,12 @@ abstract contract CRAAware is ICRAAware, ContextUpgradeable, OwnableUpgradeable 
     }
 
     /// @notice Checks that the caller is an active CRA in the registry
-    /// @dev Reverts with "CRA not active" if msg.sender is not active
+    /// @dev Reverts with the custom error CRANotActive if msg.sender is not active
     function _checkActiveCra() internal view virtual {
-        require(craRegistry.isCRAActive(_msgSender()), CRANotActive());
+        if (!craRegistry.isCRAActive(_msgSender())) revert CRANotActive();
     }
 
+    /// @inheritdoc ICRAAware
     function setCRARegistry(address _craRegistry) external onlyOwner {
         _setRegistry(_craRegistry);
     }
@@ -51,8 +52,7 @@ abstract contract CRAAware is ICRAAware, ContextUpgradeable, OwnableUpgradeable 
         emit RegistryUpdated(_craRegistry);
     }
 
-    /// @notice Get the CRA registry address
-    /// @return Address of the CRA Registry contract
+    /// @inheritdoc ICRAAware
     function getCRARegistry() external view returns (address) {
         return address(craRegistry);
     }
