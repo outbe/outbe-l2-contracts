@@ -11,8 +11,6 @@ import {CRAAware} from "../utils/CRAAware.sol";
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-/// @custom:version 1.0.0
-/// @custom:security-contact security@outbe.io
 contract ConsumptionRecordUpgradeable is
     Initializable,
     UUPSUpgradeable,

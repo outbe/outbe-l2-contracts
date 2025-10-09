@@ -10,9 +10,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 /// @notice Base contract that integrates with a CRA Registry to restrict functions to active CRA addresses
 /// @dev Intended to be inherited by upgradeable contracts. Provides an initializer, an access modifier, and helpers.
 /// @author Outbe Team
-/// @custom:version 1.0.0
-/// @custom:security-contact security@outbe.io
-abstract contract CRAAware is ICRAAware, ContextUpgradeable, OwnableUpgradeable {
+abstract contract CRAAware is ICRAAware, OwnableUpgradeable {
     /// @notice Reference to the CRA Registry contract
     /// @dev Must be set via the initializer or _setRegistry before using onlyActiveCRA
     ICRARegistry public craRegistry;

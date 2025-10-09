@@ -5,8 +5,6 @@ pragma solidity ^0.8.27;
 /// @notice Interface for contracts that integrate with a CRA Registry and restrict actions to active CRAs
 /// @dev Implemented by base contract CRAAware; exposes registry management and a custom error used by modifiers
 /// @author Outbe Team
-/// @custom:version 1.0.0
-/// @custom:security-contact security@outbe.io
 interface ICRAAware {
     /// @notice Emitted when the CRA Registry reference is updated
     /// @param registry The new CRA Registry contract address
