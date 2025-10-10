@@ -26,8 +26,6 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
 
     /// @dev Total number of records tracked by this contract
     uint256 private _totalSupply;
-    // @dev Reserving future slots for upgradeable contracts
-    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
