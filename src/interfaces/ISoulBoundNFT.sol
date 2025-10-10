@@ -1,3 +1,5 @@
+pragma solidity ^0.8.27;
+
 interface ISoulBoundNFT {
     // TODO define this interface and add compatibility for all L2 contracts with this
     // The idea of this interface is to be partially compatible with NFT's standard for easy implementation on clients.

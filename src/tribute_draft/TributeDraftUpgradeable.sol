@@ -3,13 +3,14 @@ pragma solidity ^0.8.27;
 
 import {ITributeDraft} from "../interfaces/ITributeDraft.sol";
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title TributeDraftUpgradeable
 /// @notice Any user can mint a Tribute Draft by aggregating multiple Consumption Units
-contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     string public constant VERSION = "1.0.0";
 
     IConsumptionUnit public consumptionUnit;
@@ -17,6 +18,8 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
     // mapping from tribute draft id (hash) to entity
     mapping(bytes32 => TributeDraftEntity) public tributeDrafts;
     mapping(bytes32 => bool) public consumptionUnitHashes;
+
+    uint256 private _totalSupply;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -30,6 +33,7 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         consumptionUnit = IConsumptionUnit(_consumptionUnit);
         // owner set to deployer by default
         _transferOwnership(msg.sender);
+        _totalSupply = 0;
     }
 
     function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
@@ -96,6 +100,9 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
             submittedAt: block.timestamp
         });
 
+        // Increment total supply for each new tribute draft
+        _totalSupply += 1;
+
         emit Submitted(tdId, owner_, msg.sender, n, block.timestamp);
     }
 
@@ -109,6 +116,11 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
 
     function setConsumptionUnitAddress(address _consumptionUnitAddress) external {
         consumptionUnit = IConsumptionUnit(_consumptionUnitAddress);
+    }
+
+    /// @inheritdoc ISoulBoundNFT
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

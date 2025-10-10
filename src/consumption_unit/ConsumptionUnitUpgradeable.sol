@@ -2,6 +2,7 @@
 pragma solidity ^0.8.27;
 
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -10,7 +11,7 @@ import {CRAAware} from "../utils/CRAAware.sol";
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
-contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit {
+contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit, ISoulBoundNFT {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch
@@ -22,6 +23,9 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     mapping(bytes32 => bool) public consumptionRecordHashes;
     /// @dev Owner address to CU ids owned by the address
     mapping(address => bytes32[]) public ownerRecords;
+
+    /// @dev Total number of CU records (soulbound tokens)
+    uint256 private _totalSupply;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -39,6 +43,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         __UUPSUpgradeable_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
+        _totalSupply = 0;
     }
 
     function _validateAmounts(uint256 baseAmt, uint256 attoAmt) internal pure {
@@ -98,6 +103,9 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         });
 
         ownerRecords[recordOwner].push(cuHash);
+
+        // Increment total supply for each new CU record
+        _totalSupply += 1;
 
         emit Submitted(cuHash, msg.sender, timestamp);
     }
@@ -175,6 +183,11 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
 
     function getOwner() external view returns (address) {
         return owner();
+    }
+
+    /// @inheritdoc ISoulBoundNFT
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
