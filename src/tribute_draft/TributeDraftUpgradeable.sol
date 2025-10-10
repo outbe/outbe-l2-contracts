@@ -7,10 +7,18 @@ import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
 /// @title TributeDraftUpgradeable
 /// @notice Any user can mint a Tribute Draft by aggregating multiple Consumption Units
-contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract TributeDraftUpgradeable is
+    ITributeDraft,
+    ISoulBoundNFT,
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    ERC165Upgradeable
+{
     string public constant VERSION = "1.0.0";
 
     IConsumptionUnit public consumptionUnit;
@@ -31,6 +39,7 @@ contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable,
         require(_consumptionUnit != address(0), "CU addr zero");
         __Ownable_init();
         __UUPSUpgradeable_init();
+        __ERC165_init();
         _setConsumptionUnitAddress(_consumptionUnit);
         _transferOwnership(msg.sender);
         _totalSupply = 0;
@@ -54,7 +63,7 @@ contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable,
         // fetch and validate
         IConsumptionUnit.ConsumptionUnitEntity memory first = consumptionUnit.getConsumptionUnit(cuHashes[0]);
         if (first.submittedBy == address(0)) revert NotFound(cuHashes[0]);
-        if (msg.sender != first.owner) revert NotSameOwner();
+        if (msg.sender != first.owner) revert NotSameOwner(cuHashes[0]);
 
         address owner_ = first.owner;
         uint16 currency_ = first.settlementCurrency;
@@ -65,7 +74,7 @@ contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable,
         for (uint256 i = 1; i < n; i++) {
             IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getConsumptionUnit(cuHashes[i]);
             if (rec.submittedBy == address(0)) revert NotFound(cuHashes[i]);
-            if (rec.owner != owner_) revert NotSameOwner();
+            if (rec.owner != owner_) revert NotSameOwner(cuHashes[i]);
             // compare currency codes by keccak hash of the encoded values
             if (keccak256(abi.encode(rec.settlementCurrency)) != keccak256(abi.encode(currency_))) {
                 revert NotSettlementCurrencyCurrency();
@@ -125,6 +134,11 @@ contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable,
     /// @inheritdoc ISoulBoundNFT
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
+    }
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == 0x780e9d63 || super.supportsInterface(interfaceId);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

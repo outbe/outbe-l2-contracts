@@ -3,6 +3,8 @@ pragma solidity ^0.8.27;
 
 import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ERC165Upgradeable} from
+    "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
@@ -11,7 +13,13 @@ import {CRAAware} from "../utils/CRAAware.sol";
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionRecord, ISoulBoundNFT {
+contract ConsumptionRecordUpgradeable is
+    UUPSUpgradeable,
+    CRAAware,
+    IConsumptionRecord,
+    ISoulBoundNFT,
+    ERC165Upgradeable
+{
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
 
@@ -46,6 +54,7 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
+        __ERC165_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
         _totalSupply = 0;
@@ -157,6 +166,12 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
     /// @return The address of the contract owner
     function getOwner() external view returns (address) {
         return owner();
+    }
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        // 0x780e9d63 is the ERC-721 Enumerable interfaceId used to signal totalSupply support
+        return interfaceId == 0x780e9d63 || super.supportsInterface(interfaceId);
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

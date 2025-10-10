@@ -6,12 +6,13 @@ import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
-contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit, ISoulBoundNFT {
+contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit, ISoulBoundNFT, ERC165Upgradeable {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch
@@ -41,6 +42,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
+        __ERC165_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
         _totalSupply = 0;
@@ -188,6 +190,11 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     /// @inheritdoc ISoulBoundNFT
     function totalSupply() external view returns (uint256) {
         return _totalSupply;
+    }
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == 0x780e9d63 || super.supportsInterface(interfaceId);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
