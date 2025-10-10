@@ -1,23 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-contract ConsumptionRecordUpgradeable is
-    Initializable,
-    UUPSUpgradeable,
-    OwnableUpgradeable,
-    CRAAware,
-    IConsumptionRecord
-{
+contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionRecord {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
 
@@ -37,11 +30,6 @@ contract ConsumptionRecordUpgradeable is
 
     modifier validCrHash(bytes32 crHash) {
         if (crHash == bytes32(0)) revert InvalidHash();
-        _;
-    }
-
-    modifier validOwner(address _owner) {
-        if (_owner == address(0)) revert InvalidOwner();
         _;
     }
 

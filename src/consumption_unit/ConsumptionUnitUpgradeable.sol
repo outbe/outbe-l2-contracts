@@ -10,13 +10,7 @@ import {CRAAware} from "../utils/CRAAware.sol";
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
-contract ConsumptionUnitUpgradeable is
-    Initializable,
-    OwnableUpgradeable,
-    UUPSUpgradeable,
-    CRAAware,
-    IConsumptionUnit
-{
+contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch

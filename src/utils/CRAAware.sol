@@ -19,8 +19,8 @@ abstract contract CRAAware is ICRAAware, OwnableUpgradeable {
     /// @dev Should be called from the child contract's initializer. Reverts if _craRegistry is zero.
     /// @param _craRegistry Address of the CRA Registry implementing ICRARegistry
     function __CRAAware_init(address _craRegistry) internal onlyInitializing {
-        _setRegistry(_craRegistry);
         __Ownable_init();
+        _setRegistry(_craRegistry);
     }
 
     /// @notice Restricts a function so that only active CRAs in the registry can call it
