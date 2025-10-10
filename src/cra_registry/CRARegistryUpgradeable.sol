@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -10,8 +10,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 /// @notice Upgradeable registry for managing Consumption Reflection Agents (CRAs)
 /// @dev This contract provides a centralized registry for CRA management with owner-controlled access
 /// @author Outbe Team
-/// @custom:version 1.0.0
-/// @custom:security-contact security@outbe.io
 contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";

@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
+import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
-import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {CRAAware} from "../utils/CRAAware.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-/// @custom:version 1.0.0
-/// @custom:security-contact security@outbe.io
-contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionRecord {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
 
@@ -26,26 +23,13 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
 
-    /// @dev Reference to the CRA Registry contract
-    ICRARegistry public craRegistry;
-
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    modifier onlyActiveCra() {
-        if (!craRegistry.isCRAActive(msg.sender)) revert CRANotActive();
-        _;
-    }
-
     modifier validCrHash(bytes32 crHash) {
         if (crHash == bytes32(0)) revert InvalidHash();
-        _;
-    }
-
-    modifier validOwner(address _owner) {
-        if (_owner == address(0)) revert InvalidOwner();
         _;
     }
 
@@ -58,7 +42,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
-        craRegistry = ICRARegistry(_craRegistry);
+        __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
     }
 
@@ -68,7 +52,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     /// @param keys Array of metadata keys
     /// @param values Array of metadata values
     /// @param timestamp The timestamp to use for submission
-    function _addRecord(
+    function _addEntity(
         bytes32 crHash,
         address recordOwner,
         string[] memory keys,
@@ -106,9 +90,9 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     /// @inheritdoc IConsumptionRecord
     function submit(bytes32 crHash, address recordOwner, string[] memory keys, bytes32[] memory values)
         external
-        onlyActiveCra
+        onlyActiveCRA
     {
-        _addRecord(crHash, recordOwner, keys, values, block.timestamp);
+        _addEntity(crHash, recordOwner, keys, values, block.timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
@@ -117,7 +101,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         address[] memory owners,
         string[][] memory keysArray,
         bytes32[][] memory valuesArray
-    ) external onlyActiveCra {
+    ) external onlyActiveCRA {
         uint256 batchSize = crHashes.length;
 
         // Validate batch size
@@ -133,7 +117,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
 
         // Process each record in the batch using the internal function
         for (uint256 i = 0; i < batchSize; i++) {
-            _addRecord(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
+            _addEntity(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
         }
 
         // Emit batch submission event
@@ -148,16 +132,6 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     /// @inheritdoc IConsumptionRecord
     function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
         return consumptionRecords[crHash];
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function setCRARegistry(address _craRegistry) external onlyOwner {
-        craRegistry = ICRARegistry(_craRegistry);
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function getCRARegistry() external view returns (address) {
-        return address(craRegistry);
     }
 
     /// @inheritdoc IConsumptionRecord

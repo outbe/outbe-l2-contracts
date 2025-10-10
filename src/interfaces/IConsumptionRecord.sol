@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 /// @title IConsumptionRecord Interface
 /// @notice Interface for storing and managing consumption record hashes with metadata
@@ -38,9 +38,6 @@ interface IConsumptionRecord {
 
     /// @notice Thrown when trying to submit a record that already exists
     error AlreadyExists();
-
-    /// @notice Thrown when a non-active CRA tries to submit a record
-    error CRANotActive();
 
     /// @notice Thrown when an invalid hash (zero hash) is provided
     error InvalidHash();
@@ -92,15 +89,6 @@ interface IConsumptionRecord {
     /// @param crHash The hash of the record
     /// @return CrRecord struct with complete record data
     function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory);
-
-    /// @notice Set the CRA Registry contract address
-    /// @dev Only callable by contract owner
-    /// @param _craRegistry The address of the CRA Registry contract
-    function setCRARegistry(address _craRegistry) external;
-
-    /// @notice Get the current CRA Registry contract address
-    /// @return The address of the CRA Registry contract
-    function getCRARegistry() external view returns (address);
 
     // TODO optimize this call to reduce a number of tokens returned and pagination,
     //      See for example: https://docs.openzeppelin.com/contracts/4.x/api/token/ERC721#ierc721enumerable-2

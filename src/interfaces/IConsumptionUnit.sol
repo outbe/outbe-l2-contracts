@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 /// @title IConsumptionUnit Interface
 /// @notice Interface for storing and managing consumption unit records with settlement and nominal amounts
@@ -34,7 +34,6 @@ interface IConsumptionUnit {
 
     error AlreadyExists();
     error ConsumptionRecordAlreadyExists();
-    error CRANotActive();
     error InvalidHash();
     error InvalidOwner();
     error EmptyBatch();
@@ -90,15 +89,6 @@ interface IConsumptionUnit {
     /// @param cuHash The CU hash to retrieve
     /// @return ConsumptionUnitEntity struct with complete record data
     function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory);
-
-    /// @notice Set the CRA Registry contract address
-    /// @dev Only callable by contract owner
-    /// @param _craRegistry Address of the CRA Registry contract
-    function setCRARegistry(address _craRegistry) external;
-
-    /// @notice Get the current CRA Registry contract address
-    /// @return Address of the CRA Registry contract
-    function getCRARegistry() external view returns (address);
 
     /// @notice Get all consumption unit hashes owned by a specific address
     /// @param owner The owner address

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 /// @title ITributeDraft Interface
 /// @notice Aggregates multiple Consumption Units into a single Tribute Draft

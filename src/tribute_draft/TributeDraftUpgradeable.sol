@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 import {ITributeDraft} from "../interfaces/ITributeDraft.sol";
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";

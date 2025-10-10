@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
-import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {CRAAware} from "../utils/CRAAware.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
-contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch
@@ -22,19 +22,10 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
     mapping(bytes32 => bool) public consumptionRecordHashes;
     /// @dev Owner address to CU ids owned by the address
     mapping(address => bytes32[]) public ownerRecords;
-    /// @dev CRA Registry reference used to validate CRA activity
-    ICRARegistry public craRegistry;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
-    }
-
-    /// @notice Restricts function to active CRA addresses
-    /// @dev Uses CRARegistry to verify msg.sender status
-    modifier onlyActiveCra() {
-        if (!craRegistry.isCRAActive(msg.sender)) revert CRANotActive();
-        _;
     }
 
     /// @notice Initialize the Consumption Unit contract
@@ -46,7 +37,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
-        craRegistry = ICRARegistry(_craRegistry);
+        __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
     }
 
@@ -120,7 +111,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         uint128 settlementBaseAmount,
         uint128 settlementAttoAmount,
         bytes32[] memory hashes
-    ) external onlyActiveCra {
+    ) external onlyActiveCRA {
         _addRecord(
             cuHash,
             recordOwner,
@@ -142,7 +133,7 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
         uint256[] memory settlementAmountsBase,
         uint256[] memory settlementAmountsAtto,
         bytes32[][] memory crHashesArray
-    ) external onlyActiveCra {
+    ) external onlyActiveCRA {
         uint256 batchSize = cuHashes.length;
         if (batchSize == 0) revert EmptyBatch();
         if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
@@ -176,14 +167,6 @@ contract ConsumptionUnitUpgradeable is IConsumptionUnit, Initializable, OwnableU
 
     function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory) {
         return consumptionUnits[cuHash];
-    }
-
-    function setCRARegistry(address _craRegistry) external onlyOwner {
-        craRegistry = ICRARegistry(_craRegistry);
-    }
-
-    function getCRARegistry() external view returns (address) {
-        return address(craRegistry);
     }
 
     function getConsumptionUnitsByOwner(address _owner) external view returns (bytes32[] memory) {
