@@ -33,8 +33,7 @@ contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable,
         require(_consumptionUnit != address(0), "CU addr zero");
         __Ownable_init();
         __UUPSUpgradeable_init();
-        consumptionUnit = IConsumptionUnit(_consumptionUnit);
-        // owner set to deployer by default
+        _setConsumptionUnitAddress(_consumptionUnit);
         _transferOwnership(msg.sender);
         _totalSupply = 0;
     }
@@ -117,7 +116,11 @@ contract TributeDraftUpgradeable is ITributeDraft, ISoulBoundNFT, Initializable,
         return address(consumptionUnit);
     }
 
-    function setConsumptionUnitAddress(address _consumptionUnitAddress) external {
+    function setConsumptionUnitAddress(address _consumptionUnitAddress) external onlyOwner {
+        _setConsumptionUnitAddress(_consumptionUnitAddress);
+    }
+
+    function _setConsumptionUnitAddress(address _consumptionUnitAddress) private {
         consumptionUnit = IConsumptionUnit(_consumptionUnitAddress);
     }
 
