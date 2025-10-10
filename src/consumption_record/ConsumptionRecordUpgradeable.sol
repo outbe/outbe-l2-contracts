@@ -4,13 +4,14 @@ pragma solidity ^0.8.27;
 import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionRecord {
+contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionRecord, ISoulBoundNFT {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
 
@@ -22,6 +23,9 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
 
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
+
+    /// @dev Total number of records (soulbound tokens) tracked by this contract
+    uint256 private _totalSupply;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -44,6 +48,7 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
         __UUPSUpgradeable_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
+        _totalSupply = 0;
     }
 
     /// @notice Internal function to add a single consumption record
@@ -82,6 +87,9 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
 
         // Add record hash to owner's list
         ownerRecords[recordOwner].push(crHash);
+
+        // Increment total supply
+        _totalSupply += 1;
 
         // Emit submission event
         emit Submitted(crHash, msg.sender, timestamp);
@@ -137,6 +145,12 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
     /// @inheritdoc IConsumptionRecord
     function getConsumptionRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
         return ownerRecords[_owner];
+    }
+
+    /// @notice Count NFTs tracked by this contract
+    /// @return A count of valid NFTs tracked by this contract
+    function totalSupply() external view returns (uint256) {
+        return _totalSupply;
     }
 
     /// @notice Get the current owner of the contract
