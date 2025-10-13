@@ -48,12 +48,13 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         _totalRecords = 0;
     }
 
-    function _validateAmounts(uint256 baseAmt, uint256 attoAmt) internal pure {
+    function _validateAmounts(uint64 baseAmt, uint128 attoAmt) internal pure {
         if (baseAmt == 0 && attoAmt == 0) revert InvalidAmount();
         if (attoAmt >= 1e18) revert InvalidAmount();
     }
 
     function _validateCurrency(uint16 code) internal pure {
+        // TODO add supported codes
         if (code == 0) revert InvalidSettlementCurrency();
     }
 
@@ -62,8 +63,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     /// @param recordOwner Owner address of the CU (must be non-zero)
     /// @param settlementCurrency ISO-4217 numeric currency code (must be non-zero)
     /// @param worldwideDay Worldwide day in ISO-8601 compact form, e.g. 20250923
-    /// @param settlementBaseAmount Natural units amount (can be zero only if atto amount is non-zero)
-    /// @param settlementAttoAmount Fractional units amount in 1e-18 units (must be < 1e18)
+    /// @param settlementAmountBase Natural units amount (can be zero only if atto amount is non-zero)
+    /// @param settlementAmountAtto Fractional units amount in 1e-18 units (must be < 1e18)
     /// @param crHashes Linked consumption record hashes (each must be unique globally)
     /// @param timestamp Submission timestamp to record
     function _addRecord(
@@ -71,8 +72,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         address recordOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
-        uint256 settlementBaseAmount,
-        uint256 settlementAttoAmount,
+        uint64 settlementAmountBase,
+        uint128 settlementAmountAtto,
         bytes32[] memory crHashes,
         uint256 timestamp
     ) internal {
@@ -81,7 +82,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         if (isExists(cuHash)) revert AlreadyExists();
 
         _validateCurrency(settlementCurrency);
-        _validateAmounts(settlementBaseAmount, settlementAttoAmount);
+        _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
         // check CR hashes uniqueness
         for (uint256 i = 0; i < crHashes.length; i++) {
@@ -98,8 +99,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
             worldwideDay: worldwideDay,
-            settlementAmountBase: settlementBaseAmount,
-            settlementAmountAtto: settlementAttoAmount,
+            settlementAmountBase: settlementAmountBase,
+            settlementAmountAtto: settlementAmountAtto,
             crHashes: crHashes,
             submittedAt: timestamp
         });
@@ -118,8 +119,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         address recordOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
-        uint128 settlementBaseAmount,
-        uint128 settlementAttoAmount,
+        uint64 settlementAmountBase,
+        uint128 settlementAmountAtto,
         bytes32[] memory hashes
     ) external onlyActiveCRA {
         _addRecord(
@@ -127,8 +128,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
             recordOwner,
             settlementCurrency,
             worldwideDay,
-            settlementBaseAmount,
-            settlementAttoAmount,
+            settlementAmountBase,
+            settlementAmountAtto,
             hashes,
             block.timestamp
         );
@@ -140,8 +141,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         address[] memory owners,
         uint32[] memory worldwideDays,
         uint16[] memory settlementCurrencies,
-        uint256[] memory settlementAmountsBase,
-        uint256[] memory settlementAmountsAtto,
+        uint64[] memory settlementAmountsBase,
+        uint128[] memory settlementAmountsAtto,
         bytes32[][] memory crHashesArray
     ) external onlyActiveCRA {
         uint256 batchSize = cuHashes.length;

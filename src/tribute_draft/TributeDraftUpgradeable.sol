@@ -46,7 +46,7 @@ contract TributeDraftUpgradeable is
     }
 
     function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
-        uint256 n = cuHashes.length;
+        uint32 n = uint32(cuHashes.length);
         if (n == 0) revert EmptyArray();
 
         for (uint256 i = 0; i < n; i++) {
@@ -68,10 +68,10 @@ contract TributeDraftUpgradeable is
         address owner_ = first.owner;
         uint16 currency_ = first.settlementCurrency;
         uint32 worldwideDay_ = first.worldwideDay;
-        uint256 baseAmt = first.settlementAmountBase;
-        uint256 attoAmt = first.settlementAmountAtto;
+        uint64 baseAmt = first.settlementAmountBase;
+        uint128 attoAmt = first.settlementAmountAtto;
 
-        for (uint256 i = 1; i < n; i++) {
+        for (uint32 i = 1; i < n; i++) {
             IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getConsumptionUnit(cuHashes[i]);
             if (rec.submittedBy == address(0)) revert NotFound(cuHashes[i]);
             if (rec.owner != owner_) revert NotSameOwner(cuHashes[i]);
@@ -86,10 +86,10 @@ contract TributeDraftUpgradeable is
 
             // aggregate amount: base + atto with carry (checked arithmetic)
             baseAmt += rec.settlementAmountBase;
-            uint256 attoSum = attoAmt + rec.settlementAmountAtto;
+            uint128 attoSum = attoAmt + rec.settlementAmountAtto;
             if (attoSum >= 1e18) {
-                baseAmt += uint256(attoSum / 1e18);
-                attoAmt = uint256(attoSum % 1e18);
+                baseAmt += uint64(attoSum / 1e18);
+                attoAmt = uint128(attoSum % 1e18);
             } else {
                 attoAmt = attoSum;
             }
