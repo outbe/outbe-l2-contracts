@@ -8,6 +8,7 @@ import {ERC165Upgradeable} from
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
+import {ERC721Enumerable} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
@@ -170,8 +171,9 @@ contract ConsumptionRecordUpgradeable is
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        // 0x780e9d63 is the ERC-721 Enumerable interfaceId used to signal totalSupply support
-        return interfaceId == 0x780e9d63 || super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId);
+        // TODO add supported interfaces
+        //      interfaceId == 0x780e9d63 // ERC721Enumerable
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

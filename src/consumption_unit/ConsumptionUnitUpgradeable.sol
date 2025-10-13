@@ -194,7 +194,9 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == 0x780e9d63 || super.supportsInterface(interfaceId);
+        return super.supportsInterface(interfaceId);
+        // TODO add supported interfaces
+        //      interfaceId == 0x780e9d63 // ERC721Enumerable
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
