@@ -10,17 +10,17 @@ interface IConsumptionRecord {
     /// @notice Record information for a consumption record
     /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
     struct ConsumptionRecordEntity {
-        /// @dev ID of consumption record
+        /// @notice ID of consumption record
         bytes32 consumptionRecordId;
-        /// @dev Address of the CRA that submitted this record
+        /// @notice Address of the CRA that submitted this record
         address submittedBy;
-        /// @dev Timestamp when the record was submitted
+        /// @notice Timestamp when the record was submitted
         uint256 submittedAt;
-        /// @dev Address of the owner of this consumption record
+        /// @notice Address of the owner of this consumption record
         address owner;
-        /// @dev Array of metadata keys
+        /// @notice Array of metadata keys
         string[] metadataKeys;
-        /// @dev Array of metadata values (matches keys array)
+        /// @notice Array of metadata values (matches keys array)
         bytes32[] metadataValues;
     }
 

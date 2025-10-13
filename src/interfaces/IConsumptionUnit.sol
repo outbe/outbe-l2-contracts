@@ -9,7 +9,7 @@ pragma solidity ^0.8.27;
 interface IConsumptionUnit {
     /// @notice Record information for a consumption unit
     struct ConsumptionUnitEntity {
-        /// @dev Unique ID of the consumption unit
+        /// @notice Unique ID of the consumption unit
         bytes32 consumptionUnitId;
         /// @notice Owner of the consumption unit
         address owner;
@@ -17,12 +17,12 @@ interface IConsumptionUnit {
         address submittedBy;
         /// @notice Timestamp when the consumption unit was submitted
         uint256 submittedAt;
-        /// @notice Worldwide day in ISO-8601 compact format (e.g., 20250923)
+        /// @notice Worldwide day in compact format (e.g., 20250923)
         uint32 worldwideDay;
-        /// @notice Amount expressed in natural units (base currency units). Must be >= 0.
-        uint256 settlementAmountBase;
+        /// @notice Amount expressed in natural units (base currency units).
+        uint64 settlementAmountBase;
         /// @notice Amount expressed in fractional units (atto, 1e-18). Must satisfy 0 <= amount < 1e18.
-        uint256 settlementAmountAtto;
+        uint128 settlementAmountAtto;
         /// @notice Numeric currency code using ISO 4217
         uint16 settlementCurrency;
         /// @notice Hashes identifying linked consumption records (unique per record)
@@ -56,7 +56,7 @@ interface IConsumptionUnit {
         address owner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
-        uint128 settlementAmountBase,
+        uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
         bytes32[] memory hashes
     ) external;
@@ -75,8 +75,8 @@ interface IConsumptionUnit {
         address[] memory owners,
         uint32[] memory worldwideDays,
         uint16[] memory settlementCurrencies,
-        uint256[] memory settlementAmountsBase,
-        uint256[] memory settlementAmountsAtto,
+        uint64[] memory settlementAmountsBase,
+        uint128[] memory settlementAmountsAtto,
         bytes32[][] memory crHashesArray
     ) external;
 
