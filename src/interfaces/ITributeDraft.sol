@@ -27,7 +27,7 @@ interface ITributeDraft {
     error EmptyArray();
     error AlreadyExists();
     error NotFound(bytes32 cuHash);
-    error NotSameOwner();
+    error NotSameOwner(bytes32 cuHash);
     error NotSettlementCurrencyCurrency();
     error NotSameWorldwideDay();
 

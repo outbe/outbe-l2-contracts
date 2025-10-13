@@ -3,14 +3,24 @@ pragma solidity ^0.8.27;
 
 import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ERC165Upgradeable} from
+    "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
+import {ERC721Enumerable} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionRecord {
+contract ConsumptionRecordUpgradeable is
+    UUPSUpgradeable,
+    CRAAware,
+    IConsumptionRecord,
+    ISoulBoundNFT,
+    ERC165Upgradeable
+{
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
 
@@ -22,6 +32,9 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
 
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
+
+    /// @dev Total number of records tracked by this contract
+    uint256 private _totalRecords;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -42,8 +55,10 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
+        __ERC165_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
+        _totalRecords = 0;
     }
 
     /// @notice Internal function to add a single consumption record
@@ -82,6 +97,9 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
 
         // Add record hash to owner's list
         ownerRecords[recordOwner].push(crHash);
+
+        // Increment total supply
+        _totalRecords += 1;
 
         // Emit submission event
         emit Submitted(crHash, msg.sender, timestamp);
@@ -139,10 +157,23 @@ contract ConsumptionRecordUpgradeable is UUPSUpgradeable, CRAAware, IConsumption
         return ownerRecords[_owner];
     }
 
+    /// @notice Count NFTs tracked by this contract
+    /// @return A count of valid NFTs tracked by this contract
+    function totalSupply() external view returns (uint256) {
+        return _totalRecords;
+    }
+
     /// @notice Get the current owner of the contract
     /// @return The address of the contract owner
     function getOwner() external view returns (address) {
         return owner();
+    }
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(interfaceId);
+        // TODO add supported interfaces
+        //      interfaceId == 0x780e9d63 // ERC721Enumerable
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract
