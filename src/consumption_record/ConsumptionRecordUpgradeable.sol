@@ -34,7 +34,7 @@ contract ConsumptionRecordUpgradeable is
     mapping(address => bytes32[]) public ownerRecords;
 
     /// @dev Total number of records tracked by this contract
-    uint256 private _totalSupply;
+    uint256 private _totalRecords;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -58,7 +58,7 @@ contract ConsumptionRecordUpgradeable is
         __ERC165_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
-        _totalSupply = 0;
+        _totalRecords = 0;
     }
 
     /// @notice Internal function to add a single consumption record
@@ -99,7 +99,7 @@ contract ConsumptionRecordUpgradeable is
         ownerRecords[recordOwner].push(crHash);
 
         // Increment total supply
-        _totalSupply += 1;
+        _totalRecords += 1;
 
         // Emit submission event
         emit Submitted(crHash, msg.sender, timestamp);
@@ -160,7 +160,7 @@ contract ConsumptionRecordUpgradeable is
     /// @notice Count NFTs tracked by this contract
     /// @return A count of valid NFTs tracked by this contract
     function totalSupply() external view returns (uint256) {
-        return _totalSupply;
+        return _totalRecords;
     }
 
     /// @notice Get the current owner of the contract

@@ -26,7 +26,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     mapping(address => bytes32[]) public ownerRecords;
 
     /// @dev Total number of records tracked by this contract
-    uint256 private _totalSupply;
+    uint256 private _totalRecords;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -45,7 +45,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         __ERC165_init();
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
-        _totalSupply = 0;
+        _totalRecords = 0;
     }
 
     function _validateAmounts(uint256 baseAmt, uint256 attoAmt) internal pure {
@@ -107,7 +107,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         ownerRecords[recordOwner].push(cuHash);
 
         // Increment total supply for each new CU record
-        _totalSupply += 1;
+        _totalRecords += 1;
 
         emit Submitted(cuHash, msg.sender, timestamp);
     }
@@ -189,7 +189,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
 
     /// @inheritdoc ISoulBoundNFT
     function totalSupply() external view returns (uint256) {
-        return _totalSupply;
+        return _totalRecords;
     }
 
     /// @inheritdoc ERC165Upgradeable

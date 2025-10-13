@@ -28,7 +28,7 @@ contract TributeDraftUpgradeable is
     mapping(bytes32 => bool) public consumptionUnitHashes;
 
     /// @dev Total number of records tracked by this contract
-    uint256 private _totalSupply;
+    uint256 private _totalRecords;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -42,7 +42,7 @@ contract TributeDraftUpgradeable is
         __ERC165_init();
         _setConsumptionUnitAddress(_consumptionUnit);
         _transferOwnership(msg.sender);
-        _totalSupply = 0;
+        _totalRecords = 0;
     }
 
     function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
@@ -110,7 +110,7 @@ contract TributeDraftUpgradeable is
         });
 
         // Increment total supply for each new tribute draft
-        _totalSupply += 1;
+        _totalRecords += 1;
 
         emit Submitted(tdId, owner_, msg.sender, n, block.timestamp);
     }
@@ -133,7 +133,7 @@ contract TributeDraftUpgradeable is
 
     /// @inheritdoc ISoulBoundNFT
     function totalSupply() external view returns (uint256) {
-        return _totalSupply;
+        return _totalRecords;
     }
 
     /// @inheritdoc ERC165Upgradeable
