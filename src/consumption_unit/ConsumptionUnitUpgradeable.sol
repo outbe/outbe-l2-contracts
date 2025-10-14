@@ -94,7 +94,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         // Ensure CR contract is configured
         if (address(consumptionRecord) == address(0)) revert InvalidConsumptionRecords();
         for (uint256 i = 0; i < n; i++) {
-            bytes32 memory _crHash = crHashes[i];
+            bytes32 _crHash = crHashes[i];
             // verify CR exists in ConsumptionRecord contract
             if (!consumptionRecord.isExists(_crHash)) revert InvalidConsumptionRecords();
 
