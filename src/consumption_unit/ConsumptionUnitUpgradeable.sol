@@ -8,11 +8,14 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
+import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
 contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit, ISoulBoundNFT, ERC165Upgradeable {
+    /// @notice Reference to the Consumption Record contract
+    IConsumptionRecord public consumptionRecord;
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch
@@ -37,8 +40,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     /// @dev Sets CRA registry reference and transfers ownership to provided owner
     /// @param _craRegistry Address of CRARegistry contract (must not be zero)
     /// @param _owner Address to set as contract owner (must not be zero)
-    function initialize(address _craRegistry, address _owner) public initializer {
-        require(_craRegistry != address(0), "CRA Registry cannot be zero address");
+    function initialize(address _craRegistry, address _owner, address _consumptionRecord) public initializer {
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
@@ -46,6 +48,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
         _totalRecords = 0;
+        _setConsumptionRecordAddress(_consumptionRecord);
     }
 
     function _validateAmounts(uint64 baseAmt, uint128 attoAmt) internal pure {
@@ -84,9 +87,11 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         _validateCurrency(settlementCurrency);
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
-        // check CR hashes uniqueness
+        // check CR hashes uniqueness and existence in CR contract
         uint256 n = crHashes.length;
         if (n == 0) revert InvalidConsumptionRecords();
+        // Ensure CR contract is configured
+        if (address(consumptionRecord) == address(0)) revert InvalidConsumptionRecords();
         for (uint256 i = 0; i < n; i++) {
             for (uint256 j = i + 1; j < n; j++) {
                 if (crHashes[i] == crHashes[j]) revert ConsumptionRecordAlreadyExists();
@@ -94,6 +99,8 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
             if (consumptionRecordHashes[crHashes[i]]) {
                 revert ConsumptionRecordAlreadyExists();
             }
+            // verify CR exists in ConsumptionRecord contract
+            if (!consumptionRecord.isExists(crHashes[i])) revert InvalidConsumptionRecords();
 
             consumptionRecordHashes[crHashes[i]] = true;
         }
@@ -191,6 +198,19 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
 
     function getOwner() external view returns (address) {
         return owner();
+    }
+
+    function getConsumptionRecordAddress() external view returns (address) {
+        return address(consumptionRecord);
+    }
+
+    function setConsumptionRecordAddress(address _consumptionRecord) external onlyOwner {
+        _setConsumptionRecordAddress(_consumptionRecord);
+    }
+
+    function _setConsumptionRecordAddress(address _consumptionRecord) private  {
+        require(_consumptionRecord != address(0), "CR addr zero");
+        consumptionRecord = IConsumptionRecord(_consumptionRecord);
     }
 
     /// @inheritdoc ISoulBoundNFT
