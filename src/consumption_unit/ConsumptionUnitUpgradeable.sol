@@ -209,7 +209,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         _setConsumptionRecordAddress(_consumptionRecord);
     }
 
-    function _setConsumptionRecordAddress(address _consumptionRecord) private  {
+    function _setConsumptionRecordAddress(address _consumptionRecord) private {
         require(_consumptionRecord != address(0), "CR addr zero");
         consumptionRecord = IConsumptionRecord(_consumptionRecord);
     }
