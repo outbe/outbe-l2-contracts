@@ -40,6 +40,7 @@ interface IConsumptionUnit {
     error BatchSizeTooLarge();
     error InvalidSettlementCurrency();
     error InvalidAmount();
+    error InvalidConsumptionRecords();
     error ArrayLengthMismatch();
 
     /// @notice Submit a single consumption unit record

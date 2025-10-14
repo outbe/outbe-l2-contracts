@@ -2,16 +2,17 @@
 pragma solidity ^0.8.27;
 
 import "./helpers.t.sol";
-import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {ConsumptionUnitUpgradeable} from "src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
 import {Test} from "forge-std/Test.sol";
 
-contract ConsumptionRecordUpgradeableInitializeTest is Test {
-    ConsumptionRecordUpgradeable cr;
+contract ConsumptionUnitUpgradeableInitializeTest is Test {
+    ConsumptionUnitUpgradeable cu;
     MockCRARegistry registry;
 
     address owner = address(0xABCD);
+    address cr = address(0x123ff);
 
     function setUp() public {
         registry = new MockCRARegistry();
@@ -19,49 +20,49 @@ contract ConsumptionRecordUpgradeableInitializeTest is Test {
 
     function _deployInitializedProxy(address craRegistry, address newOwner)
         internal
-        returns (ConsumptionRecordUpgradeable)
+        returns (ConsumptionUnitUpgradeable)
     {
-        ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
+        ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         bytes memory initData =
-            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, craRegistry, newOwner);
+            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, craRegistry, newOwner, cr);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
-        return ConsumptionRecordUpgradeable(address(proxy));
+        return ConsumptionUnitUpgradeable(address(proxy));
     }
 
     function test_initialize_setsOwner_andCRARegistry() public {
-        cr = _deployInitializedProxy(address(registry), owner);
+        cu = _deployInitializedProxy(address(registry), owner);
 
         // owner() is exposed via getOwner() helper
-        assertEq(cr.getOwner(), owner);
+        assertEq(cu.getOwner(), owner);
         // CRA registry address is exposed by ICRAAware.getCRARegistry
-        assertEq(ICRAAware(address(cr)).getCRARegistry(), address(registry));
+        assertEq(ICRAAware(address(cu)).getCRARegistry(), address(registry));
     }
 
     function test_initialize_reverts_when_craRegistry_zero() public {
-        ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
+        ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         bytes memory initData =
-            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(0), owner);
-        vm.expectRevert(bytes("CRA Registry cannot be zero address"));
+            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, address(0), owner, cr);
+        vm.expectRevert(bytes("CRARegistry address is zero"));
         new ERC1967Proxy(address(impl), initData);
     }
 
     function test_initialize_reverts_when_owner_zero() public {
-        ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
+        ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         bytes memory initData =
-            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), address(0));
+            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, address(registry), address(0), cr);
         vm.expectRevert(bytes("Owner cannot be zero address"));
         new ERC1967Proxy(address(impl), initData);
     }
 
     function test_initialize_reverts_when_called_twice_on_proxy() public {
-        cr = _deployInitializedProxy(address(registry), owner);
+        cu = _deployInitializedProxy(address(registry), owner);
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        cr.initialize(address(registry), owner);
+        cu.initialize(address(registry), owner, cr);
     }
 
     function test_initialize_reverts_on_implementation_due_to_disabled_initializers() public {
-        ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
+        ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        impl.initialize(address(registry), owner);
+        impl.initialize(address(registry), owner, cr);
     }
 }
