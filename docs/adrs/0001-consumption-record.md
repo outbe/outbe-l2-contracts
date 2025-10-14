@@ -1,4 +1,4 @@
-# [0006] Consumption Record on L2
+# [0001] Consumption Record on L2
 
 # Status
 
