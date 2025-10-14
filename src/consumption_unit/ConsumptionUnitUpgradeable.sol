@@ -85,13 +85,18 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
         // check CR hashes uniqueness
-        for (uint256 i = 0; i < crHashes.length; i++) {
+        uint256 n = crHashes.length;
+        if (n == 0) revert InvalidConsumptionRecords();
+        for (uint256 i = 0; i < n; i++) {
+            for (uint256 j = i + 1; j < n; j++) {
+                if (crHashes[i] == crHashes[j]) revert ConsumptionRecordAlreadyExists();
+            }
             if (consumptionRecordHashes[crHashes[i]]) {
                 revert ConsumptionRecordAlreadyExists();
             }
+
             consumptionRecordHashes[crHashes[i]] = true;
         }
-        // TODO add validation that such CR entity exists and owner is correct
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
             consumptionUnitId: cuHash,
