@@ -24,7 +24,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     /// @dev Mapping CU hash to CU entity
     mapping(bytes32 => ConsumptionUnitEntity) public consumptionUnits;
     /// @dev Tracks uniqueness of linked consumption record (CR) hashes across all CU submissions
-    mapping(bytes32 => bool) public consumptionRecordHashes;
+    mapping(bytes32 => bool) public usedConsumptionRecordHashes;
     /// @dev Owner address to CU ids owned by the address
     mapping(address => bytes32[]) public ownerRecords;
 
@@ -90,20 +90,18 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         // check CR hashes uniqueness and existence in CR contract
         // TODO add limitation for crHashes size
         uint256 n = crHashes.length;
-        if (n == 0) revert InvalidConsumptionRecords();
+        if (n == 0 || n > 100) revert InvalidConsumptionRecords();
         // Ensure CR contract is configured
         if (address(consumptionRecord) == address(0)) revert InvalidConsumptionRecords();
         for (uint256 i = 0; i < n; i++) {
-            for (uint256 j = i + 1; j < n; j++) {
-                if (crHashes[i] == crHashes[j]) revert ConsumptionRecordAlreadyExists();
-            }
-            if (consumptionRecordHashes[crHashes[i]]) {
+            bytes32 memory _crHash = crHashes[i];
+            // verify CR exists in ConsumptionRecord contract
+            if (!consumptionRecord.isExists(_crHash)) revert InvalidConsumptionRecords();
+
+            if (usedConsumptionRecordHashes[_crHash]) {
                 revert ConsumptionRecordAlreadyExists();
             }
-            // verify CR exists in ConsumptionRecord contract
-            if (!consumptionRecord.isExists(crHashes[i])) revert InvalidConsumptionRecords();
-
-            consumptionRecordHashes[crHashes[i]] = true;
+            usedConsumptionRecordHashes[_crHash] = true;
         }
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
