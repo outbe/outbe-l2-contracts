@@ -88,6 +88,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
         // check CR hashes uniqueness and existence in CR contract
+        // TODO add limitation for crHashes size
         uint256 n = crHashes.length;
         if (n == 0) revert InvalidConsumptionRecords();
         // Ensure CR contract is configured
