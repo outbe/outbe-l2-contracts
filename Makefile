@@ -43,19 +43,13 @@ clean-all: clean ## Clean all build artifacts and caches
 	rm -rf ./build
 	rm -rf ./cache
 
-## Anvil Local Deployment
-.PHONY: anvil
-anvil: ## Start local Anvil node
-	anvil
-
-## Deploy contracts to local Anvil node
+## Deployment
 .PHONY: deploy-local
-deploy-local:
+deploy-local:  ## Deploy contracts to local Anvil node
 	forge script script/DeployUpgradeable.s.sol:DeployUpgradeable \
 		--rpc-url http://127.0.0.1:8545 \
 		--broadcast \
 		-vvvv
-
 
 
 GREEN  := $(shell tput -Txterm setaf 2)
