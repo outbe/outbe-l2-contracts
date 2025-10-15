@@ -1,5 +1,7 @@
 [profile.default]
 src = "src"
+test = "test"
+script = "script"
 out = "out"
 libs = ["lib"]
 solc = "0.8.27"
@@ -14,8 +16,5 @@ remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
-
-[profile.lint]
-exclude_lints = ["mixed-case-function", "pascal-case-struct"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

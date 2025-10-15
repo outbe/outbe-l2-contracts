@@ -6,6 +6,9 @@ import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/cont
 import {
     ERC165Upgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {
+    PausableUpgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
@@ -18,6 +21,7 @@ import {
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
 contract ConsumptionRecordUpgradeable is
+    PausableUpgradeable,
     UUPSUpgradeable,
     CRAAware,
     IConsumptionRecord,
@@ -44,11 +48,6 @@ contract ConsumptionRecordUpgradeable is
         _disableInitializers();
     }
 
-    modifier validCrHash(bytes32 crHash) {
-        if (crHash == bytes32(0)) revert InvalidHash();
-        _;
-    }
-
     /// @notice Initialize the consumption record contract
     /// @dev Sets the CRA registry address and specified owner
     /// @param _craRegistry Address of the CRA Registry contract
@@ -57,6 +56,7 @@ contract ConsumptionRecordUpgradeable is
         require(_craRegistry != address(0), "CRA Registry cannot be zero address");
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
+        __Pausable_init();
         __UUPSUpgradeable_init();
         __ERC165_init();
         __CRAAware_init(_craRegistry);
@@ -112,6 +112,7 @@ contract ConsumptionRecordUpgradeable is
     function submit(bytes32 crHash, address recordOwner, string[] memory keys, bytes32[] memory values)
         external
         onlyActiveCRA
+        whenNotPaused
     {
         _addEntity(crHash, recordOwner, keys, values, block.timestamp);
     }
@@ -122,7 +123,7 @@ contract ConsumptionRecordUpgradeable is
         address[] memory owners,
         string[][] memory keysArray,
         bytes32[][] memory valuesArray
-    ) external onlyActiveCRA {
+    ) external onlyActiveCRA whenNotPaused {
         uint256 batchSize = crHashes.length;
 
         // Validate batch size
@@ -182,4 +183,14 @@ contract ConsumptionRecordUpgradeable is
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract
     /// @param newImplementation Address of the new implementation
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    /// @notice Pause contract actions
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause contract actions
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 }

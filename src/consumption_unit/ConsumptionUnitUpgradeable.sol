@@ -7,13 +7,21 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
 /// @dev Modeled after ConsumptionRecordUpgradeable with adapted ConsumptionUnitEntity structure
-contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUnit, ISoulBoundNFT, ERC165Upgradeable {
+contract ConsumptionUnitUpgradeable is
+    PausableUpgradeable,
+    UUPSUpgradeable,
+    CRAAware,
+    IConsumptionUnit,
+    ISoulBoundNFT,
+    ERC165Upgradeable
+{
     /// @notice Reference to the Consumption Record contract
     IConsumptionRecord public consumptionRecord;
     /// @notice Contract version
@@ -43,6 +51,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     function initialize(address _craRegistry, address _owner, address _consumptionRecord) public initializer {
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
+        __Pausable_init();
         __UUPSUpgradeable_init();
         __ERC165_init();
         __CRAAware_init(_craRegistry);
@@ -133,7 +142,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
         bytes32[] memory hashes
-    ) external onlyActiveCRA {
+    ) external onlyActiveCRA whenNotPaused {
         _addRecord(
             cuHash,
             recordOwner,
@@ -155,7 +164,7 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
         uint64[] memory settlementAmountsBase,
         uint128[] memory settlementAmountsAtto,
         bytes32[][] memory crHashesArray
-    ) external onlyActiveCRA {
+    ) external onlyActiveCRA whenNotPaused {
         uint256 batchSize = cuHashes.length;
         if (batchSize == 0) revert EmptyBatch();
         if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
@@ -225,4 +234,14 @@ contract ConsumptionUnitUpgradeable is UUPSUpgradeable, CRAAware, IConsumptionUn
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    /// @notice Pause contract actions
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause contract actions
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 }

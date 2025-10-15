@@ -8,6 +8,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 /// @title TributeDraftUpgradeable
 /// @notice Any user can mint a Tribute Draft by aggregating multiple Consumption Units
@@ -15,6 +16,7 @@ contract TributeDraftUpgradeable is
     ITributeDraft,
     ISoulBoundNFT,
     Initializable,
+    PausableUpgradeable,
     OwnableUpgradeable,
     UUPSUpgradeable,
     ERC165Upgradeable
@@ -38,6 +40,7 @@ contract TributeDraftUpgradeable is
     function initialize(address _consumptionUnit) public initializer {
         require(_consumptionUnit != address(0), "CU addr zero");
         __Ownable_init();
+        __Pausable_init();
         __UUPSUpgradeable_init();
         __ERC165_init();
         _setConsumptionUnitAddress(_consumptionUnit);
@@ -45,7 +48,7 @@ contract TributeDraftUpgradeable is
         _totalRecords = 0;
     }
 
-    function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
+    function submit(bytes32[] calldata cuHashes) external whenNotPaused returns (bytes32 tdId) {
         uint32 n = uint32(cuHashes.length);
         if (n == 0) revert EmptyArray();
 
@@ -144,4 +147,14 @@ contract TributeDraftUpgradeable is
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    /// @notice Pause contract actions
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    /// @notice Unpause contract actions
+    function unpause() external onlyOwner {
+        _unpause();
+    }
 }

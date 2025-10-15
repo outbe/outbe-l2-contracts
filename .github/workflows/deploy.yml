@@ -20,6 +20,8 @@ jobs:
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: 'v1.4.1'
 
       - name: Run Forge build
         run: echo ${{ vars.RPC_URL }}
