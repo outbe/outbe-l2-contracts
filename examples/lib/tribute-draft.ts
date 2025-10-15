@@ -35,14 +35,14 @@ const TRIBUTE_DRAFT_ABI = [
   'function transferOwnership(address newOwner) external',
   
   // Events
-  'event Submited(bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256 timestamp)',
+  'event Submitted(bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint32 cuCount, uint256 timestamp)',
   'event Upgraded(address indexed implementation)',
 
   // Errors
   'error EmptyArray()',
   'error AlreadyExists()',
   'error NotFound(bytes32 cuHash)',
-  'error NotSameOwner()',
+  'error NotSameOwner(bytes32 cuHash)',
   'error NotSettlementCurrencyCurrency()',
   'error NotSameWorldwideDay()'
 ];
@@ -53,10 +53,10 @@ const TRIBUTE_DRAFT_ABI = [
 export interface TributeDraftEntity {
   tributeDraftId: string;
   owner: string;
-  settlementCurrency: number;
-  worldwideDay: number;
-  settlementAmountBase: bigint;
-  settlementAmountAtto: bigint;
+  settlementCurrency: number; // uint16 from contract
+  worldwideDay: number; // uint32 from contract
+  settlementAmountBase: bigint; // uint64 from contract
+  settlementAmountAtto: bigint; // uint128 from contract
   cuHashes: string[];
   submittedAt: bigint;
 }
@@ -168,19 +168,19 @@ export class TributeDraftClient {
       const tx = await this.contract.submit(params.consumptionUnitHashes);
       const receipt = await tx.wait();
 
-      // Extract the TributeDraft ID from the Submited event
-      const submitedEvent = receipt.logs?.find((log: any) => {
+      // Extract the TributeDraft ID from the Submitted event
+      const submittedEvent = receipt.logs?.find((log: any) => {
         try {
           const parsed = this.contract.interface.parseLog(log);
-          return parsed && parsed.name === 'Submited';
+          return parsed && parsed.name === 'Submitted';
         } catch {
           return false;
         }
       });
 
       let tributeDraftId = '';
-      if (submitedEvent) {
-        const parsed = this.contract.interface.parseLog(submitedEvent);
+      if (submittedEvent) {
+        const parsed = this.contract.interface.parseLog(submittedEvent);
         tributeDraftId = parsed?.args.tdId || '';
       }
 
@@ -285,8 +285,8 @@ export class TributeDraftClient {
   /**
    * Set up event listeners
    */
-  onSubmited(callback: (tributeDraftId: string, owner: string, submittedBy: string, cuCount: bigint, timestamp: bigint) => void): void {
-    this.contract.on('Submited', (tributeDraftId, owner, submittedBy, cuCount, timestamp, event) => {
+  onSubmitted(callback: (tributeDraftId: string, owner: string, submittedBy: string, cuCount: bigint, timestamp: bigint) => void): void {
+    this.contract.on('Submitted', (tributeDraftId, owner, submittedBy, cuCount, timestamp, event) => {
       callback(tributeDraftId, owner, submittedBy, cuCount, timestamp);
     });
   }
@@ -367,7 +367,7 @@ export class TributeDraftClient {
         case 'NotFound(bytes32)':
           console.error('One or more consumption units not found');
           break;
-        case 'NotSameOwner()':
+        case 'NotSameOwner(bytes32)':
           console.error('All consumption units must be owned by the caller');
           break;
         case 'NotSettlementCurrencyCurrency()':
@@ -502,7 +502,7 @@ async function exampleUsage() {
     }
 
     // Set up event monitoring
-    tdClient.onSubmited((tributeDraftId, owner, submittedBy, cuCount, timestamp) => {
+    tdClient.onSubmitted((tributeDraftId, owner, submittedBy, cuCount, timestamp) => {
       console.log(`New tribute draft submitted:`);
       console.log(`  ID: ${tributeDraftId}`);
       console.log(`  Owner: ${owner}`);

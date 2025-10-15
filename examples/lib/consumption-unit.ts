@@ -22,10 +22,10 @@ import { ethers, Contract, Wallet, Provider } from 'ethers';
 // ConsumptionUnitUpgradeable ABI (key functions only)
 const CONSUMPTION_UNIT_ABI = [
   // Core functions
-  'function submit(bytes32 cuHash, address owner, uint16 settlementCurrency, uint32 worldwideDay, uint128 settlementAmountBase, uint128 settlementAmountAtto, bytes32[] hashes) external',
-  'function submitBatch(bytes32[] cuHashes, address[] owners, uint32[] worldwideDays, uint16[] settlementCurrencies, uint256[] settlementAmountsBase, uint256[] settlementAmountsAtto, bytes32[][] crHashesArray) external',
+  'function submit(bytes32 cuHash, address owner, uint16 settlementCurrency, uint32 worldwideDay, uint64 settlementAmountBase, uint128 settlementAmountAtto, bytes32[] hashes) external',
+  'function submitBatch(bytes32[] cuHashes, address[] owners, uint32[] worldwideDays, uint16[] settlementCurrencies, uint64[] settlementAmountsBase, uint128[] settlementAmountsAtto, bytes32[][] crHashesArray) external',
   'function isExists(bytes32 cuHash) external view returns (bool)',
-  'function getConsumptionUnit(bytes32 cuHash) external view returns (tuple(bytes32 consumptionUnitId, address owner, address submittedBy, uint256 submittedAt, uint32 worldwideDay, uint256 settlementAmountBase, uint256 settlementAmountAtto, uint16 settlementCurrency, bytes32[] crHashes))',
+  'function getConsumptionUnit(bytes32 cuHash) external view returns (tuple(bytes32 consumptionUnitId, address owner, address submittedBy, uint256 submittedAt, uint32 worldwideDay, uint64 settlementAmountBase, uint128 settlementAmountAtto, uint16 settlementCurrency, bytes32[] crHashes))',
   'function getConsumptionUnitsByOwner(address owner) external view returns (bytes32[])',
   'function setCRARegistry(address _craRegistry) external',
   'function getCRARegistry() external view returns (address)',
@@ -64,10 +64,10 @@ export interface ConsumptionUnitEntity {
   owner: string;
   submittedBy: string;
   submittedAt: bigint;
-  worldwideDay: number;
-  settlementAmountBase: bigint;
-  settlementAmountAtto: bigint;
-  settlementCurrency: number;
+  worldwideDay: number; // uint32 from contract
+  settlementAmountBase: bigint; // uint64 from contract
+  settlementAmountAtto: bigint; // uint128 from contract
+  settlementCurrency: number; // uint16 from contract
   crHashes: string[];
 }
 
@@ -77,10 +77,10 @@ export interface ConsumptionUnitEntity {
 export interface ConsumptionUnitParams {
   cuHash: string;
   owner: string;
-  settlementCurrency: number;
-  worldwideDay: number;
-  settlementAmountBase: bigint;
-  settlementAmountAtto: bigint;
+  settlementCurrency: number; // uint16 - ISO 4217 numeric code
+  worldwideDay: number; // uint32 - YYYYMMDD format
+  settlementAmountBase: bigint; // uint64 - base units
+  settlementAmountAtto: bigint; // uint128 - fractional units (< 1e18)
   consumptionRecordHashes: string[];
 }
 

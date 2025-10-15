@@ -6,14 +6,14 @@ const CONSUMPTION_RECORD_ABI = [
   "function initialize(address _craRegistry, address _owner) external",
   
   // Single submission
-  "function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external",
+  "function submit(bytes32 crHash, address owner, string[] memory keys, bytes32[] memory values) external",
   
-  // Batch submission  
-  "function submitBatch(bytes32[] memory crHashes, address[] memory owners, string[][] memory keysArray, string[][] memory valuesArray) external",
+  // Batch submission
+  "function submitBatch(bytes32[] memory crHashes, address[] memory owners, string[][] memory keysArray, bytes32[][] memory valuesArray) external",
   
   // Query functions
   "function isExists(bytes32 crHash) external view returns (bool)",
-  "function getConsumptionRecord(bytes32 crHash) external view returns (tuple(bytes32 consumptionRecordId, address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, string[] metadataValues))",
+  "function getConsumptionRecord(bytes32 crHash) external view returns (tuple(bytes32 consumptionRecordId, address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, bytes32[] metadataValues))",
   "function getConsumptionRecordsByOwner(address owner) external view returns (bytes32[] memory)",
 
   // Admin functions
@@ -40,7 +40,7 @@ export interface CRRecord {
   submittedAt: bigint;
   owner: string;
   metadataKeys: string[];
-  metadataValues: string[];
+  metadataValues: string[]; // bytes32[] from contract, converted to string[] for convenience
 }
 
 export interface ConsumptionMetadata {
@@ -82,7 +82,7 @@ export class ConsumptionRecordClient {
     metadata: ConsumptionMetadata
   ): Promise<void> {
     const keys = Object.keys(metadata);
-    const values = Object.values(metadata);
+    const values = Object.values(metadata).map(v => ConsumptionRecordClient.stringToBytes32(v));
 
     try {
       const tx = await this.contract.submit(crHash, owner, keys, values);
@@ -111,7 +111,9 @@ export class ConsumptionRecordClient {
     const crHashes = requests.map(req => req.crHash);
     const owners = requests.map(req => req.owner);
     const keysArray = requests.map(req => Object.keys(req.metadata));
-    const valuesArray = requests.map(req => Object.values(req.metadata));
+    const valuesArray = requests.map(req =>
+      Object.values(req.metadata).map(v => ConsumptionRecordClient.stringToBytes32(v))
+    );
 
     try {
       const tx = await this.contract.submitBatch(crHashes, owners, keysArray, valuesArray);
@@ -176,7 +178,7 @@ export class ConsumptionRecordClient {
       submittedAt: result.submittedAt,
       owner: result.owner,
       metadataKeys: result.metadataKeys,
-      metadataValues: result.metadataValues
+      metadataValues: result.metadataValues.map((v: string) => ConsumptionRecordClient.bytes32ToString(v))
     };
   }
 
@@ -325,6 +327,29 @@ export class ConsumptionRecordClient {
    */
   static isValidHash(hash: string): boolean {
     return ethers.isHexString(hash, 32) && hash !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+  }
+
+  /**
+   * Convert string to bytes32 for metadata values
+   */
+  static stringToBytes32(str: string): string {
+    // Encode string to UTF-8 bytes
+    const bytes = ethers.toUtf8Bytes(str);
+    // Pad to 32 bytes with zeros
+    const padded = new Uint8Array(32);
+    padded.set(bytes.slice(0, 32)); // Take first 32 bytes if string is longer
+    return ethers.hexlify(padded);
+  }
+
+  /**
+   * Convert bytes32 back to string
+   */
+  static bytes32ToString(bytes32: string): string {
+    // Remove trailing null bytes
+    const bytes = ethers.getBytes(bytes32);
+    const endIndex = bytes.findIndex(b => b === 0);
+    const trimmedBytes = endIndex === -1 ? bytes : bytes.slice(0, endIndex);
+    return ethers.toUtf8String(trimmedBytes);
   }
 }
 

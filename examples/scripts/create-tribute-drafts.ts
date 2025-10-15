@@ -183,13 +183,13 @@ async function submitTributeDraftsForUser(
   let failed = 0;
 
   console.log(`\n👤 Processing User ${userIndex + 1} (${owner.slice(0, 10)}...)`);
-  console.log(`   - Tribute Drafts to mint: ${tributeDrafts.length}`);
+  console.log(`   - Tribute Drafts to submit: ${tributeDrafts.length}`);
 
   for (let i = 0; i < tributeDrafts.length; i++) {
     const td = tributeDrafts[i];
 
     try {
-      console.log(`   ⏳ Minting TD ${i + 1}/${tributeDrafts.length} (${td.metadata.cuCount} CUs)...`);
+      console.log(`   ⏳ Submitting TD ${i + 1}/${tributeDrafts.length} (${td.metadata.cuCount} CUs)...`);
 
       const startTime = Date.now();
       const result = await client.mint(td.params);
@@ -202,7 +202,7 @@ async function submitTributeDraftsForUser(
       });
 
       successful++;
-      console.log(`   ✅ TD ${i + 1} minted in ${duration}ms (ID: ${result.tributeDraftId.slice(0, 10)}...)`);
+      console.log(`   ✅ TD ${i + 1} submitted in ${duration}ms (ID: ${result.tributeDraftId.slice(0, 10)}...)`);
 
       // Delay between submissions to avoid overwhelming the network
       if (i < tributeDrafts.length - 1) {
@@ -284,7 +284,7 @@ async function submitAllTributeDrafts(
     totalTDs += tributeDrafts.length;
 
     if (tributeDrafts.length === 0) {
-      console.log(`\n👤 User ${userIndex + 1} - No TDs to mint (skipping)`);
+      console.log(`\n👤 User ${userIndex + 1} - No TDs to submit (skipping)`);
       continue;
     }
 
@@ -439,7 +439,7 @@ async function main() {
     const user = submissionResult.userResults[i];
     console.log(
       `  ${i + 1}. ${user.owner.slice(0, 10)}... - ` +
-      `${user.successful}/${user.successful + user.failed} TDs minted ` +
+      `${user.successful}/${user.successful + user.failed} TDs submitted ` +
       `(${user.results.length} total)`
     );
   }

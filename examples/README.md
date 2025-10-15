@@ -8,7 +8,7 @@ Example scripts for using Outbe L2 contracts.
 
 ```bash
 # Terminal 1: Start Anvil
-make anvil
+anvil
 
 # Terminal 2: Deploy contracts
 make deploy-local
@@ -56,32 +56,33 @@ npx ts-node scripts/create-consumption-records.ts
 TOTAL_USERS=10           # Number of users
 RECORDS_PER_USER=5       # Records per user
 BATCH_SIZE=10            # Batch size for submission
+PROCESS_DELAY_MS=200     # Delay between batches
 ```
 
 #### Create Consumption Units (CU)
 
 ```bash
-npx ts-node testing/create-consumption-units.ts
+npx ts-node scripts/create-consumption-units.ts
 ```
 
 **What it does:**
 - Loads CR hashes from `generated-cr-hashes.json`
 - Groups CRs into Consumption Units
 - Creates CUs in batches
-- Saves CU IDs to `testing/generated-cu-ids.json`
+- Saves CU IDs to `scripts/generated-cu-ids.json`
 
 
 #### Create Tribute Drafts (TD)
 
 ```bash
-npx ts-node testing/create-tribute-drafts.ts
+npx ts-node scripts/create-tribute-drafts.ts
 ```
 
 **What it does:**
 - Loads CU IDs from `generated-cu-ids.json`
 - Groups CUs into Tribute Drafts
 - Creates TDs 
-- Saves TD IDs to `testing/generated-td-ids.json`
+- Saves TD IDs to `scripts/generated-td-ids.json`
 
 ### 4. Full workflow (all commands)
 

@@ -23,11 +23,11 @@ const CRA_REGISTRY_ABI = [
   "event CRAStatusUpdated(address indexed cra, uint8 oldStatus, uint8 newStatus, uint256 timestamp)"
 ];
 
-// CRA Status enum values
+// CRA Status enum values (order changed in the contract)
 export enum CRAStatus {
-  Inactive = 0,
-  Active = 1,
-  Suspended = 2
+  Inactive = 0, // CRA is registered but not active
+  Active = 1,   // CRA is active and can submit consumption records
+  Suspended = 2 // CRA is temporarily suspended
 }
 
 export interface CRAInfo {

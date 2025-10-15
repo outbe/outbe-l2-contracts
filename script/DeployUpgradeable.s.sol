@@ -139,7 +139,7 @@ contract DeployUpgradeable is Script {
             vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
 
         bytes memory consumptionUnitInitData =
-            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+            abi.encodeWithSignature("initialize(address,address,address)", predictedCraProxy, deployer, predictedCrProxy);
         bytes memory cuProxyBytecode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
         address predictedCuProxy =
@@ -242,13 +242,14 @@ contract DeployUpgradeable is Script {
 
         // Deploy Consumption Unit proxy
         console.log("Deploying Consumption Unit proxy...");
-        bytes memory cuInitData = abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
+        bytes memory cuInitData = abi.encodeWithSignature("initialize(address,address,address)", address(craRegistry), deployer, address(consumptionRecord));
         address consumptionUnitProxy =
             address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
         consumptionUnit = ConsumptionUnitUpgradeable(consumptionUnitProxy);
         console.log("Consumption Unit proxy:", address(consumptionUnit));
         console.log("Consumption Unit owner:", consumptionUnit.getOwner());
         console.log("Consumption Unit CRA Registry:", consumptionUnit.getCRARegistry());
+        console.log("Consumption Unit CR Address:", consumptionUnit.getConsumptionRecordAddress());
         console.log("");
 
         // Deploy Tribute Draft implementation
