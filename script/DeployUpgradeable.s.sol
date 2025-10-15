@@ -138,8 +138,9 @@ contract DeployUpgradeable is Script {
         address predictedCrProxy =
             vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
 
-        bytes memory consumptionUnitInitData =
-            abi.encodeWithSignature("initialize(address,address,address)", predictedCraProxy, deployer, predictedCrProxy);
+        bytes memory consumptionUnitInitData = abi.encodeWithSignature(
+            "initialize(address,address,address)", predictedCraProxy, deployer, predictedCrProxy
+        );
         bytes memory cuProxyBytecode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
         address predictedCuProxy =
@@ -242,7 +243,9 @@ contract DeployUpgradeable is Script {
 
         // Deploy Consumption Unit proxy
         console.log("Deploying Consumption Unit proxy...");
-        bytes memory cuInitData = abi.encodeWithSignature("initialize(address,address,address)", address(craRegistry), deployer, address(consumptionRecord));
+        bytes memory cuInitData = abi.encodeWithSignature(
+            "initialize(address,address,address)", address(craRegistry), deployer, address(consumptionRecord)
+        );
         address consumptionUnitProxy =
             address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
         consumptionUnit = ConsumptionUnitUpgradeable(consumptionUnitProxy);
