@@ -218,7 +218,16 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = cr2;
         bytes32 CU2 = keccak256("cu-cur-2");
         vm.prank(craActive);
-        cu.submit(CU2, recordOwner, 840, /* USD */ worldwideDay, 1, 0, crHashes);
+        cu.submit(
+            CU2,
+            recordOwner,
+            840,
+            /* USD */
+            worldwideDay,
+            1,
+            0,
+            crHashes
+        );
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = CU1;

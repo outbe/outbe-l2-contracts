@@ -18,18 +18,17 @@
  */
 
 import { ethers, Contract, Wallet, Provider } from 'ethers';
-import { Interface, Fragment } from '@ethersproject/abi';
 
 // ConsumptionUnitUpgradeable ABI (key functions only)
 const CONSUMPTION_UNIT_ABI = [
   // Core functions
-  'function submit(bytes32 cuHash, address owner, string settlementCurrency, string worldwideDay, uint64 settlementBaseAmount, uint128 settlementAttoAmount, uint64 nominalBaseQty, uint128 nominalAttoQty, string nominalCurrency, bytes32[] hashes) external',
-  'function submitBatch(bytes32[] cuHashes, address[] owners, string[] settlementCurrencies, string[] worldwideDays, uint64[] settlementBaseAmounts, uint128[] settlementAttoAmounts, uint64[] nominalBaseQtys, uint128[] nominalAttoQtys, string[] nominalCurrencies, bytes32[][] hashesArray) external',
+  'function submit(bytes32 cuHash, address owner, uint16 settlementCurrency, uint32 worldwideDay, uint64 settlementAmountBase, uint128 settlementAmountAtto, bytes32[] hashes) external',
+  'function submitBatch(bytes32[] cuHashes, address[] owners, uint32[] worldwideDays, uint16[] settlementCurrencies, uint64[] settlementAmountsBase, uint128[] settlementAmountsAtto, bytes32[][] crHashesArray) external',
   'function isExists(bytes32 cuHash) external view returns (bool)',
-  'function getRecord(bytes32 cuHash) external view returns (tuple(address owner, address submittedBy, string settlementCurrency, string worldwideDay, uint64 settlementBaseAmount, uint128 settlementAttoAmount, uint64 nominalBaseQty, uint128 nominalAttoQty, string nominalCurrency, bytes32[] hashes, uint256 submittedAt))',
-  'function getRecordsByOwner(address owner) external view returns (bytes32[])',
-  'function setCraRegistry(address _craRegistry) external',
-  'function getCraRegistry() external view returns (address)',
+  'function getConsumptionUnit(bytes32 cuHash) external view returns (tuple(bytes32 consumptionUnitId, address owner, address submittedBy, uint256 submittedAt, uint32 worldwideDay, uint64 settlementAmountBase, uint128 settlementAmountAtto, uint16 settlementCurrency, bytes32[] crHashes))',
+  'function getConsumptionUnitsByOwner(address owner) external view returns (bytes32[])',
+  'function setCRARegistry(address _craRegistry) external',
+  'function getCRARegistry() external view returns (address)',
   
   // Upgrade functions (owner only)
   'function upgradeTo(address newImplementation) external',
@@ -46,13 +45,13 @@ const CONSUMPTION_UNIT_ABI = [
   
   // Errors
   'error AlreadyExists()',
-  'error CrAlreadyExists()',
+  'error ConsumptionRecordAlreadyExists()',
   'error CRANotActive()',
   'error InvalidHash()',
   'error InvalidOwner()',
   'error EmptyBatch()',
   'error BatchSizeTooLarge()',
-  'error InvalidCurrency()',
+  'error InvalidSettlementCurrency()',
   'error InvalidAmount()',
   'error ArrayLengthMismatch()'
 ];
@@ -61,17 +60,15 @@ const CONSUMPTION_UNIT_ABI = [
  * ConsumptionUnit data structure
  */
 export interface ConsumptionUnitEntity {
+  consumptionUnitId: string;
   owner: string;
   submittedBy: string;
-  settlementCurrency: string;
-  worldwideDay: string;
-  settlementBaseAmount: bigint;
-  settlementAttoAmount: bigint;
-  nominalBaseQty: bigint;
-  nominalAttoQty: bigint;
-  nominalCurrency: string;
-  hashes: string[];
   submittedAt: bigint;
+  worldwideDay: number; // uint32 from contract
+  settlementAmountBase: bigint; // uint64 from contract
+  settlementAmountAtto: bigint; // uint128 from contract
+  settlementCurrency: number; // uint16 from contract
+  crHashes: string[];
 }
 
 /**
@@ -80,13 +77,10 @@ export interface ConsumptionUnitEntity {
 export interface ConsumptionUnitParams {
   cuHash: string;
   owner: string;
-  settlementCurrency: string;
-  worldwideDay: string;
-  settlementBaseAmount: bigint;
-  settlementAttoAmount: bigint;
-  nominalBaseQty: bigint;
-  nominalAttoQty: bigint;
-  nominalCurrency: string;
+  settlementCurrency: number; // uint16 - ISO 4217 numeric code
+  worldwideDay: number; // uint32 - YYYYMMDD format
+  settlementAmountBase: bigint; // uint64 - base units
+  settlementAmountAtto: bigint; // uint128 - fractional units (< 1e18)
   consumptionRecordHashes: string[];
 }
 
@@ -113,17 +107,17 @@ export class ConsumptionUnitBuilder {
   }
 
   /**
-   * Set settlement currency (ISO 4217 code)
+   * Set settlement currency (ISO 4217 numeric code)
    */
-  setSettlementCurrency(currency: string): ConsumptionUnitBuilder {
+  setSettlementCurrency(currency: number): ConsumptionUnitBuilder {
     this.params.settlementCurrency = currency;
     return this;
   }
 
   /**
-   * Set worldwide day (ISO 8601 date string)
+   * Set worldwide day (ISO 8601 numeric format YYYYMMDD)
    */
-  setWorldwideDay(day: string): ConsumptionUnitBuilder {
+  setWorldwideDay(day: number): ConsumptionUnitBuilder {
     this.params.worldwideDay = day;
     return this;
   }
@@ -137,8 +131,8 @@ export class ConsumptionUnitBuilder {
     if (atto >= BigInt(1e18)) {
       throw new Error('Atto amount must be less than 1e18');
     }
-    this.params.settlementBaseAmount = base;
-    this.params.settlementAttoAmount = atto;
+    this.params.settlementAmountBase = base;
+    this.params.settlementAmountAtto = atto;
     return this;
   }
 
@@ -152,37 +146,6 @@ export class ConsumptionUnitBuilder {
     const attoStr = fractional.padEnd(18, '0').slice(0, 18);
     const atto = BigInt(attoStr);
     return this.setSettlementAmount(base, atto);
-  }
-
-  /**
-   * Set nominal quantity with base and atto components
-   */
-  setNominalQuantity(base: bigint, atto: bigint = 0n): ConsumptionUnitBuilder {
-    if (atto >= BigInt(1e18)) {
-      throw new Error('Atto quantity must be less than 1e18');
-    }
-    this.params.nominalBaseQty = base;
-    this.params.nominalAttoQty = atto;
-    return this;
-  }
-
-  /**
-   * Set nominal quantity from decimal string
-   */
-  setNominalQuantityFromDecimal(quantity: string): ConsumptionUnitBuilder {
-    const [whole, fractional = '0'] = quantity.split('.');
-    const base = BigInt(whole);
-    const attoStr = fractional.padEnd(18, '0').slice(0, 18);
-    const atto = BigInt(attoStr);
-    return this.setNominalQuantity(base, atto);
-  }
-
-  /**
-   * Set nominal currency (unit of measurement)
-   */
-  setNominalCurrency(currency: string): ConsumptionUnitBuilder {
-    this.params.nominalCurrency = currency;
-    return this;
   }
 
   /**
@@ -208,19 +171,15 @@ export class ConsumptionUnitBuilder {
    * Build the consumption unit parameters
    */
   build(): ConsumptionUnitParams {
-    const required = ['cuHash', 'owner', 'settlementCurrency', 'worldwideDay', 'nominalCurrency'];
+    const required = ['cuHash', 'owner', 'settlementCurrency', 'worldwideDay'];
     for (const field of required) {
       if (!this.params[field as keyof ConsumptionUnitParams]) {
         throw new Error(`Missing required field: ${field}`);
       }
     }
 
-    if (this.params.settlementBaseAmount === undefined) {
+    if (this.params.settlementAmountBase === undefined) {
       throw new Error('Settlement amount must be set');
-    }
-
-    if (this.params.nominalBaseQty === undefined) {
-      throw new Error('Nominal quantity must be set');
     }
 
     if (!this.params.consumptionRecordHashes?.length) {
@@ -255,11 +214,8 @@ export class ConsumptionUnitClient {
         params.owner,
         params.settlementCurrency,
         params.worldwideDay,
-        params.settlementBaseAmount,
-        params.settlementAttoAmount,
-        params.nominalBaseQty,
-        params.nominalAttoQty,
-        params.nominalCurrency,
+        params.settlementAmountBase,
+        params.settlementAmountAtto,
         params.consumptionRecordHashes
       );
 
@@ -287,31 +243,25 @@ export class ConsumptionUnitClient {
     try {
       const cuHashes = units.map(u => u.cuHash);
       const owners = units.map(u => u.owner);
-      const settlementCurrencies = units.map(u => u.settlementCurrency);
       const worldwideDays = units.map(u => u.worldwideDay);
-      const settlementBaseAmounts = units.map(u => u.settlementBaseAmount);
-      const settlementAttoAmounts = units.map(u => u.settlementAttoAmount);
-      const nominalBaseQtys = units.map(u => u.nominalBaseQty);
-      const nominalAttoQtys = units.map(u => u.nominalAttoQty);
-      const nominalCurrencies = units.map(u => u.nominalCurrency);
-      const hashesArray = units.map(u => u.consumptionRecordHashes);
+      const settlementCurrencies = units.map(u => u.settlementCurrency);
+      const settlementAmountsBase = units.map(u => u.settlementAmountBase);
+      const settlementAmountsAtto = units.map(u => u.settlementAmountAtto);
+      const crHashesArray = units.map(u => u.consumptionRecordHashes);
 
       const tx = await this.contract.submitBatch(
         cuHashes,
         owners,
-        settlementCurrencies,
         worldwideDays,
-        settlementBaseAmounts,
-        settlementAttoAmounts,
-        nominalBaseQtys,
-        nominalAttoQtys,
-        nominalCurrencies,
-        hashesArray
+        settlementCurrencies,
+        settlementAmountsBase,
+        settlementAmountsAtto,
+        crHashesArray
       );
 
       const receipt = await tx.wait();
       console.log(`Batch of ${units.length} consumption units submitted`);
-      return receipt.transactionHash;
+      return receipt.hash;
     } catch (error: any) {
       this.handleError(error, 'submitBatch');
       throw error;
@@ -335,25 +285,23 @@ export class ConsumptionUnitClient {
    */
   async getRecord(cuHash: string): Promise<ConsumptionUnitEntity | null> {
     try {
-      const result = await this.contract.getRecord(cuHash);
-      
+      const result = await this.contract.getConsumptionUnit(cuHash);
+
       // Check if record exists (submittedBy will be zero address if not found)
       if (result.submittedBy === ethers.ZeroAddress) {
         return null;
       }
 
       return {
+        consumptionUnitId: result.consumptionUnitId,
         owner: result.owner,
         submittedBy: result.submittedBy,
-        settlementCurrency: result.settlementCurrency,
+        submittedAt: result.submittedAt,
         worldwideDay: result.worldwideDay,
-        settlementBaseAmount: result.settlementBaseAmount,
-        settlementAttoAmount: result.settlementAttoAmount,
-        nominalBaseQty: result.nominalBaseQty,
-        nominalAttoQty: result.nominalAttoQty,
-        nominalCurrency: result.nominalCurrency,
-        hashes: result.hashes,
-        submittedAt: result.submittedAt
+        settlementAmountBase: result.settlementAmountBase,
+        settlementAmountAtto: result.settlementAmountAtto,
+        settlementCurrency: result.settlementCurrency,
+        crHashes: result.crHashes
       };
     } catch (error: any) {
       this.handleError(error, 'getRecord');
@@ -366,7 +314,7 @@ export class ConsumptionUnitClient {
    */
   async getRecordsByOwner(owner: string): Promise<string[]> {
     try {
-      return await this.contract.getRecordsByOwner(owner);
+      return await this.contract.getConsumptionUnitsByOwner(owner);
     } catch (error: any) {
       this.handleError(error, 'getRecordsByOwner');
       throw error;
@@ -377,7 +325,7 @@ export class ConsumptionUnitClient {
    * Get CRA Registry address
    */
   async getCraRegistry(): Promise<string> {
-    return await this.contract.getCraRegistry();
+    return await this.contract.getCRARegistry();
   }
 
   /**
@@ -385,7 +333,7 @@ export class ConsumptionUnitClient {
    */
   async setCraRegistry(craRegistryAddress: string): Promise<string> {
     try {
-      const tx = await this.contract.setCraRegistry(craRegistryAddress);
+      const tx = await this.contract.setCRARegistry(craRegistryAddress);
       const receipt = await tx.wait();
       console.log(`CRA Registry updated: ${craRegistryAddress}`);
       return receipt.transactionHash;
@@ -515,7 +463,7 @@ export class ConsumptionUnitClient {
         case 'AlreadyExists()':
           console.error('Consumption unit already exists');
           break;
-        case 'CrAlreadyExists()':
+        case 'ConsumptionRecordAlreadyExists()':
           console.error('One of the consumption record hashes already exists');
           break;
         case 'CRANotActive()':
@@ -527,8 +475,8 @@ export class ConsumptionUnitClient {
         case 'InvalidOwner()':
           console.error('Invalid owner address provided');
           break;
-        case 'InvalidCurrency()':
-          console.error('Invalid currency code provided');
+        case 'InvalidSettlementCurrency()':
+          console.error('Invalid settlement currency code provided');
           break;
         case 'InvalidAmount()':
           console.error('Invalid amount - atto component must be < 1e18');
@@ -567,11 +515,9 @@ async function exampleUsage() {
     const cuParams = new ConsumptionUnitBuilder()
       .setCuHash('0x1234567890123456789012345678901234567890123456789012345678901234')
       .setOwner(ownerWallet.address)
-      .setSettlementCurrency('USD')
-      .setWorldwideDay('2024-01-15')
+      .setSettlementCurrency(840)  // USD ISO 4217 numeric code
+      .setWorldwideDay(20240115)   // 2024-01-15 as YYYYMMDD
       .setSettlementAmountFromDecimal('150.75')  // $150.75
-      .setNominalQuantityFromDecimal('100.5')    // 100.5 kWh
-      .setNominalCurrency('kWh')
       .addConsumptionRecordHash('0xabcd1234567890123456789012345678901234567890123456789012345678ab')
       .addConsumptionRecordHash('0xabcd1234567890123456789012345678901234567890123456789012345678cd')
       .build();
@@ -585,10 +531,9 @@ async function exampleUsage() {
     if (unit) {
       console.log('Consumption Unit Details:');
       console.log(`- Owner: ${unit.owner}`);
-      console.log(`- Settlement: ${ConsumptionUnitClient.formatAmount(unit.settlementBaseAmount, unit.settlementAttoAmount)} ${unit.settlementCurrency}`);
-      console.log(`- Nominal: ${ConsumptionUnitClient.formatAmount(unit.nominalBaseQty, unit.nominalAttoQty)} ${unit.nominalCurrency}`);
+      console.log(`- Settlement: ${ConsumptionUnitClient.formatAmount(unit.settlementAmountBase, unit.settlementAmountAtto)} (Currency: ${unit.settlementCurrency})`);
       console.log(`- Day: ${unit.worldwideDay}`);
-      console.log(`- CR Hashes: ${unit.hashes.length} records`);
+      console.log(`- CR Hashes: ${unit.crHashes.length} records`);
     }
 
     // Get all units for owner
@@ -604,10 +549,3 @@ async function exampleUsage() {
     console.error('Example failed:', error);
   }
 }
-
-export {
-  ConsumptionUnitClient,
-  ConsumptionUnitBuilder,
-  type ConsumptionUnitEntity,
-  type ConsumptionUnitParams
-};

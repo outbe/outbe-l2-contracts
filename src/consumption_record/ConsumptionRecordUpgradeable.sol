@@ -3,12 +3,15 @@ pragma solidity ^0.8.27;
 
 import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {ERC165Upgradeable} from
-    "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {
+    ERC165Upgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
-import {ERC721Enumerable} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {
+    ERC721Enumerable
+} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata

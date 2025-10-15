@@ -6,11 +6,11 @@ const CRA_REGISTRY_ABI = [
   "function initialize(address _owner) external",
   
   // Core functions
-  "function registerCra(address cra, string calldata name) external",
-  "function updateCraStatus(address cra, uint8 status) external",
-  "function isCraActive(address cra) external view returns (bool)",
-  "function getCraInfo(address cra) external view returns (tuple(string name, uint8 status, uint256 registeredAt))",
-  "function getAllCras() external view returns (address[])",
+  "function registerCRA(address cra, string calldata name) external",
+  "function updateCRAStatus(address cra, uint8 status) external",
+  "function isCRAActive(address cra) external view returns (bool)",
+  "function getCRAInfo(address cra) external view returns (tuple(string name, uint8 status, uint256 registeredAt))",
+  "function getAllCRAs() external view returns (address[])",
   "function getOwner() external view returns (address)",
   
   // Upgrade functions (owner only)
@@ -23,11 +23,11 @@ const CRA_REGISTRY_ABI = [
   "event CRAStatusUpdated(address indexed cra, uint8 oldStatus, uint8 newStatus, uint256 timestamp)"
 ];
 
-// CRA Status enum values
+// CRA Status enum values (order changed in the contract)
 export enum CRAStatus {
-  Inactive = 0,
-  Active = 1,
-  Suspended = 2
+  Inactive = 0, // CRA is registered but not active
+  Active = 1,   // CRA is active and can submit consumption records
+  Suspended = 2 // CRA is temporarily suspended
 }
 
 export interface CRAInfo {
@@ -54,7 +54,7 @@ export class CRARegistryClient {
    */
   async registerCra(craAddress: string, name: string): Promise<void> {
     try {
-      const tx = await this.contract.registerCra(craAddress, name);
+      const tx = await this.contract.registerCRA(craAddress, name);
       await tx.wait();
       console.log(`✅ CRA registered: ${craAddress} with name "${name}"`);
     } catch (error: any) {
@@ -74,7 +74,7 @@ export class CRARegistryClient {
    */
   async updateCraStatus(craAddress: string, status: CRAStatus): Promise<void> {
     try {
-      const tx = await this.contract.updateCraStatus(craAddress, status);
+      const tx = await this.contract.updateCRAStatus(craAddress, status);
       await tx.wait();
       console.log(`✅ CRA status updated: ${craAddress} -> ${CRAStatus[status]}`);
     } catch (error: any) {
@@ -91,7 +91,7 @@ export class CRARegistryClient {
    * Check if CRA is active
    */
   async isCraActive(craAddress: string): Promise<boolean> {
-    return await this.contract.isCraActive(craAddress);
+    return await this.contract.isCRAActive(craAddress);
   }
 
   /**
@@ -99,7 +99,7 @@ export class CRARegistryClient {
    */
   async getCraInfo(craAddress: string): Promise<CRAInfo> {
     try {
-      const result = await this.contract.getCraInfo(craAddress);
+      const result = await this.contract.getCRAInfo(craAddress);
       return {
         name: result.name,
         status: result.status,
@@ -117,7 +117,7 @@ export class CRARegistryClient {
    * Get all registered CRA addresses
    */
   async getAllCras(): Promise<string[]> {
-    return await this.contract.getAllCras();
+    return await this.contract.getAllCRAs();
   }
 
   /**
@@ -349,7 +349,7 @@ export class CRAMonitoringService {
 
   constructor(registryAddress: string, provider: Provider) {
     // Use read-only provider for monitoring
-    const readOnlyWallet = Wallet.createRandom().connect(provider);
+    const readOnlyWallet = Wallet.createRandom().connect(provider) as unknown as Wallet;
     this.registry = new CRARegistryClient(registryAddress, readOnlyWallet, provider);
   }
 
@@ -453,7 +453,7 @@ export class CRAHealthChecker {
   private registry: CRARegistryClient;
   
   constructor(registryAddress: string, provider: Provider) {
-    const readOnlyWallet = Wallet.createRandom().connect(provider);
+    const readOnlyWallet = Wallet.createRandom().connect(provider) as unknown as Wallet;
     this.registry = new CRARegistryClient(registryAddress, readOnlyWallet, provider);
   }
 

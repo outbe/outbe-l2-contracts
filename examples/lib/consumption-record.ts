@@ -6,19 +6,19 @@ const CONSUMPTION_RECORD_ABI = [
   "function initialize(address _craRegistry, address _owner) external",
   
   // Single submission
-  "function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external",
+  "function submit(bytes32 crHash, address owner, string[] memory keys, bytes32[] memory values) external",
   
-  // Batch submission  
-  "function submitBatch(bytes32[] memory crHashes, address[] memory owners, string[][] memory keysArray, string[][] memory valuesArray) external",
+  // Batch submission
+  "function submitBatch(bytes32[] memory crHashes, address[] memory owners, string[][] memory keysArray, bytes32[][] memory valuesArray) external",
   
   // Query functions
   "function isExists(bytes32 crHash) external view returns (bool)",
-  "function getRecord(bytes32 crHash) external view returns (tuple(address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, string[] metadataValues))",
-  "function getRecordsByOwner(address owner) external view returns (bytes32[] memory)",
-  
+  "function getConsumptionRecord(bytes32 crHash) external view returns (tuple(bytes32 consumptionRecordId, address submittedBy, uint256 submittedAt, address owner, string[] metadataKeys, bytes32[] metadataValues))",
+  "function getConsumptionRecordsByOwner(address owner) external view returns (bytes32[] memory)",
+
   // Admin functions
-  "function setCraRegistry(address _craRegistry) external",
-  "function getCraRegistry() external view returns (address)",
+  "function setCRARegistry(address _craRegistry) external",
+  "function getCRARegistry() external view returns (address)",
   "function getOwner() external view returns (address)",
   
   // Upgrade functions (owner only)
@@ -31,16 +31,16 @@ const CONSUMPTION_RECORD_ABI = [
   
   // Events
   "event Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp)",
-  "event MetadataAdded(bytes32 indexed crHash, string key, string value)",
   "event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp)"
 ];
 
 export interface CRRecord {
+  consumptionRecordId: string;
   submittedBy: string;
   submittedAt: bigint;
   owner: string;
   metadataKeys: string[];
-  metadataValues: string[];
+  metadataValues: string[]; // bytes32[] from contract, converted to string[] for convenience
 }
 
 export interface ConsumptionMetadata {
@@ -61,8 +61,8 @@ export interface BatchSubmissionResult {
 }
 
 export class ConsumptionRecordClient {
-  private contract: Contract;
-  private signer: Wallet;
+  public contract: Contract;
+  public signer: Wallet;
 
   constructor(
     contractAddress: string,
@@ -82,7 +82,7 @@ export class ConsumptionRecordClient {
     metadata: ConsumptionMetadata
   ): Promise<void> {
     const keys = Object.keys(metadata);
-    const values = Object.values(metadata);
+    const values = Object.values(metadata).map(v => ConsumptionRecordClient.stringToBytes32(v));
 
     try {
       const tx = await this.contract.submit(crHash, owner, keys, values);
@@ -111,18 +111,20 @@ export class ConsumptionRecordClient {
     const crHashes = requests.map(req => req.crHash);
     const owners = requests.map(req => req.owner);
     const keysArray = requests.map(req => Object.keys(req.metadata));
-    const valuesArray = requests.map(req => Object.values(req.metadata));
+    const valuesArray = requests.map(req =>
+      Object.values(req.metadata).map(v => ConsumptionRecordClient.stringToBytes32(v))
+    );
 
     try {
       const tx = await this.contract.submitBatch(crHashes, owners, keysArray, valuesArray);
       const receipt = await tx.wait();
-      
+
       console.log(`✅ Batch submitted: ${requests.length} records`);
       
       return {
         success: true,
         batchSize: requests.length,
-        transactionHash: receipt.transactionHash,
+        transactionHash: receipt.hash,
         submittedRecords: crHashes
       };
     } catch (error: any) {
@@ -169,13 +171,14 @@ export class ConsumptionRecordClient {
    * Get complete consumption record data
    */
   async getRecord(crHash: string): Promise<CRRecord> {
-    const result = await this.contract.getRecord(crHash);
+    const result = await this.contract.getConsumptionRecord(crHash);
     return {
+      consumptionRecordId: result.consumptionRecordId,
       submittedBy: result.submittedBy,
       submittedAt: result.submittedAt,
       owner: result.owner,
       metadataKeys: result.metadataKeys,
-      metadataValues: result.metadataValues
+      metadataValues: result.metadataValues.map((v: string) => ConsumptionRecordClient.bytes32ToString(v))
     };
   }
 
@@ -183,7 +186,7 @@ export class ConsumptionRecordClient {
    * Get all consumption record hashes owned by a specific address
    */
   async getRecordsByOwner(owner: string): Promise<string[]> {
-    return await this.contract.getRecordsByOwner(owner);
+    return await this.contract.getConsumptionRecordsByOwner(owner);
   }
 
   /**
@@ -226,7 +229,7 @@ export class ConsumptionRecordClient {
    * Get CRA Registry address
    */
   async getCraRegistry(): Promise<string> {
-    return await this.contract.getCraRegistry();
+    return await this.contract.getCRARegistry();
   }
 
   /**
@@ -234,7 +237,7 @@ export class ConsumptionRecordClient {
    */
   async setCraRegistry(registryAddress: string): Promise<void> {
     try {
-      const tx = await this.contract.setCraRegistry(registryAddress);
+      const tx = await this.contract.setCRARegistry(registryAddress);
       await tx.wait();
       console.log(`✅ CRA Registry updated: ${registryAddress}`);
     } catch (error: any) {
@@ -299,13 +302,6 @@ export class ConsumptionRecordClient {
   }
 
   /**
-   * Listen for metadata addition events
-   */
-  onMetadataAdded(callback: (crHash: string, key: string, value: string) => void): void {
-    this.contract.on('MetadataAdded', callback);
-  }
-
-  /**
    * Listen for batch submission events
    */
   onBatchSubmitted(callback: (batchSize: bigint, cra: string, timestamp: bigint) => void): void {
@@ -331,6 +327,29 @@ export class ConsumptionRecordClient {
    */
   static isValidHash(hash: string): boolean {
     return ethers.isHexString(hash, 32) && hash !== '0x0000000000000000000000000000000000000000000000000000000000000000';
+  }
+
+  /**
+   * Convert string to bytes32 for metadata values
+   */
+  static stringToBytes32(str: string): string {
+    // Encode string to UTF-8 bytes
+    const bytes = ethers.toUtf8Bytes(str);
+    // Pad to 32 bytes with zeros
+    const padded = new Uint8Array(32);
+    padded.set(bytes.slice(0, 32)); // Take first 32 bytes if string is longer
+    return ethers.hexlify(padded);
+  }
+
+  /**
+   * Convert bytes32 back to string
+   */
+  static bytes32ToString(bytes32: string): string {
+    // Remove trailing null bytes
+    const bytes = ethers.getBytes(bytes32);
+    const endIndex = bytes.findIndex(b => b === 0);
+    const trimmedBytes = endIndex === -1 ? bytes : bytes.slice(0, endIndex);
+    return ethers.toUtf8String(trimmedBytes);
   }
 }
 
@@ -551,10 +570,6 @@ export async function exampleUsage() {
       console.log(`🔔 Batch submitted: ${batchSize} records by ${cra} at ${new Date(Number(timestamp) * 1000)}`);
     });
 
-    consumptionRecord.onMetadataAdded((crHash, key, value) => {
-      console.log(`🔔 Metadata added to ${crHash}: ${key} = ${value}`);
-    });
-
     console.log('\n=== Contract Information ===');
     
     // Get contract information
@@ -654,14 +669,15 @@ export class BatchConsumptionProcessor {
       const chunk = records.slice(i, i + this.batchSize);
       console.log(`📦 Processing batch ${Math.floor(i / this.batchSize) + 1}/${Math.ceil(records.length / this.batchSize)}`);
 
-      const batchHashes = chunk.map(r => r.hash);
-      const batchOwners = chunk.map(r => r.owner);
-      const batchKeys = chunk.map(r => r.metadata.keys);
-      const batchValues = chunk.map(r => r.metadata.values);
+      const batchRequests: BatchSubmissionRequest[] = chunk.map(r => ({
+        crHash: r.hash,
+        owner: r.owner,
+        metadata: r.metadata
+      }));
 
       try {
-        await this.client.submitBatch(batchHashes, batchOwners, batchKeys, batchValues);
-        successful.push(...batchHashes);
+        await this.client.submitBatch(batchRequests);
+        successful.push(...chunk.map(r => r.hash));
         console.log(`✅ Successfully processed ${chunk.length} records`);
       } catch (error) {
         console.warn(`⚠️ Batch failed, falling back to individual submissions`);
@@ -750,9 +766,9 @@ export class ConsumptionAnalytics {
     recordsByMonth: Map<string, number>;
   }> {
     console.log(`📊 Analyzing consumption for owner: ${ownerAddress}`);
-    
+
     const recordHashes = await this.client.getRecordsByOwner(ownerAddress);
-    const records: ConsumptionRecordEntity[] = [];
+    const records: CRRecord[] = [];
     
     // Fetch all records
     for (const hash of recordHashes) {
@@ -781,7 +797,7 @@ export class ConsumptionAnalytics {
 
     for (const record of records) {
       // Analyze metadata
-      const metadata = this.parseMetadata(record.keys, record.values);
+      const metadata = this.parseMetadata(record.metadataKeys, record.metadataValues);
       
       // Count energy sources
       const source = metadata.source || 'unknown';
@@ -889,7 +905,7 @@ export class ConsumptionMonitor {
         return;
       }
 
-      const metadata = this.parseMetadata(record.keys, record.values);
+      const metadata = this.parseMetadata(record.metadataKeys, record.metadataValues);
       
       this.emit('newRecord', {
         hash,
