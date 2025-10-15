@@ -48,11 +48,6 @@ contract ConsumptionRecordUpgradeable is
         _disableInitializers();
     }
 
-    modifier validCrHash(bytes32 crHash) {
-        if (crHash == bytes32(0)) revert InvalidHash();
-        _;
-    }
-
     /// @notice Initialize the consumption record contract
     /// @dev Sets the CRA registry address and specified owner
     /// @param _craRegistry Address of the CRA Registry contract
