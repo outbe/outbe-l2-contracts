@@ -1,15 +1,24 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 import {ITributeDraft} from "../interfaces/ITributeDraft.sol";
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 
 /// @title TributeDraftUpgradeable
 /// @notice Any user can mint a Tribute Draft by aggregating multiple Consumption Units
-contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract TributeDraftUpgradeable is
+    ITributeDraft,
+    ISoulBoundNFT,
+    Initializable,
+    OwnableUpgradeable,
+    UUPSUpgradeable,
+    ERC165Upgradeable
+{
     string public constant VERSION = "1.0.0";
 
     IConsumptionUnit public consumptionUnit;
@@ -17,6 +26,9 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
     // mapping from tribute draft id (hash) to entity
     mapping(bytes32 => TributeDraftEntity) public tributeDrafts;
     mapping(bytes32 => bool) public consumptionUnitHashes;
+
+    /// @dev Total number of records tracked by this contract
+    uint256 private _totalRecords;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -27,13 +39,14 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         require(_consumptionUnit != address(0), "CU addr zero");
         __Ownable_init();
         __UUPSUpgradeable_init();
-        consumptionUnit = IConsumptionUnit(_consumptionUnit);
-        // owner set to deployer by default
+        __ERC165_init();
+        _setConsumptionUnitAddress(_consumptionUnit);
         _transferOwnership(msg.sender);
+        _totalRecords = 0;
     }
 
     function submit(bytes32[] calldata cuHashes) external returns (bytes32 tdId) {
-        uint256 n = cuHashes.length;
+        uint32 n = uint32(cuHashes.length);
         if (n == 0) revert EmptyArray();
 
         for (uint256 i = 0; i < n; i++) {
@@ -50,19 +63,19 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         // fetch and validate
         IConsumptionUnit.ConsumptionUnitEntity memory first = consumptionUnit.getConsumptionUnit(cuHashes[0]);
         if (first.submittedBy == address(0)) revert NotFound(cuHashes[0]);
-        if (msg.sender != first.owner) revert NotSameOwner();
+        if (msg.sender != first.owner) revert NotSameOwner(cuHashes[0]);
 
         address owner_ = first.owner;
         uint16 currency_ = first.settlementCurrency;
         uint32 worldwideDay_ = first.worldwideDay;
-        uint256 baseAmt = first.settlementAmountBase;
-        uint256 attoAmt = first.settlementAmountAtto;
+        uint64 baseAmt = first.settlementAmountBase;
+        uint128 attoAmt = first.settlementAmountAtto;
 
-        for (uint256 i = 1; i < n; i++) {
+        for (uint32 i = 1; i < n; i++) {
             IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getConsumptionUnit(cuHashes[i]);
             if (rec.submittedBy == address(0)) revert NotFound(cuHashes[i]);
-            if (rec.owner != owner_) revert NotSameOwner();
-            // compare currency strings by keccak hash
+            if (rec.owner != owner_) revert NotSameOwner(cuHashes[i]);
+            // compare currency codes by keccak hash of the encoded values
             if (keccak256(abi.encode(rec.settlementCurrency)) != keccak256(abi.encode(currency_))) {
                 revert NotSettlementCurrencyCurrency();
             }
@@ -73,10 +86,10 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
 
             // aggregate amount: base + atto with carry (checked arithmetic)
             baseAmt += rec.settlementAmountBase;
-            uint256 attoSum = attoAmt + rec.settlementAmountAtto;
+            uint128 attoSum = attoAmt + rec.settlementAmountAtto;
             if (attoSum >= 1e18) {
-                baseAmt += uint256(attoSum / 1e18);
-                attoAmt = uint256(attoSum % 1e18);
+                baseAmt += uint64(attoSum / 1e18);
+                attoAmt = uint128(attoSum % 1e18);
             } else {
                 attoAmt = attoSum;
             }
@@ -96,7 +109,10 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
             submittedAt: block.timestamp
         });
 
-        emit Submited(tdId, owner_, msg.sender, n, block.timestamp);
+        // Increment total supply for each new tribute draft
+        _totalRecords += 1;
+
+        emit Submitted(tdId, owner_, msg.sender, n, block.timestamp);
     }
 
     function getTributeDraft(bytes32 tdId) external view returns (TributeDraftEntity memory) {
@@ -107,8 +123,24 @@ contract TributeDraftUpgradeable is ITributeDraft, Initializable, OwnableUpgrade
         return address(consumptionUnit);
     }
 
-    function setConsumptionUnitAddress(address _consumptionUnitAddress) external {
+    function setConsumptionUnitAddress(address _consumptionUnitAddress) external onlyOwner {
+        _setConsumptionUnitAddress(_consumptionUnitAddress);
+    }
+
+    function _setConsumptionUnitAddress(address _consumptionUnitAddress) private {
         consumptionUnit = IConsumptionUnit(_consumptionUnitAddress);
+    }
+
+    /// @inheritdoc ISoulBoundNFT
+    function totalSupply() external view returns (uint256) {
+        return _totalRecords;
+    }
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(interfaceId);
+        // TODO add supported interfaces
+        //      interfaceId == 0x780e9d63 // ERC721Enumerable
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

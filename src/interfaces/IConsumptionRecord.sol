@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
 /// @title IConsumptionRecord Interface
 /// @notice Interface for storing and managing consumption record hashes with metadata
@@ -10,18 +10,18 @@ interface IConsumptionRecord {
     /// @notice Record information for a consumption record
     /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
     struct ConsumptionRecordEntity {
-        /// @dev ID of consumption record
+        /// @notice ID of consumption record
         bytes32 consumptionRecordId;
-        /// @dev Address of the CRA that submitted this record
+        /// @notice Address of the CRA that submitted this record
         address submittedBy;
-        /// @dev Timestamp when the record was submitted
+        /// @notice Timestamp when the record was submitted
         uint256 submittedAt;
-        /// @dev Address of the owner of this consumption record
+        /// @notice Address of the owner of this consumption record
         address owner;
-        /// @dev Array of metadata keys
+        /// @notice Array of metadata keys
         string[] metadataKeys;
-        /// @dev Array of metadata values (matches keys array)
-        string[] metadataValues;
+        /// @notice Array of metadata values (matches keys array)
+        bytes32[] metadataValues;
     }
 
     /// @notice Emitted when a consumption record is submitted
@@ -38,9 +38,6 @@ interface IConsumptionRecord {
 
     /// @notice Thrown when trying to submit a record that already exists
     error AlreadyExists();
-
-    /// @notice Thrown when a non-active CRA tries to submit a record
-    error CRANotActive();
 
     /// @notice Thrown when an invalid hash (zero hash) is provided
     error InvalidHash();
@@ -66,8 +63,10 @@ interface IConsumptionRecord {
     /// @param owner The owner of the consumption record (must be non-zero)
     /// @param keys Array of metadata keys (must match values array length)
     /// @param values Array of metadata values (must match keys array length)
-    function submit(bytes32 crHash, address owner, string[] memory keys, string[] memory values) external;
+    function submit(bytes32 crHash, address owner, string[] memory keys, bytes32[] memory values) external;
 
+    // TODO replace batching by Multicall extension,
+    //      see https://portal.thirdweb.com/tokens/build/extensions/general/Multicall
     /// @notice Submit a batch of consumption records with metadata
     /// @dev Only active CRAs can submit records. Maximum 100 records per batch. All hashes must be unique and non-zero.
     /// @param crHashes Array of consumption record hashes (each must be non-zero)
@@ -78,7 +77,7 @@ interface IConsumptionRecord {
         bytes32[] memory crHashes,
         address[] memory owners,
         string[][] memory keysArray,
-        string[][] memory valuesArray
+        bytes32[][] memory valuesArray
     ) external;
 
     /// @notice Check if a consumption record exists
@@ -91,15 +90,8 @@ interface IConsumptionRecord {
     /// @return CrRecord struct with complete record data
     function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory);
 
-    /// @notice Set the CRA Registry contract address
-    /// @dev Only callable by contract owner
-    /// @param _craRegistry The address of the CRA Registry contract
-    function setCRARegistry(address _craRegistry) external;
-
-    /// @notice Get the current CRA Registry contract address
-    /// @return The address of the CRA Registry contract
-    function getCRARegistry() external view returns (address);
-
+    // TODO optimize this call to reduce a number of tokens returned and pagination,
+    //      See for example: https://docs.openzeppelin.com/contracts/4.x/api/token/ERC721#ierc721enumerable-2
     /// @notice Get all consumption record hashes owned by a specific address
     /// @param owner The address of the owner
     /// @return Array of consumption record hashes owned by the address

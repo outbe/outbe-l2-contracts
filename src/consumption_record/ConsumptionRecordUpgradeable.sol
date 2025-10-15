@@ -1,19 +1,26 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.27;
 
+import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ERC165Upgradeable} from
+    "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
-import {ICRARegistry} from "../interfaces/ICRARegistry.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
+import {CRAAware} from "../utils/CRAAware.sol";
+import {ERC721Enumerable} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
 /// @dev This contract allows active CRAs to submit consumption records with flexible metadata
 /// @author Outbe Team
-/// @custom:version 1.0.0
-/// @custom:security-contact security@outbe.io
-contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, OwnableUpgradeable, UUPSUpgradeable {
+contract ConsumptionRecordUpgradeable is
+    UUPSUpgradeable,
+    CRAAware,
+    IConsumptionRecord,
+    ISoulBoundNFT,
+    ERC165Upgradeable
+{
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
 
@@ -26,26 +33,16 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     /// @dev Mapping from owner address to array of record hashes they own
     mapping(address => bytes32[]) public ownerRecords;
 
-    /// @dev Reference to the CRA Registry contract
-    ICRARegistry public craRegistry;
+    /// @dev Total number of records tracked by this contract
+    uint256 private _totalRecords;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    modifier onlyActiveCra() {
-        if (!craRegistry.isCRAActive(msg.sender)) revert CRANotActive();
-        _;
-    }
-
     modifier validCrHash(bytes32 crHash) {
         if (crHash == bytes32(0)) revert InvalidHash();
-        _;
-    }
-
-    modifier validOwner(address _owner) {
-        if (_owner == address(0)) revert InvalidOwner();
         _;
     }
 
@@ -58,8 +55,10 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __UUPSUpgradeable_init();
-        craRegistry = ICRARegistry(_craRegistry);
+        __ERC165_init();
+        __CRAAware_init(_craRegistry);
         _transferOwnership(_owner);
+        _totalRecords = 0;
     }
 
     /// @notice Internal function to add a single consumption record
@@ -68,11 +67,11 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     /// @param keys Array of metadata keys
     /// @param values Array of metadata values
     /// @param timestamp The timestamp to use for submission
-    function _addRecord(
+    function _addEntity(
         bytes32 crHash,
         address recordOwner,
         string[] memory keys,
-        string[] memory values,
+        bytes32[] memory values,
         uint256 timestamp
     ) internal {
         // Validate record parameters
@@ -99,16 +98,19 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         // Add record hash to owner's list
         ownerRecords[recordOwner].push(crHash);
 
+        // Increment total supply
+        _totalRecords += 1;
+
         // Emit submission event
         emit Submitted(crHash, msg.sender, timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
-    function submit(bytes32 crHash, address recordOwner, string[] memory keys, string[] memory values)
+    function submit(bytes32 crHash, address recordOwner, string[] memory keys, bytes32[] memory values)
         external
-        onlyActiveCra
+        onlyActiveCRA
     {
-        _addRecord(crHash, recordOwner, keys, values, block.timestamp);
+        _addEntity(crHash, recordOwner, keys, values, block.timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
@@ -116,8 +118,8 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
         bytes32[] memory crHashes,
         address[] memory owners,
         string[][] memory keysArray,
-        string[][] memory valuesArray
-    ) external onlyActiveCra {
+        bytes32[][] memory valuesArray
+    ) external onlyActiveCRA {
         uint256 batchSize = crHashes.length;
 
         // Validate batch size
@@ -133,7 +135,7 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
 
         // Process each record in the batch using the internal function
         for (uint256 i = 0; i < batchSize; i++) {
-            _addRecord(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
+            _addEntity(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
         }
 
         // Emit batch submission event
@@ -151,24 +153,27 @@ contract ConsumptionRecordUpgradeable is IConsumptionRecord, Initializable, Owna
     }
 
     /// @inheritdoc IConsumptionRecord
-    function setCRARegistry(address _craRegistry) external onlyOwner {
-        craRegistry = ICRARegistry(_craRegistry);
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function getCRARegistry() external view returns (address) {
-        return address(craRegistry);
-    }
-
-    /// @inheritdoc IConsumptionRecord
     function getConsumptionRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
         return ownerRecords[_owner];
+    }
+
+    /// @notice Count NFTs tracked by this contract
+    /// @return A count of valid NFTs tracked by this contract
+    function totalSupply() external view returns (uint256) {
+        return _totalRecords;
     }
 
     /// @notice Get the current owner of the contract
     /// @return The address of the contract owner
     function getOwner() external view returns (address) {
         return owner();
+    }
+
+    /// @inheritdoc ERC165Upgradeable
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return super.supportsInterface(interfaceId);
+        // TODO add supported interfaces
+        //      interfaceId == 0x780e9d63 // ERC721Enumerable
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

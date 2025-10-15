@@ -2,6 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+solc = "0.8.27"
 bytecode_hash = "none"
 cbor_metadata = false
 always_use_create_2_factory = true
@@ -14,7 +15,7 @@ remappings = [
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
-[lint]
+[profile.lint]
 exclude_lints = ["mixed-case-function", "pascal-case-struct"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
