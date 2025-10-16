@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {OwnableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {
     ERC165Upgradeable
@@ -13,8 +12,9 @@ import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {
-    ERC721Enumerable
-} from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+    MulticallUpgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
+import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
@@ -26,7 +26,8 @@ contract ConsumptionRecordUpgradeable is
     CRAAware,
     IConsumptionRecord,
     ISoulBoundNFT,
-    ERC165Upgradeable
+    ERC165Upgradeable,
+    MulticallUpgradeable
 {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
@@ -60,6 +61,7 @@ contract ConsumptionRecordUpgradeable is
         __UUPSUpgradeable_init();
         __ERC165_init();
         __CRAAware_init(_craRegistry);
+        __Multicall_init();
         _transferOwnership(_owner);
         _totalRecords = 0;
     }
@@ -117,33 +119,24 @@ contract ConsumptionRecordUpgradeable is
         _addEntity(crHash, recordOwner, keys, values, block.timestamp);
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function submitBatch(
-        bytes32[] memory crHashes,
-        address[] memory owners,
-        string[][] memory keysArray,
-        bytes32[][] memory valuesArray
-    ) external onlyActiveCRA whenNotPaused {
-        uint256 batchSize = crHashes.length;
-
-        // Validate batch size
-        if (batchSize == 0) revert EmptyBatch();
-        if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-
-        // Validate array lengths match
-        if (owners.length != batchSize) revert MetadataKeyValueMismatch();
-        if (keysArray.length != batchSize) revert MetadataKeyValueMismatch();
-        if (valuesArray.length != batchSize) revert MetadataKeyValueMismatch();
-
-        uint256 timestamp = block.timestamp;
-
-        // Process each record in the batch using the internal function
-        for (uint256 i = 0; i < batchSize; i++) {
-            _addEntity(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
+    /// @notice Multicall entry point allowing multiple submits in a single transaction
+    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    function multicall(bytes[] calldata data)
+        external
+        override
+        onlyActiveCRA
+        whenNotPaused
+        returns (bytes[] memory results)
+    {
+        uint256 n = data.length;
+        if (n == 0) revert EmptyBatch();
+        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
+        // Inline implementation of OZ Multicall to allow access control modifiers
+        results = new bytes[](n);
+        for (uint256 i = 0; i < n; i++) {
+            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
+            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
         }
-
-        // Emit batch submission event
-        emit BatchSubmitted(batchSize, msg.sender, timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord

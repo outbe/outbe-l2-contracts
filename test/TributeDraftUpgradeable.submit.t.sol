@@ -5,9 +5,7 @@ import {Test} from "../lib/forge-std/src/Test.sol";
 import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
-import {IConsumptionRecord} from "../src/interfaces/IConsumptionRecord.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
-import {IConsumptionUnit} from "../src/interfaces/IConsumptionUnit.sol";
 import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ITributeDraft} from "../src/interfaces/ITributeDraft.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
@@ -76,17 +74,17 @@ contract TributeDraftUpgradeableSubmitTest is Test {
 
     function test_submit_success_persists_entity_aggregates_and_emits() public {
         // seed two CUs
-        bytes32 CU1 = keccak256("cu-1");
-        bytes32 CU2 = keccak256("cu-2");
-        _submitCU(CU1, keccak256("cr-1"), 5, 9e17);
-        _submitCU(CU2, keccak256("cr-2"), 7, 6e17);
+        bytes32 cu1 = keccak256("cu-1");
+        bytes32 cu2 = keccak256("cu-2");
+        _submitCU(cu1, keccak256("cr-1"), 5, 9e17);
+        _submitCU(cu2, keccak256("cr-2"), 7, 6e17);
 
         uint256 ts = 1_800_000_000;
         vm.warp(ts);
 
         bytes32[] memory cuHashes = new bytes32[](2);
-        cuHashes[0] = CU1;
-        cuHashes[1] = CU2;
+        cuHashes[0] = cu1;
+        cuHashes[1] = cu2;
 
         // Expected tdId matches contract computation
         bytes32 expectedId = keccak256(abi.encode(recordOwner, worldwideDay, cuHashes));
@@ -108,8 +106,8 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         assertEq(e.settlementAmountBase, 13);
         assertEq(e.settlementAmountAtto, 5e17);
         assertEq(e.cuHashes.length, 2);
-        assertEq(e.cuHashes[0], CU1);
-        assertEq(e.cuHashes[1], CU2);
+        assertEq(e.cuHashes[0], cu1);
+        assertEq(e.cuHashes[1], cu2);
         assertEq(e.submittedAt, ts);
 
         // totalSupply increments
@@ -123,12 +121,12 @@ contract TributeDraftUpgradeableSubmitTest is Test {
     }
 
     function test_submit_reverts_on_duplicate_cu_in_input() public {
-        bytes32 CU1 = keccak256("cu-dup");
-        _submitCU(CU1, keccak256("cr-dup"), 1, 1);
+        bytes32 cu1 = keccak256("cu-dup");
+        _submitCU(cu1, keccak256("cr-dup"), 1, 1);
 
         bytes32[] memory cuHashes = new bytes32[](2);
-        cuHashes[0] = CU1;
-        cuHashes[1] = CU1; // duplicate
+        cuHashes[0] = cu1;
+        cuHashes[1] = cu1; // duplicate
 
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.AlreadyExists.selector);
@@ -136,24 +134,24 @@ contract TributeDraftUpgradeableSubmitTest is Test {
     }
 
     function test_submit_reverts_when_cu_already_used_before() public {
-        bytes32 CU1 = keccak256("cu-used-1");
-        bytes32 CU2 = keccak256("cu-used-2");
-        bytes32 CU3 = keccak256("cu-used-3");
-        _submitCU(CU1, keccak256("cr-used-1"), 2, 0);
-        _submitCU(CU2, keccak256("cr-used-2"), 3, 0);
-        _submitCU(CU3, keccak256("cr-used-3"), 4, 0);
+        bytes32 cu1 = keccak256("cu-used-1");
+        bytes32 cu2 = keccak256("cu-used-2");
+        bytes32 cu3 = keccak256("cu-used-3");
+        _submitCU(cu1, keccak256("cr-used-1"), 2, 0);
+        _submitCU(cu2, keccak256("cr-used-2"), 3, 0);
+        _submitCU(cu3, keccak256("cr-used-3"), 4, 0);
 
         // First submission consumes CU1 and CU2
         bytes32[] memory first = new bytes32[](2);
-        first[0] = CU1;
-        first[1] = CU2;
+        first[0] = cu1;
+        first[1] = cu2;
         vm.prank(recordOwner);
         td.submit(first);
 
         // Second submission tries to reuse CU1
         bytes32[] memory second = new bytes32[](2);
-        second[0] = CU1;
-        second[1] = CU3;
+        second[0] = cu1;
+        second[1] = cu3;
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.AlreadyExists.selector);
         td.submit(second);
@@ -169,19 +167,19 @@ contract TributeDraftUpgradeableSubmitTest is Test {
     }
 
     function test_submit_reverts_when_caller_not_owner_of_first_cu() public {
-        bytes32 CU1 = keccak256("cu-not-owner");
-        _submitCU(CU1, keccak256("cr-not-owner"), 1, 0);
+        bytes32 cu1 = keccak256("cu-not-owner");
+        _submitCU(cu1, keccak256("cr-not-owner"), 1, 0);
         bytes32[] memory arr = new bytes32[](1);
-        arr[0] = CU1;
+        arr[0] = cu1;
         vm.prank(other);
-        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, CU1));
+        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu1));
         td.submit(arr);
     }
 
     function test_submit_reverts_when_different_owner_in_list() public {
         // CU1 owned by recordOwner
-        bytes32 CU1 = keccak256("cu-owner-1");
-        _submitCU(CU1, keccak256("cr-owner-1"), 1, 0);
+        bytes32 cu1 = keccak256("cu-owner-1");
+        _submitCU(cu1, keccak256("cr-owner-1"), 1, 0);
 
         // Create CU2 owned by a different owner by submitting CR and CU with different owner
         // We need to submit CR with other as owner and CU with other as owner, so adjust helper inline here
@@ -194,32 +192,32 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         cr.submit(keccak256("cr-owner-2"), other, keys, values);
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = keccak256("cr-owner-2");
-        bytes32 CU2 = keccak256("cu-owner-2");
+        bytes32 cu2 = keccak256("cu-owner-2");
         vm.prank(craActive);
-        cu.submit(CU2, other, currency, worldwideDay, 2, 0, crHashes);
+        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes);
 
         bytes32[] memory arr = new bytes32[](2);
-        arr[0] = CU1;
-        arr[1] = CU2;
+        arr[0] = cu1;
+        arr[1] = cu2;
 
         vm.prank(recordOwner);
-        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, CU2));
+        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu2));
         td.submit(arr);
     }
 
     function test_submit_reverts_on_currency_mismatch() public {
-        bytes32 CU1 = keccak256("cu-cur-1");
-        _submitCU(CU1, keccak256("cr-cur-1"), 1, 0);
+        bytes32 cu1 = keccak256("cu-cur-1");
+        _submitCU(cu1, keccak256("cr-cur-1"), 1, 0);
 
         // Make a CU with different currency for same owner/day
         bytes32 cr2 = keccak256("cr-cur-2");
         _submitCR(cr2);
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = cr2;
-        bytes32 CU2 = keccak256("cu-cur-2");
+        bytes32 cu2 = keccak256("cu-cur-2");
         vm.prank(craActive);
         cu.submit(
-            CU2,
+            cu2,
             recordOwner,
             840,
             /* USD */
@@ -230,8 +228,8 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         );
 
         bytes32[] memory arr = new bytes32[](2);
-        arr[0] = CU1;
-        arr[1] = CU2;
+        arr[0] = cu1;
+        arr[1] = cu2;
 
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.NotSettlementCurrencyCurrency.selector);
@@ -239,21 +237,21 @@ contract TributeDraftUpgradeableSubmitTest is Test {
     }
 
     function test_submit_reverts_on_worldwideDay_mismatch() public {
-        bytes32 CU1 = keccak256("cu-day-1");
-        _submitCU(CU1, keccak256("cr-day-1"), 1, 0);
+        bytes32 cu1 = keccak256("cu-day-1");
+        _submitCU(cu1, keccak256("cr-day-1"), 1, 0);
 
         // CU with different day
         bytes32 cr2 = keccak256("cr-day-2");
         _submitCR(cr2);
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = cr2;
-        bytes32 CU2 = keccak256("cu-day-2");
+        bytes32 cu2 = keccak256("cu-day-2");
         vm.prank(craActive);
-        cu.submit(CU2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes);
+        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes);
 
         bytes32[] memory arr = new bytes32[](2);
-        arr[0] = CU1;
-        arr[1] = CU2;
+        arr[0] = cu1;
+        arr[1] = cu2;
 
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.NotSameWorldwideDay.selector);

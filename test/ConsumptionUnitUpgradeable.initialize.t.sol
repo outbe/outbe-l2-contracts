@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "./helpers.t.sol";
+import "./helpers.t.sol" as TestUtils;
 import {ConsumptionUnitUpgradeable} from "src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
@@ -9,13 +9,13 @@ import {Test} from "forge-std/Test.sol";
 
 contract ConsumptionUnitUpgradeableInitializeTest is Test {
     ConsumptionUnitUpgradeable cu;
-    MockCRARegistry registry;
+    TestUtils.MockCRARegistry registry;
 
     address owner = address(0xABCD);
     address cr = address(0x123ff);
 
     function setUp() public {
-        registry = new MockCRARegistry();
+        registry = new TestUtils.MockCRARegistry();
     }
 
     function _deployInitializedProxy(address craRegistry, address newOwner)

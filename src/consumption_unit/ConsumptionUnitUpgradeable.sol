@@ -3,13 +3,13 @@ pragma solidity ^0.8.27;
 
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
@@ -20,7 +20,8 @@ contract ConsumptionUnitUpgradeable is
     CRAAware,
     IConsumptionUnit,
     ISoulBoundNFT,
-    ERC165Upgradeable
+    ERC165Upgradeable,
+    MulticallUpgradeable
 {
     /// @notice Reference to the Consumption Record contract
     IConsumptionRecord public consumptionRecord;
@@ -55,6 +56,7 @@ contract ConsumptionUnitUpgradeable is
         __UUPSUpgradeable_init();
         __ERC165_init();
         __CRAAware_init(_craRegistry);
+        __Multicall_init();
         _transferOwnership(_owner);
         _totalRecords = 0;
         _setConsumptionRecordAddress(_consumptionRecord);
@@ -155,41 +157,23 @@ contract ConsumptionUnitUpgradeable is
         );
     }
 
-    /// @inheritdoc IConsumptionUnit
-    function submitBatch(
-        bytes32[] memory cuHashes,
-        address[] memory owners,
-        uint32[] memory worldwideDays,
-        uint16[] memory settlementCurrencies,
-        uint64[] memory settlementAmountsBase,
-        uint128[] memory settlementAmountsAtto,
-        bytes32[][] memory crHashesArray
-    ) external onlyActiveCRA whenNotPaused {
-        uint256 batchSize = cuHashes.length;
-        if (batchSize == 0) revert EmptyBatch();
-        if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-
-        if (
-            owners.length != batchSize || settlementCurrencies.length != batchSize || worldwideDays.length != batchSize
-                || settlementAmountsBase.length != batchSize || settlementAmountsAtto.length != batchSize
-                || crHashesArray.length != batchSize
-        ) revert ArrayLengthMismatch();
-
-        uint256 timestamp = block.timestamp;
-        for (uint256 i = 0; i < batchSize; i++) {
-            _addRecord(
-                cuHashes[i],
-                owners[i],
-                settlementCurrencies[i],
-                worldwideDays[i],
-                settlementAmountsBase[i],
-                settlementAmountsAtto[i],
-                crHashesArray[i],
-                timestamp
-            );
+    /// @notice Multicall entry point allowing multiple submits in a single transaction
+    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    function multicall(bytes[] calldata data)
+        external
+        override
+        onlyActiveCRA
+        whenNotPaused
+        returns (bytes[] memory results)
+    {
+        uint256 n = data.length;
+        if (n == 0) revert EmptyBatch();
+        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
+        results = new bytes[](n);
+        for (uint256 i = 0; i < n; i++) {
+            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
+            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
         }
-
-        emit BatchSubmitted(batchSize, msg.sender, timestamp);
     }
 
     function isExists(bytes32 cuHash) public view returns (bool) {
