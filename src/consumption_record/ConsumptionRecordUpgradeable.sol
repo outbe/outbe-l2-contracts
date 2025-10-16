@@ -13,6 +13,10 @@ import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {
+    MulticallUpgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
+import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
+import {
     ERC721Enumerable
 } from "../../lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
@@ -26,7 +30,8 @@ contract ConsumptionRecordUpgradeable is
     CRAAware,
     IConsumptionRecord,
     ISoulBoundNFT,
-    ERC165Upgradeable
+    ERC165Upgradeable,
+    MulticallUpgradeable
 {
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
@@ -60,6 +65,7 @@ contract ConsumptionRecordUpgradeable is
         __UUPSUpgradeable_init();
         __ERC165_init();
         __CRAAware_init(_craRegistry);
+        __Multicall_init();
         _transferOwnership(_owner);
         _totalRecords = 0;
     }
@@ -115,6 +121,25 @@ contract ConsumptionRecordUpgradeable is
         whenNotPaused
     {
         _addEntity(crHash, recordOwner, keys, values, block.timestamp);
+    }
+
+    /// @notice Multicall entry point allowing multiple submits in a single transaction
+    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    function multicall(bytes[] calldata data)
+        external
+        override
+        onlyActiveCRA
+        whenNotPaused
+        returns (bytes[] memory results)
+    {
+        uint256 n = data.length;
+        if (n == 0) revert EmptyBatch();
+        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
+        // Inline implementation of OZ Multicall to allow access control modifiers
+        results = new bytes[](n);
+        for (uint256 i = 0; i < n; i++) {
+            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
+        }
     }
 
     /// @inheritdoc IConsumptionRecord
