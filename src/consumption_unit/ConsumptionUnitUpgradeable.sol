@@ -10,6 +10,8 @@ import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/intro
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
@@ -20,7 +22,8 @@ contract ConsumptionUnitUpgradeable is
     CRAAware,
     IConsumptionUnit,
     ISoulBoundNFT,
-    ERC165Upgradeable
+    ERC165Upgradeable,
+    MulticallUpgradeable
 {
     /// @notice Reference to the Consumption Record contract
     IConsumptionRecord public consumptionRecord;
@@ -55,6 +58,7 @@ contract ConsumptionUnitUpgradeable is
         __UUPSUpgradeable_init();
         __ERC165_init();
         __CRAAware_init(_craRegistry);
+        __Multicall_init();
         _transferOwnership(_owner);
         _totalRecords = 0;
         _setConsumptionRecordAddress(_consumptionRecord);
@@ -153,6 +157,24 @@ contract ConsumptionUnitUpgradeable is
             hashes,
             block.timestamp
         );
+    }
+
+    /// @notice Multicall entry point allowing multiple submits in a single transaction
+    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    function multicall(bytes[] calldata data)
+        external
+        override
+        onlyActiveCRA
+        whenNotPaused
+        returns (bytes[] memory results)
+    {
+        uint256 n = data.length;
+        if (n == 0) revert EmptyBatch();
+        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
+        results = new bytes[](n);
+        for (uint256 i = 0; i < n; i++) {
+            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
+        }
     }
 
     /// @inheritdoc IConsumptionUnit
