@@ -91,8 +91,12 @@ contract TributeDraftUpgradeable is
             baseAmt += rec.settlementAmountBase;
             uint128 attoSum = attoAmt + rec.settlementAmountAtto;
             if (attoSum >= 1e18) {
-                baseAmt += uint64(attoSum / 1e18);
-                attoAmt = uint128(attoSum % 1e18);
+                uint128 baseAdd = attoSum / 1e18;
+                uint128 attoAdd = attoSum % 1e18;
+                // casting to 'uint64' is safe because the amount wouldn't be so large value
+                // forge-lint: disable-next-line(unsafe-typecast)
+                baseAmt += uint64(baseAdd);
+                attoAmt = attoAdd;
             } else {
                 attoAmt = attoSum;
             }

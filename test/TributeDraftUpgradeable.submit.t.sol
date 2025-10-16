@@ -136,10 +136,10 @@ contract TributeDraftUpgradeableSubmitTest is Test {
     function test_submit_reverts_when_cu_already_used_before() public {
         bytes32 cu1 = keccak256("cu-used-1");
         bytes32 cu2 = keccak256("cu-used-2");
-        bytes32 CU3 = keccak256("cu-used-3");
+        bytes32 cu3 = keccak256("cu-used-3");
         _submitCU(cu1, keccak256("cr-used-1"), 2, 0);
         _submitCU(cu2, keccak256("cr-used-2"), 3, 0);
-        _submitCU(CU3, keccak256("cr-used-3"), 4, 0);
+        _submitCU(cu3, keccak256("cr-used-3"), 4, 0);
 
         // First submission consumes CU1 and CU2
         bytes32[] memory first = new bytes32[](2);
@@ -151,7 +151,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         // Second submission tries to reuse CU1
         bytes32[] memory second = new bytes32[](2);
         second[0] = cu1;
-        second[1] = CU3;
+        second[1] = cu3;
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.AlreadyExists.selector);
         td.submit(second);

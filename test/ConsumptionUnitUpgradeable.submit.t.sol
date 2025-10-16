@@ -6,7 +6,6 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 import {ConsumptionRecordUpgradeable} from "src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "src/consumption_unit/ConsumptionUnitUpgradeable.sol";
-import {IConsumptionRecord} from "src/interfaces/IConsumptionRecord.sol";
 import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
 import {MockCRARegistry} from "./helpers.t.sol";

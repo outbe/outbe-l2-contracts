@@ -26,8 +26,12 @@ contract CRARegistryUpgradeable is ICRARegistry, Initializable, OwnableUpgradeab
     }
 
     modifier craExists(address cra) {
-        if (cras[cra].registeredAt == 0) revert CRANotFound();
+        _craExists(cra);
         _;
+    }
+
+    function _craExists(address cra) internal view {
+        if (cras[cra].registeredAt == 0) revert CRANotFound();
     }
 
     /// @notice Initialize the registry
