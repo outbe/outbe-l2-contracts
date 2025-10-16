@@ -57,6 +57,9 @@ interface IConsumptionRecord {
     /// @notice Thrown when trying to submit an empty batch
     error EmptyBatch();
 
+    /// @notice Thrown when trying to submit an invalid multicall tx
+    error InvalidCall();
+
     /// @notice Submit a consumption record with optional metadata
     /// @dev Only active CRAs can submit records. Hash must be non-zero and unique.
     /// @param crHash The hash of the consumption record (must be non-zero)

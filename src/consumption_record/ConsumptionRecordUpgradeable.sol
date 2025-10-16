@@ -134,6 +134,7 @@ contract ConsumptionRecordUpgradeable is
         // Inline implementation of OZ Multicall to allow access control modifiers
         results = new bytes[](n);
         for (uint256 i = 0; i < n; i++) {
+            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
             results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
         }
     }

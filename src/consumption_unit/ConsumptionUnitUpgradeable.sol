@@ -171,6 +171,7 @@ contract ConsumptionUnitUpgradeable is
         if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
         results = new bytes[](n);
         for (uint256 i = 0; i < n; i++) {
+            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
             results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
         }
     }

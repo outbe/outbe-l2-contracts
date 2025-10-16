@@ -31,15 +31,33 @@ interface IConsumptionUnit {
 
     event Submitted(bytes32 indexed cuHash, address indexed cra, uint256 timestamp);
 
+    /// @notice Thrown when trying to submit a record that already exists
     error AlreadyExists();
-    error ConsumptionRecordAlreadyExists();
+
+    /// @notice Thrown when an invalid hash (zero hash) is provided
     error InvalidHash();
+
+    /// @notice Thrown when metadata keys and values arrays have different lengths
+    error MetadataKeyValueMismatch();
+
+    /// @notice Thrown when trying to add metadata with an empty key
+    error EmptyMetadataKey();
+
+    /// @notice Thrown when an invalid owner address (zero address) is provided
     error InvalidOwner();
-    error EmptyBatch();
+
+    /// @notice Thrown when batch size exceeds the maximum allowed (100)
     error BatchSizeTooLarge();
+
+    /// @notice Thrown when trying to submit an empty batch
+    error EmptyBatch();
+
+    error ConsumptionRecordAlreadyExists();
     error InvalidSettlementCurrency();
     error InvalidAmount();
     error InvalidConsumptionRecords();
+    /// @notice Thrown when trying to submit an invalid multicall tx
+    error InvalidCall();
 
     /// @notice Submit a single consumption unit record
     /// @dev Only active CRAs can submit. Hash must be non-zero and unique.
