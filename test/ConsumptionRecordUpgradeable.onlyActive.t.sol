@@ -23,7 +23,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
         // Deploy implementation and initialize via ERC1967Proxy
         ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
         bytes memory initData =
-                            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
+            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         cr = ConsumptionRecordUpgradeable(address(proxy));
 

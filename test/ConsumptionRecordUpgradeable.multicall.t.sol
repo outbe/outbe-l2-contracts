@@ -23,7 +23,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         // Deploy implementation and initialize via ERC1967Proxy
         ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
         bytes memory initData =
-                            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
+            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         cr = ConsumptionRecordUpgradeable(address(proxy));
 
@@ -40,9 +40,9 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
     }
 
     function _encodeSubmit(bytes32 crHash, address owner_, string memory k, uint256 v)
-    internal
-    pure
-    returns (bytes memory)
+        internal
+        pure
+        returns (bytes memory)
     {
         (string[] memory keys, bytes32[] memory values) = _singleKV(k, v);
         return abi.encodeWithSelector(ConsumptionRecordUpgradeable.submit.selector, crHash, owner_, keys, values);
