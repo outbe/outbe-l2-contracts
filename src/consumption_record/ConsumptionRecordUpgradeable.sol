@@ -143,35 +143,6 @@ contract ConsumptionRecordUpgradeable is
     }
 
     /// @inheritdoc IConsumptionRecord
-    function submitBatch(
-        bytes32[] memory crHashes,
-        address[] memory owners,
-        string[][] memory keysArray,
-        bytes32[][] memory valuesArray
-    ) external onlyActiveCRA whenNotPaused {
-        uint256 batchSize = crHashes.length;
-
-        // Validate batch size
-        if (batchSize == 0) revert EmptyBatch();
-        if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-
-        // Validate array lengths match
-        if (owners.length != batchSize) revert MetadataKeyValueMismatch();
-        if (keysArray.length != batchSize) revert MetadataKeyValueMismatch();
-        if (valuesArray.length != batchSize) revert MetadataKeyValueMismatch();
-
-        uint256 timestamp = block.timestamp;
-
-        // Process each record in the batch using the internal function
-        for (uint256 i = 0; i < batchSize; i++) {
-            _addEntity(crHashes[i], owners[i], keysArray[i], valuesArray[i], timestamp);
-        }
-
-        // Emit batch submission event
-        emit BatchSubmitted(batchSize, msg.sender, timestamp);
-    }
-
-    /// @inheritdoc IConsumptionRecord
     function isExists(bytes32 crHash) public view returns (bool) {
         return consumptionRecords[crHash].submittedBy != address(0);
     }

@@ -65,21 +65,6 @@ interface IConsumptionRecord {
     /// @param values Array of metadata values (must match keys array length)
     function submit(bytes32 crHash, address owner, string[] memory keys, bytes32[] memory values) external;
 
-    // TODO replace batching by Multicall extension,
-    //      see https://portal.thirdweb.com/tokens/build/extensions/general/Multicall
-    /// @notice Submit a batch of consumption records with metadata
-    /// @dev Only active CRAs can submit records. Maximum 100 records per batch. All hashes must be unique and non-zero.
-    /// @param crHashes Array of consumption record hashes (each must be non-zero)
-    /// @param owners Array of record owners (each must be non-zero, matches crHashes length)
-    /// @param keysArray Array of metadata key arrays (matches crHashes length)
-    /// @param valuesArray Array of metadata value arrays (matches crHashes length)
-    function submitBatch(
-        bytes32[] memory crHashes,
-        address[] memory owners,
-        string[][] memory keysArray,
-        bytes32[][] memory valuesArray
-    ) external;
-
     /// @notice Check if a consumption record exists
     /// @param crHash The hash to check
     /// @return true if the record exists, false otherwise

@@ -177,43 +177,6 @@ contract ConsumptionUnitUpgradeable is
         }
     }
 
-    /// @inheritdoc IConsumptionUnit
-    function submitBatch(
-        bytes32[] memory cuHashes,
-        address[] memory owners,
-        uint32[] memory worldwideDays,
-        uint16[] memory settlementCurrencies,
-        uint64[] memory settlementAmountsBase,
-        uint128[] memory settlementAmountsAtto,
-        bytes32[][] memory crHashesArray
-    ) external onlyActiveCRA whenNotPaused {
-        uint256 batchSize = cuHashes.length;
-        if (batchSize == 0) revert EmptyBatch();
-        if (batchSize > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-
-        if (
-            owners.length != batchSize || settlementCurrencies.length != batchSize || worldwideDays.length != batchSize
-                || settlementAmountsBase.length != batchSize || settlementAmountsAtto.length != batchSize
-                || crHashesArray.length != batchSize
-        ) revert ArrayLengthMismatch();
-
-        uint256 timestamp = block.timestamp;
-        for (uint256 i = 0; i < batchSize; i++) {
-            _addRecord(
-                cuHashes[i],
-                owners[i],
-                settlementCurrencies[i],
-                worldwideDays[i],
-                settlementAmountsBase[i],
-                settlementAmountsAtto[i],
-                crHashesArray[i],
-                timestamp
-            );
-        }
-
-        emit BatchSubmitted(batchSize, msg.sender, timestamp);
-    }
-
     function isExists(bytes32 cuHash) public view returns (bool) {
         return consumptionUnits[cuHash].submittedBy != address(0);
     }

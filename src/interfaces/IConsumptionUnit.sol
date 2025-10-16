@@ -30,7 +30,6 @@ interface IConsumptionUnit {
     }
 
     event Submitted(bytes32 indexed cuHash, address indexed cra, uint256 timestamp);
-    event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp);
 
     error AlreadyExists();
     error ConsumptionRecordAlreadyExists();
@@ -41,7 +40,6 @@ interface IConsumptionUnit {
     error InvalidSettlementCurrency();
     error InvalidAmount();
     error InvalidConsumptionRecords();
-    error ArrayLengthMismatch();
 
     /// @notice Submit a single consumption unit record
     /// @dev Only active CRAs can submit. Hash must be non-zero and unique.
@@ -60,25 +58,6 @@ interface IConsumptionUnit {
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
         bytes32[] memory hashes
-    ) external;
-
-    /// @notice Submit a batch of consumption unit records
-    /// @dev Only active CRAs can submit. Maximum 100 per batch. All hashes must be unique and non-zero.
-    /// @param cuHashes Array of CU hashes (each must be non-zero)
-    /// @param owners Array of CU owners (must match cuHashes length)
-    /// @param worldwideDays Array of worldwide days (must match cuHashes length)
-    /// @param settlementCurrencies Array of ISO-4217 currency codes (must match cuHashes length)
-    /// @param settlementAmountsBase Array of base amounts (must match cuHashes length)
-    /// @param settlementAmountsAtto Array of fractional amounts (each 0 <= amount < 1e18, must match cuHashes length)
-    /// @param crHashesArray Array of arrays of linked CR hashes (must match cuHashes length)
-    function submitBatch(
-        bytes32[] memory cuHashes,
-        address[] memory owners,
-        uint32[] memory worldwideDays,
-        uint16[] memory settlementCurrencies,
-        uint64[] memory settlementAmountsBase,
-        uint128[] memory settlementAmountsAtto,
-        bytes32[][] memory crHashesArray
     ) external;
 
     /// @notice Check if a consumption unit exists

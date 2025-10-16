@@ -28,7 +28,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
         // Deploy implementation and initialize via ERC1967Proxy
         ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
         bytes memory initData =
-            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
+                            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         cr = ConsumptionRecordUpgradeable(address(proxy));
 
@@ -77,57 +77,5 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
         vm.prank(craUnknown);
         vm.expectRevert(ICRAAware.CRANotActive.selector);
         cr.submit(crHash, recordOwner, keys, values);
-    }
-
-    function test_submitBatch_succeeds_for_activeCRA() public {
-        bytes32[] memory crHashes = new bytes32[](2);
-        crHashes[0] = keccak256("b1");
-        crHashes[1] = keccak256("b2");
-
-        address[] memory owners = new address[](2);
-        owners[0] = recordOwner;
-        owners[1] = recordOwner;
-
-        string[][] memory keysArray = new string[][](2);
-        keysArray[0] = new string[](1);
-        keysArray[0][0] = "k";
-        keysArray[1] = new string[](1);
-        keysArray[1][0] = "k";
-
-        bytes32[][] memory valuesArray = new bytes32[][](2);
-        valuesArray[0] = new bytes32[](1);
-        valuesArray[0][0] = bytes32(uint256(1));
-        valuesArray[1] = new bytes32[](1);
-        valuesArray[1][0] = bytes32(uint256(2));
-
-        vm.prank(craActive);
-        cr.submitBatch(crHashes, owners, keysArray, valuesArray);
-
-        assertTrue(cr.isExists(crHashes[0]));
-        assertTrue(cr.isExists(crHashes[1]));
-        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getConsumptionRecord(crHashes[0]);
-        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getConsumptionRecord(crHashes[1]);
-        assertEq(e1.submittedBy, craActive);
-        assertEq(e2.submittedBy, craActive);
-    }
-
-    function test_submitBatch_reverts_for_inactiveCRA() public {
-        bytes32[] memory crHashes = new bytes32[](1);
-        crHashes[0] = keccak256("b3");
-
-        address[] memory owners = new address[](1);
-        owners[0] = recordOwner;
-
-        string[][] memory keysArray = new string[][](1);
-        keysArray[0] = new string[](1);
-        keysArray[0][0] = "k";
-
-        bytes32[][] memory valuesArray = new bytes32[][](1);
-        valuesArray[0] = new bytes32[](1);
-        valuesArray[0][0] = bytes32(uint256(3));
-
-        vm.prank(craInactive);
-        vm.expectRevert(ICRAAware.CRANotActive.selector);
-        cr.submitBatch(crHashes, owners, keysArray, valuesArray);
     }
 }
