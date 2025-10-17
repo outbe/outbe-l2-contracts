@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {ConsumptionRecordAmendmentUpgradeable} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract PredictAddresses is Script {
@@ -45,12 +46,16 @@ contract PredictAddresses is Script {
         string memory craProxySalt = string.concat("CRARegistryProxy_", saltSuffix);
         string memory crImplSalt = string.concat("ConsumptionRecordImpl_", saltSuffix);
         string memory crProxySalt = string.concat("ConsumptionRecordProxy_", saltSuffix);
+        string memory crAImplSalt = string.concat("ConsumptionRecordAmendmentImpl_", saltSuffix);
+        string memory crAProxySalt = string.concat("ConsumptionRecordAmendmentProxy_", saltSuffix);
 
         // Convert to bytes32
         bytes32 craImplSaltBytes = keccak256(abi.encodePacked(craImplSalt));
         bytes32 craProxySaltBytes = keccak256(abi.encodePacked(craProxySalt));
         bytes32 crImplSaltBytes = keccak256(abi.encodePacked(crImplSalt));
         bytes32 crProxySaltBytes = keccak256(abi.encodePacked(crProxySalt));
+        bytes32 crAImplSaltBytes = keccak256(abi.encodePacked(crAImplSalt));
+        bytes32 crAProxySaltBytes = keccak256(abi.encodePacked(crAProxySalt));
 
         // Predict implementation addresses
         address predictedCraImpl = vm.computeCreate2Address(
@@ -59,6 +64,10 @@ contract PredictAddresses is Script {
 
         address predictedCrImpl = vm.computeCreate2Address(
             crImplSaltBytes, keccak256(type(ConsumptionRecordUpgradeable).creationCode), CREATE2_FACTORY
+        );
+
+        address predictedCrAImpl = vm.computeCreate2Address(
+            crAImplSaltBytes, keccak256(type(ConsumptionRecordAmendmentUpgradeable).creationCode), CREATE2_FACTORY
         );
 
         // Predict proxy addresses
@@ -74,6 +83,14 @@ contract PredictAddresses is Script {
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrImpl, consumptionRecordInitData));
         address predictedCrProxy =
             vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
+
+        bytes memory crAmendmentInitData =
+            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+        bytes memory crAProxyBytecode = abi.encodePacked(
+            type(ERC1967Proxy).creationCode, abi.encode(predictedCrAImpl, crAmendmentInitData)
+        );
+        address predictedCrAProxy =
+            vm.computeCreate2Address(crAProxySaltBytes, keccak256(crAProxyBytecode), CREATE2_FACTORY);
 
         // Display results
         console.log("CRA Registry Implementation:");
@@ -100,21 +117,37 @@ contract PredictAddresses is Script {
         console.log("- Predicted address:", predictedCrProxy);
         console.log("");
 
+        console.log("Consumption Record Amendment Implementation:");
+        console.log("- Salt string:", crAImplSalt);
+        console.log("- Salt bytes32:", vm.toString(crAImplSaltBytes));
+        console.log("- Predicted address:", predictedCrAImpl);
+        console.log("");
+
+        console.log("Consumption Record Amendment Proxy (Main Contract):");
+        console.log("- Salt string:", crAProxySalt);
+        console.log("- Salt bytes32:", vm.toString(crAProxySaltBytes));
+        console.log("- Predicted address:", predictedCrAProxy);
+        console.log("");
+
         console.log("=== Summary ===");
         console.log("Implementation Addresses (for upgrades):");
         console.log("- CRA Registry Impl:      ", predictedCraImpl);
         console.log("- Consumption Record Impl:", predictedCrImpl);
+        console.log("- CR Amendment Impl:      ", predictedCrAImpl);
         console.log("");
         console.log("Proxy Addresses (use these for interactions):");
         console.log("- CRA Registry:      ", predictedCraProxy);
         console.log("- Consumption Record:", predictedCrProxy);
+        console.log("- CR Amendment:      ", predictedCrAProxy);
         console.log("");
 
         console.log("Environment variables:");
         console.log("export CRA_REGISTRY_ADDRESS=", predictedCraProxy);
         console.log("export CONSUMPTION_RECORD_ADDRESS=", predictedCrProxy);
+        console.log("export CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", predictedCrAProxy);
         console.log("export CRA_REGISTRY_IMPL=", predictedCraImpl);
         console.log("export CONSUMPTION_RECORD_IMPL=", predictedCrImpl);
+        console.log("export CONSUMPTION_RECORD_AMENDMENT_IMPL=", predictedCrAImpl);
     }
 
     function computeCreate2Address(bytes32 salt, bytes32 bytecodeHash, address deployer)
