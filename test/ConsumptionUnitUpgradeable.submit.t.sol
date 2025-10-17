@@ -86,7 +86,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         emit IConsumptionUnit.Submitted(cuHash, craActive, ts);
 
         vm.prank(craActive);
-        cu.submit(cuHash, recordOwner, currency, wday, baseAmt, attoAmt, crHashes);
+        cu.submit(cuHash, recordOwner, currency, wday, baseAmt, attoAmt, crHashes, new bytes32[](0));
 
         // isExists
         assertTrue(cu.isExists(cuHash));
@@ -120,7 +120,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidHash.selector);
-        cu.submit(bytes32(0), recordOwner, 978, 20250101, 1, 0, crHashes);
+        cu.submit(bytes32(0), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_zero_owner() public {
@@ -130,7 +130,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidOwner.selector);
-        cu.submit(keccak256("cu-x"), address(0), 978, 20250101, 1, 0, crHashes);
+        cu.submit(keccak256("cu-x"), address(0), 978, 20250101, 1, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_invalid_currency_zero() public {
@@ -140,7 +140,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidSettlementCurrency.selector);
-        cu.submit(keccak256("cu-curr"), recordOwner, 0, 20250101, 1, 0, crHashes);
+        cu.submit(keccak256("cu-curr"), recordOwner, 0, 20250101, 1, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_invalid_amount_both_zero() public {
@@ -150,7 +150,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-        cu.submit(keccak256("cu-amt0"), recordOwner, 978, 20250101, 0, 0, crHashes);
+        cu.submit(keccak256("cu-amt0"), recordOwner, 978, 20250101, 0, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_invalid_amount_atto_ge_1e18() public {
@@ -160,7 +160,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-        cu.submit(keccak256("cu-amt1"), recordOwner, 978, 20250101, 0, uint128(1e18), crHashes);
+        cu.submit(keccak256("cu-amt1"), recordOwner, 978, 20250101, 0, uint128(1e18), crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_empty_cr_hashes() public {
@@ -168,7 +168,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-        cu.submit(keccak256("cu-empty"), recordOwner, 978, 20250101, 1, 0, crHashes);
+        cu.submit(keccak256("cu-empty"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_unknown_cr_hash() public {
@@ -178,7 +178,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-        cu.submit(keccak256("cu-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes);
+        cu.submit(keccak256("cu-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
@@ -190,7 +190,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craActive);
         vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-        cu.submit(keccak256("cu-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes);
+        cu.submit(keccak256("cu-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
     }
 
     function test_submit_reverts_on_cr_hash_used_globally_before() public {
@@ -201,9 +201,9 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         arr[0] = h;
 
         vm.startPrank(craActive);
-        cu.submit(keccak256("cu-first"), recordOwner, 978, 20250101, 1, 0, arr);
+        cu.submit(keccak256("cu-first"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
         vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-        cu.submit(keccak256("cu-second"), recordOwner, 978, 20250101, 2, 0, arr);
+        cu.submit(keccak256("cu-second"), recordOwner, 978, 20250101, 2, 0, arr, new bytes32[](0));
         vm.stopPrank();
     }
 
@@ -215,9 +215,9 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.startPrank(craActive);
         bytes32 cuHash = keccak256("cu-dup");
-        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr);
+        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
         vm.expectRevert(IConsumptionUnit.AlreadyExists.selector);
-        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr);
+        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
         vm.stopPrank();
     }
 
@@ -229,11 +229,11 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
 
         vm.prank(craInactive);
         vm.expectRevert(ICRAAware.CRANotActive.selector);
-        cu.submit(keccak256("cu-inact"), recordOwner, 978, 20250101, 1, 0, arr);
+        cu.submit(keccak256("cu-inact"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
 
         address craUnknown = address(0xEefe);
         vm.prank(craUnknown);
         vm.expectRevert(ICRAAware.CRANotActive.selector);
-        cu.submit(keccak256("cu-unk"), recordOwner, 978, 20250101, 1, 0, arr);
+        cu.submit(keccak256("cu-unk"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
     }
 }

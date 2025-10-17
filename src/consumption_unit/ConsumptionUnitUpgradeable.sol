@@ -80,6 +80,7 @@ contract ConsumptionUnitUpgradeable is
     /// @param settlementAmountBase Natural units amount (can be zero only if atto amount is non-zero)
     /// @param settlementAmountAtto Fractional units amount in 1e-18 units (must be < 1e18)
     /// @param crHashes Linked consumption record hashes (each must be unique globally)
+    /// @param amendmentHashes Linked consumption record amendment hashes (each must be unique globally)
     /// @param timestamp Submission timestamp to record
     function _addRecord(
         bytes32 cuHash,
@@ -89,8 +90,9 @@ contract ConsumptionUnitUpgradeable is
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
         bytes32[] memory crHashes,
+        bytes32[] memory amendmentHashes,
         uint256 timestamp
-    ) internal {
+    ) private {
         if (cuHash == bytes32(0)) revert InvalidHash();
         if (recordOwner == address(0)) revert InvalidOwner();
         if (isExists(cuHash)) revert AlreadyExists();
@@ -98,21 +100,9 @@ contract ConsumptionUnitUpgradeable is
         _validateCurrency(settlementCurrency);
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
-        // check CR hashes uniqueness and existence in CR contract
-        // TODO add limitation for crHashes size
-        uint256 n = crHashes.length;
-        if (n == 0 || n > 100) revert InvalidConsumptionRecords();
-        // Ensure CR contract is configured
-        if (address(consumptionRecord) == address(0)) revert InvalidConsumptionRecords();
-        for (uint256 i = 0; i < n; i++) {
-            bytes32 _crHash = crHashes[i];
-            // verify CR exists in ConsumptionRecord contract
-            if (!consumptionRecord.isExists(_crHash)) revert InvalidConsumptionRecords();
-
-            if (usedConsumptionRecordHashes[_crHash]) {
-                revert ConsumptionRecordAlreadyExists();
-            }
-            usedConsumptionRecordHashes[_crHash] = true;
+        _validateHashes(crHashes);
+        if (amendmentHashes.length > 0) {
+            _validateHashes(amendmentHashes);
         }
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
@@ -124,6 +114,7 @@ contract ConsumptionUnitUpgradeable is
             settlementAmountBase: settlementAmountBase,
             settlementAmountAtto: settlementAmountAtto,
             crHashes: crHashes,
+            amendmentCrHashes: amendmentHashes,
             submittedAt: timestamp
         });
 
@@ -135,6 +126,23 @@ contract ConsumptionUnitUpgradeable is
         emit Submitted(cuHash, msg.sender, timestamp);
     }
 
+    /// @dev check hashes uniqueness and existence in CR contract
+    function _validateHashes(bytes32[] memory _hashes) private {
+        // TODO add limitation for hashes size
+        uint256 n = _hashes.length;
+        if (n == 0 || n > 100) revert InvalidConsumptionRecords();
+        for (uint256 i = 0; i < n; i++) {
+            bytes32 _hash = _hashes[i];
+            // verify CR exists in ConsumptionRecord contract
+            if (!consumptionRecord.isExists(_hash)) revert InvalidConsumptionRecords();
+
+            if (usedConsumptionRecordHashes[_hash]) {
+                revert ConsumptionRecordAlreadyExists();
+            }
+            usedConsumptionRecordHashes[_hash] = true;
+        }
+    }
+
     /// @inheritdoc IConsumptionUnit
     function submit(
         bytes32 cuHash,
@@ -143,7 +151,8 @@ contract ConsumptionUnitUpgradeable is
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        bytes32[] memory hashes
+        bytes32[] memory hashes,
+        bytes32[] memory amendmentHashes
     ) external onlyActiveCRA whenNotPaused {
         _addRecord(
             cuHash,
@@ -153,19 +162,14 @@ contract ConsumptionUnitUpgradeable is
             settlementAmountBase,
             settlementAmountAtto,
             hashes,
+            amendmentHashes,
             block.timestamp
         );
     }
 
     /// @notice Multicall entry point allowing multiple submits in a single transaction
     /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
-    function multicall(bytes[] calldata data)
-        external
-        override
-        onlyActiveCRA
-        whenNotPaused
-        returns (bytes[] memory results)
-    {
+    function multicall(bytes[] calldata data) external override onlyActiveCRA whenNotPaused returns (bytes[] memory results){
         uint256 n = data.length;
         if (n == 0) revert EmptyBatch();
         if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();

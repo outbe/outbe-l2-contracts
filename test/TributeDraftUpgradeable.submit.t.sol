@@ -69,7 +69,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = crHash;
         vm.prank(craActive);
-        cu.submit(cuHash, recordOwner, currency, worldwideDay, base, atto, crHashes);
+        cu.submit(cuHash, recordOwner, currency, worldwideDay, base, atto, crHashes, new bytes32[](0));
     }
 
     function test_submit_success_persists_entity_aggregates_and_emits() public {
@@ -194,7 +194,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = keccak256("cr-owner-2");
         bytes32 cu2 = keccak256("cu-owner-2");
         vm.prank(craActive);
-        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes);
+        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes, new bytes32[](0));
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = cu1;
@@ -216,16 +216,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = cr2;
         bytes32 cu2 = keccak256("cu-cur-2");
         vm.prank(craActive);
-        cu.submit(
-            cu2,
-            recordOwner,
-            840,
-            /* USD */
-            worldwideDay,
-            1,
-            0,
-            crHashes
-        );
+        cu.submit(cu2, recordOwner, 840, worldwideDay, 1, 0, crHashes, new bytes32[](0));
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = cu1;
@@ -247,7 +238,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = cr2;
         bytes32 cu2 = keccak256("cu-day-2");
         vm.prank(craActive);
-        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes);
+        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes, new bytes32[](0));
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = cu1;
