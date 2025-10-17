@@ -11,7 +11,7 @@ interface ITributeDraft {
         address owner;
         /// @notice Numeric currency code using ISO 4217
         uint16 settlementCurrency;
-        /// @notice Worldwide day in compact format (e.g., 20250923)
+        /// @notice Worldwide day in a compact format YYYYMMDD (e.g., 20250923)
         uint32 worldwideDay;
         /// @notice Aggregated amount expressed in natural units (base currency units).
         uint64 settlementAmountBase;

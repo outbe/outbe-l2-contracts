@@ -17,7 +17,7 @@ interface IConsumptionUnit {
         address submittedBy;
         /// @notice Timestamp when the consumption unit was submitted
         uint256 submittedAt;
-        /// @notice Worldwide day in compact format (e.g., 20250923)
+        /// @notice Worldwide day in a compact format YYYYMMDD (e.g., 20250923)
         uint32 worldwideDay;
         /// @notice Amount expressed in natural units (base currency units).
         uint64 settlementAmountBase;
