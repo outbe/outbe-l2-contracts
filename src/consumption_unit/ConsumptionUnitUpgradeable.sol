@@ -262,9 +262,10 @@ contract ConsumptionUnitUpgradeable is
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return super.supportsInterface(interfaceId);
         // TODO add supported interfaces
         //      interfaceId == 0x780e9d63 // ERC721Enumerable
+        return interfaceId == type(IConsumptionUnit).interfaceId || interfaceId == type(ISoulBoundNFT).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

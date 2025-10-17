@@ -172,9 +172,10 @@ contract ConsumptionRecordAmendmentUpgradeable is
 
     /// @inheritdoc ERC165Upgradeable
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return super.supportsInterface(interfaceId);
         // TODO add supported interfaces
         //      interfaceId == 0x780e9d63 // ERC721Enumerable
+        return interfaceId == type(IConsumptionRecordAmendment).interfaceId
+            || interfaceId == type(ISoulBoundNFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract
