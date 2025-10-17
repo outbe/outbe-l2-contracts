@@ -6,6 +6,9 @@ import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC196
 
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ITributeDraft} from "../src/interfaces/ITributeDraft.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
@@ -35,10 +38,17 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         ERC1967Proxy crProxy = new ERC1967Proxy(address(crImpl), crInit);
         cr = ConsumptionRecordUpgradeable(address(crProxy));
 
-        // Deploy CU behind proxy
+        // Deploy CRA (Amendment) behind proxy
+        ConsumptionRecordAmendmentUpgradeable craImpl = new ConsumptionRecordAmendmentUpgradeable();
+        bytes memory craInit =
+            abi.encodeWithSelector(ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), owner);
+        ERC1967Proxy craProxy = new ERC1967Proxy(address(craImpl), craInit);
+        ConsumptionRecordAmendmentUpgradeable cra = ConsumptionRecordAmendmentUpgradeable(address(craProxy));
+
+        // Deploy CU behind proxy with CR and CRA addresses
         ConsumptionUnitUpgradeable cuImpl = new ConsumptionUnitUpgradeable();
         bytes memory cuInit = abi.encodeWithSelector(
-            ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr)
+            ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr), address(cra)
         );
         ERC1967Proxy cuProxy = new ERC1967Proxy(address(cuImpl), cuInit);
         cu = ConsumptionUnitUpgradeable(address(cuProxy));

@@ -4,7 +4,9 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
-import {ConsumptionRecordAmendmentUpgradeable} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 
 /// @title UpgradeImplementations Script
 /// @notice Script for upgrading implementation contracts while preserving proxy addresses
@@ -198,8 +200,11 @@ contract UpgradeImplementations is Script {
         }
 
         if (config.upgradeConsumptionRecordAmendment) {
-            ConsumptionRecordAmendmentUpgradeable consumptionRecord = ConsumptionRecordAmendmentUpgradeable(config.consumptionRecordAmendmentProxy);
-            console.log("Consumption Record Amendment proxy still functional:", address(consumptionRecord) != address(0));
+            ConsumptionRecordAmendmentUpgradeable consumptionRecord =
+                ConsumptionRecordAmendmentUpgradeable(config.consumptionRecordAmendmentProxy);
+            console.log(
+                "Consumption Record Amendment proxy still functional:", address(consumptionRecord) != address(0)
+            );
             console.log("Consumption Record Amendment version:", consumptionRecord.VERSION());
 
             // Test basic functionality

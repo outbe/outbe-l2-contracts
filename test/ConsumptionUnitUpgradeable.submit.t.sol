@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ConsumptionRecordUpgradeable} from "src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {ConsumptionRecordAmendmentUpgradeable} from "src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
@@ -12,6 +13,7 @@ import {MockCRARegistry} from "./helpers.t.sol";
 
 contract ConsumptionUnitUpgradeableSubmitTest is Test {
     ConsumptionRecordUpgradeable cr;
+    ConsumptionRecordAmendmentUpgradeable cra;
     ConsumptionUnitUpgradeable cu;
     MockCRARegistry registry;
 
@@ -46,11 +48,31 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
             cr.submit(keccak256("cr-seed"), recordOwner, keys, vals);
         }
 
-        // Deploy CU and initialize via ERC1967Proxy with CR address configured
+        // Deploy CRA (Consumption Record Amendment) and initialize via ERC1967Proxy
+        {
+            ConsumptionRecordAmendmentUpgradeable implCRA = new ConsumptionRecordAmendmentUpgradeable();
+            bytes memory initCRA = abi.encodeWithSelector(
+                ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), owner
+            );
+            ERC1967Proxy proxyCRA = new ERC1967Proxy(address(implCRA), initCRA);
+            cra = ConsumptionRecordAmendmentUpgradeable(address(proxyCRA));
+        }
+
+        // Seed one CRA so that CU can reference it
+        {
+            string[] memory keys = new string[](1);
+            bytes32[] memory vals = new bytes32[](1);
+            keys[0] = "seed";
+            vals[0] = bytes32(uint256(1));
+            vm.prank(craActive);
+            cra.submit(keccak256("cra-seed"), recordOwner, keys, vals);
+        }
+
+        // Deploy CU and initialize via ERC1967Proxy with CR and CRA addresses configured
         {
             ConsumptionUnitUpgradeable implCU = new ConsumptionUnitUpgradeable();
             bytes memory initCU = abi.encodeWithSelector(
-                ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr)
+                ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr), address(cra)
             );
             ERC1967Proxy proxyCU = new ERC1967Proxy(address(implCU), initCU);
             cu = ConsumptionUnitUpgradeable(address(proxyCU));
@@ -66,13 +88,22 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         cr.submit(crHash, recordOwner, keys, vals);
     }
 
+    function _seedCRA(bytes32 craHash) internal {
+        string[] memory keys = new string[](1);
+        bytes32[] memory vals = new bytes32[](1);
+        keys[0] = "k";
+        vals[0] = bytes32(uint256(123));
+        vm.prank(craActive);
+        cra.submit(craHash, recordOwner, keys, vals);
+    }
+
     function test_submit_persists_full_entity_and_indexes_and_emits_event() public {
         // prepare CRs to link
         bytes32 crHash = keccak256("cr-ok");
         _seedCR(crHash);
         // prepare amendment CRs to link
         bytes32 amendHash = keccak256("cr-amend-ok");
-        _seedCR(amendHash);
+        _seedCRA(amendHash);
 
         bytes32 cuHash = keccak256("cu-1");
         uint16 currency = 840; // USD
@@ -264,7 +295,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         bytes32 base = keccak256("cr-amend-dupe-base");
         _seedCR(base);
         bytes32 amend = keccak256("cr-amend-dupe");
-        _seedCR(amend);
+        _seedCRA(amend);
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = base;
         bytes32[] memory amendmentHashes = new bytes32[](2);
@@ -280,7 +311,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         bytes32 base1 = keccak256("cr-amend-used-base1");
         _seedCR(base1);
         bytes32 amend = keccak256("cr-amend-used");
-        _seedCR(amend);
+        _seedCRA(amend);
 
         bytes32[] memory crHashes1 = new bytes32[](1);
         crHashes1[0] = base1;
@@ -314,7 +345,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         amendArr[0] = h;
 
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
         cu.submit(keccak256("cu-amend-overlap"), recordOwner, 978, 20250101, 1, 0, baseArr, amendArr);
     }
 }

@@ -4,7 +4,9 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
-import {ConsumptionRecordAmendmentUpgradeable} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -158,7 +160,11 @@ contract DeployUpgradeable is Script {
             vm.computeCreate2Address(crAProxySaltBytes, keccak256(crAProxyBytecode), CREATE2_FACTORY);
 
         bytes memory consumptionUnitInitData = abi.encodeWithSignature(
-            "initialize(address,address,address)", predictedCraProxy, deployer, predictedCrProxy
+            "initialize(address,address,address,address)",
+            predictedCraProxy,
+            deployer,
+            predictedCrProxy,
+            predictedCrAProxy
         );
         bytes memory cuProxyBytecode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
@@ -272,9 +278,8 @@ contract DeployUpgradeable is Script {
 
         // Deploy Consumption Record Amendment proxy
         console.log("Deploying CR Amendment proxy...");
-        bytes memory crAInitData = abi.encodeWithSignature(
-            "initialize(address,address)", address(craRegistry), deployer
-        );
+        bytes memory crAInitData =
+            abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
         address crAmendmentProxy =
             address(new ERC1967Proxy{salt: crAProxySaltBytes}(consumptionRecordAmendmentImpl, crAInitData));
         consumptionRecordAmendment = ConsumptionRecordAmendmentUpgradeable(crAmendmentProxy);
@@ -291,7 +296,11 @@ contract DeployUpgradeable is Script {
         // Deploy Consumption Unit proxy
         console.log("Deploying Consumption Unit proxy...");
         bytes memory cuInitData = abi.encodeWithSignature(
-            "initialize(address,address,address)", address(craRegistry), deployer, address(consumptionRecord)
+            "initialize(address,address,address,address)",
+            address(craRegistry),
+            deployer,
+            address(consumptionRecord),
+            address(consumptionRecordAmendment)
         );
         address consumptionUnitProxy =
             address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
@@ -300,6 +309,7 @@ contract DeployUpgradeable is Script {
         console.log("Consumption Unit owner:", consumptionUnit.getOwner());
         console.log("Consumption Unit CRA Registry:", consumptionUnit.getCRARegistry());
         console.log("Consumption Unit CR Address:", consumptionUnit.getConsumptionRecordAddress());
+        console.log("Consumption Unit CR Amendment Address:", consumptionUnit.getConsumptionRecordAmendmentAddress());
         console.log("");
 
         // Deploy Tribute Draft implementation

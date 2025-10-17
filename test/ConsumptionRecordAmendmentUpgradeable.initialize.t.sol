@@ -2,7 +2,9 @@
 pragma solidity ^0.8.27;
 
 import "./helpers.t.sol" as TestUtils;
-import {ConsumptionRecordAmendmentUpgradeable} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
 import {Test} from "forge-std/Test.sol";
@@ -47,8 +49,9 @@ contract ConsumptionRecordAmendmentUpgradeableInitializeTest is Test {
 
     function test_initialize_reverts_when_owner_zero() public {
         ConsumptionRecordAmendmentUpgradeable impl = new ConsumptionRecordAmendmentUpgradeable();
-        bytes memory initData =
-            abi.encodeWithSelector(ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), address(0));
+        bytes memory initData = abi.encodeWithSelector(
+            ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), address(0)
+        );
         vm.expectRevert(bytes("Owner cannot be zero address"));
         new ERC1967Proxy(address(impl), initData);
     }

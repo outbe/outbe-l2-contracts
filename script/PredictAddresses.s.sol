@@ -4,7 +4,9 @@ pragma solidity ^0.8.20;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
-import {ConsumptionRecordAmendmentUpgradeable} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract PredictAddresses is Script {
@@ -86,9 +88,8 @@ contract PredictAddresses is Script {
 
         bytes memory crAmendmentInitData =
             abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
-        bytes memory crAProxyBytecode = abi.encodePacked(
-            type(ERC1967Proxy).creationCode, abi.encode(predictedCrAImpl, crAmendmentInitData)
-        );
+        bytes memory crAProxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrAImpl, crAmendmentInitData));
         address predictedCrAProxy =
             vm.computeCreate2Address(crAProxySaltBytes, keccak256(crAProxyBytecode), CREATE2_FACTORY);
 

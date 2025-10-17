@@ -3,7 +3,9 @@ pragma solidity ^0.8.27;
 
 import {Test} from "../lib/forge-std/src/Test.sol";
 import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ConsumptionRecordAmendmentUpgradeable} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {IConsumptionRecordAmendment} from "../src/interfaces/IConsumptionRecordAmendment.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
 
@@ -20,9 +22,8 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
 
         // Deploy implementation and initialize via ERC1967Proxy
         ConsumptionRecordAmendmentUpgradeable impl = new ConsumptionRecordAmendmentUpgradeable();
-        bytes memory initData = abi.encodeWithSelector(
-            ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), owner
-        );
+        bytes memory initData =
+            abi.encodeWithSelector(ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         cra = ConsumptionRecordAmendmentUpgradeable(address(proxy));
 
@@ -56,9 +57,8 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         assertTrue(cra.isExists(crAHash));
 
         // entity fields
-        IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity memory e = cra.getConsumptionRecordAmendment(
-            crAHash
-        );
+        IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity memory e =
+            cra.getConsumptionRecordAmendment(crAHash);
         assertEq(e.consumptionRecordAmendmentId, crAHash);
         assertEq(e.submittedBy, craActive);
         assertEq(e.submittedAt, ts);

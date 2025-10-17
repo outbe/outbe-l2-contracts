@@ -13,6 +13,7 @@ contract ConsumptionUnitUpgradeableInitializeTest is Test {
 
     address owner = address(0xABCD);
     address cr = address(0x123ff);
+    address cra = address(0x456ff);
 
     function setUp() public {
         registry = new TestUtils.MockCRARegistry();
@@ -24,7 +25,7 @@ contract ConsumptionUnitUpgradeableInitializeTest is Test {
     {
         ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         bytes memory initData =
-            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, craRegistry, newOwner, cr);
+            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, craRegistry, newOwner, cr, cra);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         return ConsumptionUnitUpgradeable(address(proxy));
     }
@@ -41,15 +42,16 @@ contract ConsumptionUnitUpgradeableInitializeTest is Test {
     function test_initialize_reverts_when_craRegistry_zero() public {
         ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         bytes memory initData =
-            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, address(0), owner, cr);
+            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, address(0), owner, cr, cra);
         vm.expectRevert(bytes("CRARegistry address is zero"));
         new ERC1967Proxy(address(impl), initData);
     }
 
     function test_initialize_reverts_when_owner_zero() public {
         ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
-        bytes memory initData =
-            abi.encodeWithSelector(ConsumptionUnitUpgradeable.initialize.selector, address(registry), address(0), cr);
+        bytes memory initData = abi.encodeWithSelector(
+            ConsumptionUnitUpgradeable.initialize.selector, address(registry), address(0), cr, cra
+        );
         vm.expectRevert(bytes("Owner cannot be zero address"));
         new ERC1967Proxy(address(impl), initData);
     }
@@ -57,12 +59,12 @@ contract ConsumptionUnitUpgradeableInitializeTest is Test {
     function test_initialize_reverts_when_called_twice_on_proxy() public {
         cu = _deployInitializedProxy(address(registry), owner);
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        cu.initialize(address(registry), owner, cr);
+        cu.initialize(address(registry), owner, cr, cra);
     }
 
     function test_initialize_reverts_on_implementation_due_to_disabled_initializers() public {
         ConsumptionUnitUpgradeable impl = new ConsumptionUnitUpgradeable();
         vm.expectRevert(bytes("Initializable: contract is already initialized"));
-        impl.initialize(address(registry), owner, cr);
+        impl.initialize(address(registry), owner, cr, cra);
     }
 }

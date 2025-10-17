@@ -6,6 +6,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 import {ConsumptionRecordUpgradeable} from "src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "src/consumption_unit/ConsumptionUnitUpgradeable.sol";
+import {ConsumptionRecordAmendmentUpgradeable} from "src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
@@ -40,11 +41,22 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         _seedCR(keccak256("cr-A"));
         _seedCR(keccak256("cr-B"));
 
-        // Deploy CU and initialize via ERC1967Proxy with CR address configured
+        // Deploy CRA (Consumption Record Amendment) and initialize via ERC1967Proxy
+        ConsumptionRecordAmendmentUpgradeable cra;
+        {
+            ConsumptionRecordAmendmentUpgradeable implCRA = new ConsumptionRecordAmendmentUpgradeable();
+            bytes memory initCRA = abi.encodeWithSelector(
+                ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), owner
+            );
+            ERC1967Proxy proxyCRA = new ERC1967Proxy(address(implCRA), initCRA);
+            cra = ConsumptionRecordAmendmentUpgradeable(address(proxyCRA));
+        }
+
+        // Deploy CU and initialize via ERC1967Proxy with CR and CRA addresses configured
         {
             ConsumptionUnitUpgradeable implCU = new ConsumptionUnitUpgradeable();
             bytes memory initCU = abi.encodeWithSelector(
-                ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr)
+                ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr), address(cra)
             );
             ERC1967Proxy proxyCU = new ERC1967Proxy(address(implCU), initCU);
             cu = ConsumptionUnitUpgradeable(address(proxyCU));

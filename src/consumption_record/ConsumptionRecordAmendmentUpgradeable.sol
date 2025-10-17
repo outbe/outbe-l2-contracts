@@ -2,12 +2,18 @@
 pragma solidity ^0.8.27;
 
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {ERC165Upgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import {PausableUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
+import {
+    ERC165Upgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {
+    PausableUpgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
 import {IConsumptionRecordAmendment} from "../interfaces/IConsumptionRecordAmendment.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
-import {MulticallUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
+import {
+    MulticallUpgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
 import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
 
 /// @title ConsumptionRecordAmendmentUpgradeable

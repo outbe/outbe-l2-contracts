@@ -8,6 +8,7 @@ import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/intro
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {IConsumptionRecordAmendment} from "../interfaces/IConsumptionRecordAmendment.sol";
 import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 
@@ -25,6 +26,8 @@ contract ConsumptionUnitUpgradeable is
 {
     /// @notice Reference to the Consumption Record contract
     IConsumptionRecord public consumptionRecord;
+    /// @notice Reference to the Consumption Record Amendment contract
+    IConsumptionRecordAmendment public consumptionRecordAmendment;
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
     /// @notice Maximum number of CU records that can be submitted in a single batch
@@ -34,6 +37,8 @@ contract ConsumptionUnitUpgradeable is
     mapping(bytes32 => ConsumptionUnitEntity) public consumptionUnits;
     /// @dev Tracks uniqueness of linked consumption record (CR) hashes across all CU submissions
     mapping(bytes32 => bool) public usedConsumptionRecordHashes;
+    /// @dev Tracks uniqueness of linked consumption record amendment hashes across all CU submissions
+    mapping(bytes32 => bool) public usedConsumptionRecordAmendmentHashes;
     /// @dev Owner address to CU ids owned by the address
     mapping(address => bytes32[]) public ownerRecords;
 
@@ -49,7 +54,14 @@ contract ConsumptionUnitUpgradeable is
     /// @dev Sets CRA registry reference and transfers ownership to provided owner
     /// @param _craRegistry Address of CRARegistry contract (must not be zero)
     /// @param _owner Address to set as contract owner (must not be zero)
-    function initialize(address _craRegistry, address _owner, address _consumptionRecord) public initializer {
+    /// @param _consumptionRecord Address of ConsumptionRecord contract (must not be zero)
+    /// @param _consumptionRecordAmendment Address of ConsumptionRecordAmendment contract (must not be zero)
+    function initialize(
+        address _craRegistry,
+        address _owner,
+        address _consumptionRecord,
+        address _consumptionRecordAmendment
+    ) public initializer {
         require(_owner != address(0), "Owner cannot be zero address");
         __Ownable_init();
         __Pausable_init();
@@ -60,6 +72,7 @@ contract ConsumptionUnitUpgradeable is
         _transferOwnership(_owner);
         _totalRecords = 0;
         _setConsumptionRecordAddress(_consumptionRecord);
+        _setConsumptionRecordAmendmentAddress(_consumptionRecordAmendment);
     }
 
     function _validateAmounts(uint64 baseAmt, uint128 attoAmt) internal pure {
@@ -101,9 +114,7 @@ contract ConsumptionUnitUpgradeable is
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
         _validateHashes(crHashes);
-        if (amendmentHashes.length > 0) {
-            _validateHashes(amendmentHashes);
-        }
+        _validateAmendmentHashes(amendmentHashes);
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
             consumptionUnitId: cuHash,
@@ -140,6 +151,22 @@ contract ConsumptionUnitUpgradeable is
                 revert ConsumptionRecordAlreadyExists();
             }
             usedConsumptionRecordHashes[_hash] = true;
+        }
+    }
+
+    /// @dev check amendment hashes uniqueness and existence in CR Amendment contract
+    function _validateAmendmentHashes(bytes32[] memory _hashes) private {
+        uint256 n = _hashes.length;
+        if (n > 100) revert InvalidConsumptionRecords();
+        for (uint256 i = 0; i < n; i++) {
+            bytes32 _hash = _hashes[i];
+            // verify CR Amendment exists in ConsumptionRecordAmendment contract
+            if (!consumptionRecordAmendment.isExists(_hash)) revert InvalidConsumptionRecords();
+
+            if (usedConsumptionRecordAmendmentHashes[_hash]) {
+                revert ConsumptionRecordAlreadyExists();
+            }
+            usedConsumptionRecordAmendmentHashes[_hash] = true;
         }
     }
 
@@ -206,13 +233,26 @@ contract ConsumptionUnitUpgradeable is
         return address(consumptionRecord);
     }
 
+    function getConsumptionRecordAmendmentAddress() external view returns (address) {
+        return address(consumptionRecordAmendment);
+    }
+
     function setConsumptionRecordAddress(address _consumptionRecord) external onlyOwner {
         _setConsumptionRecordAddress(_consumptionRecord);
+    }
+
+    function setConsumptionRecordAmendmentAddress(address _consumptionRecordAmendment) external onlyOwner {
+        _setConsumptionRecordAmendmentAddress(_consumptionRecordAmendment);
     }
 
     function _setConsumptionRecordAddress(address _consumptionRecord) private {
         require(_consumptionRecord != address(0), "CR addr zero");
         consumptionRecord = IConsumptionRecord(_consumptionRecord);
+    }
+
+    function _setConsumptionRecordAmendmentAddress(address _consumptionRecordAmendment) private {
+        require(_consumptionRecordAmendment != address(0), "CRA addr zero");
+        consumptionRecordAmendment = IConsumptionRecordAmendment(_consumptionRecordAmendment);
     }
 
     /// @inheritdoc ISoulBoundNFT
