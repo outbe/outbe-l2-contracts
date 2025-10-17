@@ -82,7 +82,7 @@ contract ConsumptionUnitUpgradeable is
     /// @param crHashes Linked consumption record hashes (each must be unique globally)
     /// @param amendmentHashes Linked consumption record amendment hashes (each must be unique globally)
     /// @param timestamp Submission timestamp to record
-    function _addRecord(
+    function _addEntity(
         bytes32 cuHash,
         address recordOwner,
         uint16 settlementCurrency,
@@ -154,7 +154,7 @@ contract ConsumptionUnitUpgradeable is
         bytes32[] memory hashes,
         bytes32[] memory amendmentHashes
     ) external onlyActiveCRA whenNotPaused {
-        _addRecord(
+        _addEntity(
             cuHash,
             recordOwner,
             settlementCurrency,
