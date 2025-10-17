@@ -70,6 +70,9 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         // prepare CRs to link
         bytes32 crHash = keccak256("cr-ok");
         _seedCR(crHash);
+        // prepare amendment CRs to link
+        bytes32 amendHash = keccak256("cr-amend-ok");
+        _seedCR(amendHash);
 
         bytes32 cuHash = keccak256("cu-1");
         uint16 currency = 840; // USD
@@ -78,6 +81,8 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         uint128 attoAmt = 5;
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = crHash;
+        bytes32[] memory amendmentHashes = new bytes32[](1);
+        amendmentHashes[0] = amendHash;
 
         uint256 ts = 1_800_000_000;
         vm.warp(ts);
@@ -86,7 +91,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         emit IConsumptionUnit.Submitted(cuHash, craActive, ts);
 
         vm.prank(craActive);
-        cu.submit(cuHash, recordOwner, currency, wday, baseAmt, attoAmt, crHashes, new bytes32[](0));
+        cu.submit(cuHash, recordOwner, currency, wday, baseAmt, attoAmt, crHashes, amendmentHashes);
 
         // isExists
         assertTrue(cu.isExists(cuHash));
@@ -103,6 +108,8 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         assertEq(e.settlementAmountAtto, attoAmt);
         assertEq(e.crHashes.length, 1);
         assertEq(e.crHashes[0], crHash);
+        assertEq(e.amendmentCrHashes.length, 1);
+        assertEq(e.amendmentCrHashes[0], amendHash);
 
         // owner index
         bytes32[] memory owned = cu.getConsumptionUnitsByOwner(recordOwner);
@@ -235,5 +242,79 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         vm.prank(craUnknown);
         vm.expectRevert(ICRAAware.CRANotActive.selector);
         cu.submit(keccak256("cu-unk"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
+    }
+
+    // Amendment hashes tests
+    function test_submit_reverts_on_unknown_amendment_hash() public {
+        // seed base CR only
+        bytes32 base = keccak256("cr-amend-unknown-base");
+        _seedCR(base);
+        bytes32 unknown = keccak256("cr-amend-unknown"); // not seeded
+        bytes32[] memory crHashes = new bytes32[](1);
+        crHashes[0] = base;
+        bytes32[] memory amendmentHashes = new bytes32[](1);
+        amendmentHashes[0] = unknown;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+        cu.submit(keccak256("cu-amend-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
+    }
+
+    function test_submit_reverts_on_duplicate_amendment_hash_in_input_array() public {
+        bytes32 base = keccak256("cr-amend-dupe-base");
+        _seedCR(base);
+        bytes32 amend = keccak256("cr-amend-dupe");
+        _seedCR(amend);
+        bytes32[] memory crHashes = new bytes32[](1);
+        crHashes[0] = base;
+        bytes32[] memory amendmentHashes = new bytes32[](2);
+        amendmentHashes[0] = amend;
+        amendmentHashes[1] = amend;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(keccak256("cu-amend-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
+    }
+
+    function test_submit_reverts_on_amendment_hash_used_globally_before() public {
+        bytes32 base1 = keccak256("cr-amend-used-base1");
+        _seedCR(base1);
+        bytes32 amend = keccak256("cr-amend-used");
+        _seedCR(amend);
+
+        bytes32[] memory crHashes1 = new bytes32[](1);
+        crHashes1[0] = base1;
+        bytes32[] memory amendment1 = new bytes32[](1);
+        amendment1[0] = amend;
+
+        vm.startPrank(craActive);
+        cu.submit(keccak256("cu-amend-first"), recordOwner, 978, 20250101, 1, 0, crHashes1, amendment1);
+        vm.stopPrank();
+
+        // now try to reuse the same amendment hash in another CU
+        bytes32 base2 = keccak256("cr-amend-used-base2");
+        _seedCR(base2);
+        bytes32[] memory crHashes2 = new bytes32[](1);
+        crHashes2[0] = base2;
+        bytes32[] memory amendment2 = new bytes32[](1);
+        amendment2[0] = amend;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(keccak256("cu-amend-second"), recordOwner, 978, 20250101, 2, 0, crHashes2, amendment2);
+    }
+
+    function test_submit_reverts_when_amendment_and_base_overlap_in_same_submission() public {
+        // same CR hash appears in both arrays
+        bytes32 h = keccak256("cr-amend-overlap");
+        _seedCR(h);
+        bytes32[] memory baseArr = new bytes32[](1);
+        baseArr[0] = h;
+        bytes32[] memory amendArr = new bytes32[](1);
+        amendArr[0] = h;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(keccak256("cu-amend-overlap"), recordOwner, 978, 20250101, 1, 0, baseArr, amendArr);
     }
 }
