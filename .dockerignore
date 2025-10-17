@@ -1,0 +1,7 @@
+/**
+!src/
+!script/
+!lib/
+!foundry.toml
+!foundry.lock
+!entrypoint.sh
