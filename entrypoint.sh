@@ -37,12 +37,19 @@ done
 
 # register CRA
 if [ -n "$CRA_ADDRESS" ]; then
-    echo "Registering CRA..."
+    echo "Registering CRA $CRA_ADDRESS ..."
     if ! cast send $CRA_REGISTRY_PROXY "registerCRA(address,string)" $CRA_ADDRESS "Test CRA" --private-key $OWNER_PRIVATE_KEY; then
         echo "Failed to register CRA"
         exit 1
     fi
-    echo "CRA_REGISTERED"
+
+    echo "Sending 1000 ETH to the newly registered CRA..."
+    if ! cast send $CRA_ADDRESS --value 1000000000000000000000 --private-key $OWNER_PRIVATE_KEY; then
+      echo "Failed to top-up CRA balance"
+      exit 1
+    fi
+
+    echo "CRA REGISTERED"
 fi
 
 # Keep container running and forward output
