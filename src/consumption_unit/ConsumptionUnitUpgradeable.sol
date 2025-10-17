@@ -169,7 +169,13 @@ contract ConsumptionUnitUpgradeable is
 
     /// @notice Multicall entry point allowing multiple submits in a single transaction
     /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
-    function multicall(bytes[] calldata data) external override onlyActiveCRA whenNotPaused returns (bytes[] memory results){
+    function multicall(bytes[] calldata data)
+        external
+        override
+        onlyActiveCRA
+        whenNotPaused
+        returns (bytes[] memory results)
+    {
         uint256 n = data.length;
         if (n == 0) revert EmptyBatch();
         if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();

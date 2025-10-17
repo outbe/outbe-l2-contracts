@@ -70,7 +70,15 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         bytes32[] memory crHashes
     ) internal pure returns (bytes memory) {
         return abi.encodeWithSelector(
-            ConsumptionUnitUpgradeable.submit.selector, cuHash, _owner, currency, wday, baseAmt, attoAmt, crHashes, new bytes32[](0)
+            ConsumptionUnitUpgradeable.submit.selector,
+            cuHash,
+            _owner,
+            currency,
+            wday,
+            baseAmt,
+            attoAmt,
+            crHashes,
+            new bytes32[](0)
         );
     }
 
