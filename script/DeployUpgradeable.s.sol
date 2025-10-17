@@ -418,23 +418,27 @@ contract DeployUpgradeable is Script {
         console.log("Implementation Addresses:");
         console.log("- CRA Registry Impl:      ", craRegistryImpl);
         console.log("- Consumption Record Impl:", consumptionRecordImpl);
+        console.log("- Consumption Record Amendment Impl:", consumptionRecordAmendmentImpl);
         console.log("- Consumption Unit Impl:  ", consumptionUnitImpl);
         console.log("- Tribute Draft Impl:     ", tributeDraftImpl);
         console.log("");
         console.log("Proxy Addresses (Use these for interactions):");
         console.log("- CRA Registry:      ", address(craRegistry));
         console.log("- Consumption Record:", address(consumptionRecord));
+        console.log("- Consumption Record Amendment:", address(consumptionRecordAmendment));
         console.log("- Consumption Unit:  ", address(consumptionUnit));
         console.log("- Tribute Draft:     ", address(tributeDraft));
         console.log("");
         console.log("Contract Owners:");
         console.log("- CRA Registry:      ", craRegistry.getOwner());
         console.log("- Consumption Record:", consumptionRecord.getOwner());
+        console.log("- Consumption Record Amendment:", consumptionRecordAmendment.getOwner());
         console.log("- Consumption Unit:  ", consumptionUnit.getOwner());
         // Tribute Draft is Ownable but no owner getter; no direct owner method in TD, skip owner here
         console.log("");
         console.log("Configuration:");
         console.log("- CR -> CRA Registry:", consumptionRecord.getCRARegistry());
+        console.log("- CR (A) -> CRA Registry:", consumptionRecordAmendment.getCRARegistry());
         console.log("- CU -> CRA Registry:", consumptionUnit.getCRARegistry());
         console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
@@ -458,10 +462,12 @@ contract DeployUpgradeable is Script {
         console.log("Environment Variables for .env:");
         console.log("CRA_REGISTRY_ADDRESS=", address(craRegistry));
         console.log("CONSUMPTION_RECORD_ADDRESS=", address(consumptionRecord));
+        console.log("CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", address(consumptionRecordAmendment));
         console.log("CONSUMPTION_UNIT_ADDRESS=", address(consumptionUnit));
         console.log("TRIBUTE_DRAFT_ADDRESS=", address(tributeDraft));
         console.log("CRA_REGISTRY_IMPL=", craRegistryImpl);
         console.log("CONSUMPTION_RECORD_IMPL=", consumptionRecordImpl);
+        console.log("CONSUMPTION_RECORD_AMENDMENT_IMPL=", consumptionRecordAmendmentImpl);
         console.log("CONSUMPTION_UNIT_IMPL=", consumptionUnitImpl);
         console.log("TRIBUTE_DRAFT_IMPL=", tributeDraftImpl);
     }
