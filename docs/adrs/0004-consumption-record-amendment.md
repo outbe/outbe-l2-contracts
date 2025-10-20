@@ -1,4 +1,4 @@
-# [0004] Consumption Record Amendment on L2
+# [0004] Consumption Record Amendment
 
 # Status
 
@@ -11,24 +11,15 @@ Draft
 # Context
 
 A Consumption Record Amendment (CRAmd) is a content-addressed, immutable registry entry that represents a transaction
-amendment to a previously reflected Act of Consumption on L2. It mirrors the Consumption Record (CR) model but captures
+amendment to a previously reflected Act of Consumption. It mirrors the Consumption Record (CR) model but captures
 post-factum adjustments such as corrections, chargebacks, partial refunds, or merchant-initiated changes. Each
 amendment is identified off-chain by a Blake3-based preimage and is submitted on-chain by its 32-byte hash
 (crAmendmentHash).
 
-Reflection context (June 2025):
-- CRs are created by the Consumption Reflection Agent (CRA) during two ingestion windows per Worldwide Day; refunds are
-  represented as negative-value CRs recorded in subsequent periods with references to the original CU and Worldwide Day.
-- Network deduplication is enforced by CR/CR amendment hash uniqueness. CUs aggregate CRs and may also reference
-  amendment hashes where applicable.
-- Hash preimage inputs for CRs include bank_account_hash = blake3(bic + iban || bban) and registered_at (UTC timestamp,
-  seconds precision, ISO 8601). Amendments follow the same hashing discipline applied to their own identifying inputs
-  as defined by the off-chain CRA implementation.
-
 Creation of amendments is permissioned to active Consumption Reflection Agents (CRAs) via the CRA Registry.
 
-This ADR documents the L2 ConsumptionRecordAmendmentUpgradeable registry used to store amendment hashes and related
-metadata. It is designed to be referenced by ConsumptionUnitUpgradeable during CU submissions.
+This ADR documents the `ConsumptionRecordAmendmentUpgradeable` contract used to store amendment hashes and related
+metadata. It is designed to be referenced by `ConsumptionUnitUpgradeable` during CU submissions.
 
 ## Goals
 
@@ -38,15 +29,9 @@ metadata. It is designed to be referenced by ConsumptionUnitUpgradeable during C
 - Support efficient batching via multicall with bounded batch size
 - Remain upgradeable via UUPS with strict owner gating
 
-## Non-Goals
-
-- On-chain computation or verification of the amendment hash preimage
-- NFT transfer semantics
-- ZK verification
-
 # Decision
 
-We implement an L2 registry contract using Solidity with a UUPS upgradeable proxy pattern. Active CRAs submit
+We implement smart contract using Solidity with a UUPS upgradeable proxy pattern. Active CRAs submit
 amendments identified by a bytes32 hash and accompanied by optional metadata. The registry exposes querying by
 crAmendmentHash and by owner. Batched submissions are performed using a controlled multicall entrypoint.
 
