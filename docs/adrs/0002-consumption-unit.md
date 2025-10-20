@@ -10,10 +10,18 @@ Draft
 
 # Context
 
-A Consumption Unit (CU) is an immutable, content-addressed entry representing a normalized unit of user consumption on
-L2. Each CU is identified by a unique 32-byte hash (cuHash) and contains settlement information, the worldwide day, and
-a list of linked consumption record (CR) hashes providing provenance and breakdown. Creation is permissioned to active
-Consumption Reflection Agents (CRAs) via the CRA Registry.
+A Consumption Unit (CU) is an immutable, content-addressed entry representing the aggregated value of a user's Acts of
+Consumption for a Worldwide Day and Bank Account on L2, per the Reflection of Acts of Consumption (June 2025). Each CU
+is identified off-chain by a Blake3-based preimage and is submitted on-chain by its 32-byte hash (cuHash). CUs carry
+settlement information, worldwide day, and link to the underlying Consumption Record (CR) hashes (and, when applicable,
+Consumption Record Amendment hashes) providing provenance and breakdown.
+
+Operational context from the reflection:
+- CRA ingests eligible transactions twice per Worldwide Day and creates CRs, then aggregates them into CUs per Account and Worldwide Day.
+- Deduplication is enforced network-wide by checking that the same CR hash cannot be used in more than one CU.
+- Refunds are modeled as negative CRs and can be reflected in subsequent CUs.
+
+Creation is permissioned to active Consumption Reflection Agents (CRAs) via the CRA Registry.
 
 This document describes the on-chain logic and data requirements for the L2 Consumption Unit registry implemented by the
 upgradeable smart contract ConsumptionUnitUpgradeable.
@@ -77,10 +85,11 @@ struct ConsumptionUnitEntity {
     address submittedBy;         // CRA address that submitted
     uint256 submittedAt;         // Block timestamp of submission
     uint32 worldwideDay;         // ISO-8601 compact form, e.g., 20250923
-    uint256 settlementAmountBase;// Amount in base (natural) units, >= 0
-    uint256 settlementAmountAtto;// Amount in fractional 1e-18 units, 0 <= x < 1e18
+    uint64 settlementAmountBase; // Amount in base (natural) units, >= 0
+    uint128 settlementAmountAtto;// Amount in fractional 1e-18 units, 0 <= x < 1e18
     uint16 settlementCurrency;   // ISO-4217 numeric code, non-zero
     bytes32[] crHashes;          // Linked CR hashes; each must be unique globally
+    bytes32[] amendmentCrHashes; // Linked CR amendment hashes; each must be unique globally
 }
 ```
 
@@ -97,30 +106,26 @@ All functions are available on the proxy.
   address owner,
   uint16 settlementCurrency,
   uint32 worldwideDay,
-  uint128 settlementBaseAmount,
+  uint64 settlementBaseAmount,
   uint128 settlementAttoAmount,
-  bytes32[] hashes
+  bytes32[] crHashes,
+  bytes32[] amendmentHashes
   ) external onlyActiveCRA
     - Creates a single CU at current block.timestamp.
     - Validations (see Validation Rules): cuHash non-zero and unique, owner non-zero, currency non-zero, amounts shape
-      valid, CR hashes not previously used.
+      valid; CR hashes and Amendment hashes must be unique globally and must not overlap within the same submission.
     - Effects: persists entity, indexes by owner, increments total counter.
     - Emits: Submitted(cuHash, cra, timestamp)
 
-- submitBatch(
-  bytes32[] cuHashes,
-  address[] owners,
-  uint32[] worldwideDays,
-  uint16[] settlementCurrencies,
-  uint256[] settlementAmountsBase,
-  uint256[] settlementAmountsAtto,
-  bytes32[][] crHashesArray
-  ) external onlyActiveCRA
-    - Creates multiple CUs using a single shared timestamp (captured once at the start).
-    - Validations: 0 < batchSize <= MAX_BATCH_SIZE (100); arrays lengths match; per-item validations identical to
-      submit().
-    - Effects: repeats single CU creation for each item.
-    - Emits: BatchSubmitted(batchSize, cra, timestamp)
+- multicall(bytes[] data) -> bytes[] results
+    - Only callable by an active CRA.
+    - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
+    - Validations:
+        - 0 < data.length <= MAX_BATCH_SIZE (100)
+        - Each entry must be a call to submit(...) (otherwise reverts InvalidCall)
+    - Effects:
+        - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted event.
+    - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
 - isExists(bytes32 cuHash) -> bool
     - Returns whether a CU exists.
@@ -145,7 +150,6 @@ All functions are available on the proxy.
 Events (from IConsumptionUnit):
 
 - Submitted(bytes32 indexed cuHash, address indexed cra, uint256 timestamp)
-- BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp)
 
 Errors (from IConsumptionUnit):
 
@@ -157,15 +161,17 @@ Errors (from IConsumptionUnit):
 - BatchSizeTooLarge()
 - InvalidSettlementCurrency()
 - InvalidAmount()                   // either both amounts are zero or atto >= 1e18
-- ArrayLengthMismatch()
+- InvalidConsumptionRecords()       // overlap between CR and amendment hashes, or invalid arrays
+- InvalidCall()
 
 # Record Identity and Referencing
 
 - cuHash is a 32-byte identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
 - Uniqueness is enforced per CU: the same cuHash cannot be reused.
-- Each referenced CR hash (crHashes[i]) must be unique globally across all CUs. The contract tracks this in
-  consumptionRecordHashes to prevent double-linking.
-- The registry does not compute or verify cuHash or crHashes on-chain; upstream systems define their hashing schemes.
+- Each referenced CR hash (crHashes[i]) must be unique globally across all CUs. Likewise, each referenced amendment
+  hash (amendmentCrHashes[i]) must be unique globally across all CUs. The contract tracks both sets to prevent double-linking.
+- No overlap is allowed within a single submission between crHashes and amendmentCrHashes.
+- The registry does not compute or verify cuHash or the linked hashes on-chain; upstream systems define their hashing schemes.
 
 # Access Control
 
@@ -189,7 +195,7 @@ Errors (from IConsumptionUnit):
 
 # Validation Rules Summary
 
-On submit and per-item in submitBatch:
+On submit and per-item in multicall:
 
 - cuHash != 0x0 (InvalidHash)
 - owner != address(0) (InvalidOwner)
@@ -197,11 +203,13 @@ On submit and per-item in submitBatch:
 - settlementCurrency != 0 (InvalidSettlementCurrency)
 - Amounts: not both zero AND atto < 1e18 (InvalidAmount)
 - Each crHash must not have been used before (ConsumptionRecordAlreadyExists)
+- Each amendmentHash must not have been used before
+- No overlap between crHashes and amendmentHashes (InvalidConsumptionRecords)
 
-Batch-level:
+Batch-level (multicall):
 
 - 0 < batchSize <= 100 (EmptyBatch, BatchSizeTooLarge)
-- All arrays have length == batchSize (ArrayLengthMismatch)
+- Each entry must target submit(...) (InvalidCall)
 
 # Example Payloads
 
@@ -215,22 +223,28 @@ submit(
   worldwideDay = 20250701,        // YYYYMMDD as uint32
   settlementBaseAmount = 48,
   settlementAttoAmount = 700000000000000000, // 0.7 in 1e-18
-  hashes = [0xc42433...79b4]      // linked CR hashes
+  crHashes = [0xc42433...79b4],             // linked CR hashes
+  amendmentHashes = [0xaabbcc...1122]       // linked CR amendment hashes
 )
 ```
 
-Batch submission (two items):
+Multicall with two submit calls:
 
 ```
-submitBatch(
-  cuHashes = [0xAAA..., 0xBBB...],
-  owners = [0x111..., 0x222...],
-  worldwideDays = [20250701, 20250702],
-  settlementCurrencies = [840, 978],
-  settlementAmountsBase = [48, 97],
-  settlementAmountsAtto = [700000000000000000, 400000000000000000],
-  crHashesArray = [ [0xc42433...79b4], [0xdeadbe...ef01] ]
-)
+multicall([
+  abi.encodeWithSelector(
+    ConsumptionUnitUpgradeable.submit.selector,
+    0xAAA..., 0x111..., 840, 20250701, 48, 700000000000000000,
+    [0xc42433...79b4],
+    [0xaabbcc...1122]
+  ),
+  abi.encodeWithSelector(
+    ConsumptionUnitUpgradeable.submit.selector,
+    0xBBB..., 0x222..., 978, 20250702, 97, 400000000000000000,
+    [0xdeadbe...ef01],
+    new bytes32[](0)
+  )
+])
 ```
 
 # Integration Notes

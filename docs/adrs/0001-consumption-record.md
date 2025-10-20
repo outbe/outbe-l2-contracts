@@ -11,12 +11,22 @@ Draft
 # Context
 
 A Consumption Record (CR) is a content-addressed, immutable registry entry that represents a single, verifiable
-footprint of user consumption on L2. Each record is identified by a unique 32-byte hash (crHash) and is accompanied by
-metadata describing the context of the record. Creation of records is permissioned to active Consumption Reflection
-Agents (CRAs) via a CRA Registry.
+footprint of a user's Act of Consumption on L2 for a given Worldwide Day and User's Bank Account, as defined in the
+Reflection of Acts of Consumption (June 2025). Each record is identified off-chain by a Blake3-based preimage and is
+submitted on-chain by its 32-byte hash (crHash). The preimage is derived by CRA from:
+- bank_account_hash = blake3(bic + iban || bban)
+- registered_at = the UTC timestamp (seconds precision, ISO 8601) when the financial institution registered the transaction
 
-This document describes the on-chain logic and data requirements for the L2 Consumption Record registry implemented by
-the upgradeable smart contract ConsumptionRecordUpgradeable.
+Operational context from the reflection:
+- CRA ingests transactions twice per Worldwide Day (split by local time): after local day end, and after Worldwide Day end (23:59 UTC–12).
+- CRA filters eligible merchant transactions, normalizes them to the CR schema, computes settlement values in Settlement Currency and coen, and generates the cryptographic hash per record.
+- Refunds are represented as negative-value CRs recorded in subsequent periods with references to the original CU and Worldwide Day.
+- Deduplication is enforced network-wide by ensuring CR hashes are unique across all CUs.
+
+Creation of records is permissioned to active Consumption Reflection Agents (CRAs) via a CRA Registry.
+
+This document describes the on-chain logic and data requirements for the L2 Consumption Record registry implemented by the
+upgradeable smart contract ConsumptionRecordUpgradeable.
 
 ## Goals
 
@@ -102,18 +112,15 @@ All functions are available on the proxy.
         - Increments total counter
     - Emits: Submitted(crHash, cra, timestamp)
 
-- submitBatch(bytes32[] crHashes, address[] owners, string[][] keysArray, bytes32[][] valuesArray)
+- multicall(bytes[] data) -> bytes[] results
     - Only callable by an active CRA.
-    - Creates multiple records using a single shared timestamp (captured once at the start).
+    - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
     - Validations:
-        - 0 < crHashes.length <= MAX_BATCH_SIZE (100)
-        - owners.length == crHashes.length
-        - keysArray.length == crHashes.length
-        - valuesArray.length == crHashes.length
-        - Per-item validations identical to submit()
+        - 0 < data.length <= MAX_BATCH_SIZE (100)
+        - Each entry must be a call to submit(...) (otherwise reverts InvalidCall)
     - Effects:
-        - Repeats the single-record creation for each item
-    - Emits: BatchSubmitted(batchSize, cra, timestamp)
+        - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted event.
+    - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
 - isExists(bytes32 crHash) -> bool
     - Returns whether a record exists.
@@ -138,7 +145,6 @@ All functions are available on the proxy.
 Events (from IConsumptionRecord):
 
 - Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp)
-- BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp)
 
 Errors (from IConsumptionRecord):
 
@@ -149,6 +155,7 @@ Errors (from IConsumptionRecord):
 - InvalidOwner()
 - BatchSizeTooLarge()
 - EmptyBatch()
+- InvalidCall()
 
 # Record Identity and Hashing
 
