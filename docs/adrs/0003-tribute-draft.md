@@ -1,4 +1,4 @@
-# [0003] Tribute Draft on L2
+# [0003] Tribute Draft
 
 # Status
 
@@ -11,11 +11,11 @@ Draft
 # Context
 
 A Tribute Draft (TD) is an immutable, content-addressed aggregate built from multiple Consumption Units (CUs) for a
-single owner and worldwide day on L2. Tribute Drafts provide a user-facing, pre-tribute artifact that summarizes the
+single owner and worldwide day. Tribute Drafts provide a user-facing, pre-tribute artifact that summarizes the
 settlement amounts for the selected day and currency, while preserving provenance via linked CU hashes.
 
-This document describes the on-chain logic and data requirements for the L2 Tribute Draft registry implemented by the
-upgradeable smart contract TributeDraftUpgradeable.
+This document describes the on-chain logic and data requirements for the Tribute Draft registry implemented by the
+upgradeable smart contract `TributeDraftUpgradeable`.
 
 ## Goals
 
@@ -25,15 +25,9 @@ upgradeable smart contract TributeDraftUpgradeable.
 - Provide deterministic TD identity derived from inputs
 - Remain upgradeable via UUPS with owner-only upgrades
 
-## Non-Goals
-
-- On-chain proof of CU correctness or origin beyond existence checks (future work)
-- Price/FX calculations; the contract only stores settlement amounts supplied by upstream CU records
-- ZK proof verification; can be handled by a factory/bridge or L1 minting flow
-
 # Decision
 
-We implement an L2 aggregation contract using Solidity with the UUPS upgradeable proxy pattern. Any user can submit a
+We implement smart contract using Solidity with the UUPS upgradeable proxy pattern. Any user can submit a
 set of CU hashes owned by them for a specific day and currency. The contract validates aggregation invariants, performs
 amount summation with carry between base and atto components, assigns a deterministic TD identifier, and records the
 aggregate in storage. Each referenced CU hash is globally marked as used to prevent re-aggregation elsewhere.
@@ -176,40 +170,12 @@ On submit:
     - CU.settlementCurrency == first.settlementCurrency (NotSettlementCurrencyCurrency)
     - CU.worldwideDay == first.worldwideDay (NotSameWorldwideDay)
 
-# Example Payloads
-
-Single submission (pseudocode/ABI):
-
-```
-submit(
-  cuHashes = [
-    0xc424331004231e47f857761e2bcb61d30c5e7a7fc1ea27235b5ecb2ef5fc79b4,
-    0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef
-  ]
-) -> tdId
-```
-
-Query:
-
-```
-getTributeDraft(tdId)
-getConsumptionUnitAddress()
-```
-
-Admin:
-
-```
-setConsumptionUnitAddress(0x...CU)
-```
-
 # Integration Notes
 
 - Consumption Unit linkage: The contract relies on an external ConsumptionUnit registry. Ensure the address is set
   correctly during deployment and can be updated by the owner if needed.
 - Indexing: Indexers can watch Submitted to maintain lists of TDs per owner and reconstruct aggregation inputs from
   cuHashes.
-- Deterministic IDs: Wallets/dapps may pre-compute tdId locally for UX, using the same ordering of cuHashes supplied on
-  chain.
 
 # Security Considerations
 
@@ -218,14 +184,3 @@ setConsumptionUnitAddress(0x...CU)
 - Global uniqueness of CU hashes prevents double-counting and reuse across TDs.
 - Upgrade authority is centralized; consider assigning a timelock/multisig as owner.
 - No external calls are made beyond reading from the Consumption Unit contract, minimizing reentrancy risk.
-
-# Related Changes
-
-- None required for oracles; the TD aggregates already normalized CU values and currency codes.
-- Optional future enhancement: add an owner-to-TD index for faster owner-based queries.
-
-# Open Questions
-
-- Should the TD ID also include settlementCurrency to guard against theoretical hash collisions if currencies differ?
-- Should we expose a view to check whether a given CU hash has already been used in any Tribute Draft?
-- Do we need pagination or owner-based listing helpers for large datasets?

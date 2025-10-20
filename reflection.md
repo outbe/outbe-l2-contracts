@@ -51,7 +51,7 @@ Tribute Draft is created on L2 Network before Tribute is offered on L1.
 
 | Rule | Description |
 | --- | --- |
-| Aggregation | CRs Settlement Amount and Nominal Qty are aggregated to CU per User's Bank Account and Worldwide Day. |
+| Aggregation | CRs Settlement Amount is aggregated to CU per User's Bank Account and Worldwide Day. |
 | Account type | Personal Account. |
 | Eligibility | Only merchant transactions, no intra-user transfers. |
 | Refunds | Tracked as negative CRs. |
@@ -63,7 +63,7 @@ CR aggregation is collecting multiple CRs and combining them into CUs that aggr
 It includes:
 
 - Grouping all CRs matching the same User's Bank Account and Worldwide Day. 
-- Summing values (e.g. total settlement_amount, total nominal_qty).
+- Summing values (total settlement_amount).
 - Producing signed CUs from that set.
 
 ### CRA Implementation Principles
@@ -105,8 +105,6 @@ It includes:
 | settlement_currency | String | X | currency used for Settlement Currency, ISO 4217. |
 | settlement_amount_base | Integer | X | Amount in Settlement Currency, expressed in natural units (e.g., 48). |
 | settlement_amount_atto | Integer | X | Fractional amount in Settlement Currency, in atto-units (e.g., 0.07 = 70000000000000000000). |
-| nominal_qty_base | Integer | X | Value in coen in natural units (e.g., 300) |
-| nominal_qty_atto | Integer | X | Fractional part of coen value, in atto-units (e.g. 46000000000000000). |
 | cu_hashes | [String] | X | array of cu_id. |
 
 ### Hashing
@@ -168,9 +166,6 @@ consumption_record:
     - settlement_amount_base
     - settlement_amount_atto
     - settlement_price
-    - nominal_price_minor
-    - nominal_qty_base
-    - nominal_qty_atto
     - status
     - settlement_date
     - merchant_name
@@ -229,21 +224,6 @@ consumption_record:
       type: integer
       description: Price of 1 unit of settlement currency denominated in transaction currency, expressed in base.atto. Used to convert transaction_amount into the settlement amount.
       example: 85916666700000000000  # 85.9166667 INR per 1 USD (settlement currency).
-
-    nominal_price_minor:
-      type: integer
-      description: Price of 1 coen denominated in settlement currency, expressed in base.atto (1e-18). Used to convert the settlement amount into coen. This rate is sourced from Network Price Feed Oracle.
-      example: 160177472297536170 # 0.160177
-        
-    nominal_qty_base:
-      type: integer
-      description: Value of CR Value in coen, which is calculated as settlement_amount_base.settlement_amount_atto / nominal_price. Integer part, expressed in natural units.
-      example: 8
-        
-     nominal_qty_atto:
-       type: integer
-       description: Fractional part of CR Value in coen, which is calculated as settlement_amount_base.settlement_amount_atto / coen_price. Integer part, expressed in atto-units.
-       example: 990028243953940215 # 0.99003
       
     status:
       type: string
@@ -382,9 +362,6 @@ consumption_record:
   "settlement_amount_base": 1,
   "settlement_amount_atto": 440000000000000000,
   "settlement_price": 11640000000000000,
-  "nominal_price_minor": 160177472297536170,
-  "nominal_qty_base": 8,
-  "nominal_qty_atto": 990028243953940215,
   "status": "COMPLETED",
   "settlement_date": "2025-06-07T10:15:22Z",
   "merchant_name": "BigBasket",
@@ -410,7 +387,7 @@ consumption_record:
 
 ```
 
-On June 7, 2025 (worldwide day: 2025-06-07), a user in Delhi (UTC+05:30) purchased groceries worth ₹123.72 from BigBasket using their debit card. The transaction was initiated at 15:30:45 IST (Delhi local time). The transaction amount was converted to USD at an exchange rate of 1 USD = 85.9166667 INR, resulting in a settlement value of $1.44, represented as 1 USD (base) and 0.44 USD (atto). Using the nominal price of $0.160177 per coen, this amount equated to 8.990028243953940215 coens, represented with 10^-18 precision, broken into 8 whole coens and 990028243953940215 fractional part (with 10^-18 precision). This purchase was recorded on L2 network as a Consumption Record with merchant BigBasket, MCC 5411 code of category.
+On June 7, 2025 (worldwide day: 2025-06-07), a user in Delhi (UTC+05:30) purchased groceries worth ₹123.72 from BigBasket using their debit card. The transaction was initiated at 15:30:45 IST (Delhi local time). The transaction amount was converted to USD at an exchange rate of 1 USD = 85.9166667 INR, resulting in a settlement value of $1.44, represented as 1 USD (base) and 0.44 USD (atto). This purchase was recorded on L2 network as a Consumption Record with merchant BigBasket, MCC 5411 code of category.
 
 ### Appendix C **Consumption Unit (CU) Schema**
 
@@ -426,8 +403,6 @@ consumption_unit:
     - settlement_currency
     - settlement_amount_base
     - settlement_amount_atto
-    - nominal_qty_base
-    - nominal_qty_atto
     - wallet_app_address
     - last_cr_hash
     - cr_hashes
@@ -467,16 +442,6 @@ consumption_unit:
       description: Amount of the Tribute in Settlement Currency. Fractional part, in atto-units.
       example: 670000000000000000  # 0.67 
       
-    nominal_qty_base:
-      type: integer
-      description: Whole number of coens derived from total settlement amount ÷ coen price for all CR's included in current CU.
-      example: 146
-    
-    nominal_qty_atto:
-      type: integer
-      description: Fractional part of coen quantity in atto-units.
-      example: 356000000000000000 # 0.356
-      
     wallet_app_address:
         type: String
         description: Wallet App Address associated with the user's Wallet App.
@@ -506,8 +471,6 @@ consumption_unit:
   settlement_currency: "USD"
   settlement_amount_base: 23
   settlement_amount_atto: 670000000000000000
-  nominal_qty_base: 143
-  nominal_qty_atto: 356000000000000000
   wallet_app_address: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
   last_cr_hash: "a3dcb4d229de6fde0db5686dee47145d17c8f95b8698af8b3e44e8f9b1b6c9f2"
   cr_hashes:
@@ -515,9 +478,7 @@ consumption_unit:
     - "be1e6d86c93782d71e75dd7f82d5a75e7a64b3b2731d1f7a92c01a83cc7316d4"
 ```
 
-On June 7, 2025 (worldwide day: 2025-06-07), a Delhi-based user made a ₹4,129.99 INR consumption in total. This Consumption Value was converted to $23.67 USD and recorded as CU on Network.
-
-Total CU has 143.356000000000000000 coens, represented with 10^-18 precision split into: 143 nominal_qty_base (143 base) and 0.356 nominal_qty_atto (356e15 atto). One of the Consumption Records included in this CU was previously described above for the sum of ₹123.72 INR in CR Schema.
+On June 7, 2025 (worldwide day: 2025-06-07), a Delhi-based user made a ₹4,129.99 INR consumption in total. This Consumption Value was converted to $23.67 USD and recorded as CU on Network. One of the Consumption Records included in this CU was previously described above for the sum of ₹123.72 INR in CR Schema.
 
 CU includes the hash of the associated Consumption Record (CR), ensuring traceability and integrity. It is now registered on L2 and ready for Tribute Draft aggregation, representing the user's verified consumption for that Worldwide Day.
 
@@ -535,8 +496,6 @@ tribute_draft:
     - settlement_currency
     - settlement_amount_base
     - settlement_amount_atto
-    - nominal_qty_base
-    - nominal_qty_atto
     - state
     - cu_hashes
 
@@ -574,16 +533,6 @@ tribute_draft:
        type: integer [10^-18]
        description: Fractional part of the settlement value in settlement currency. Expressed in atto-units.
        example: 700000000000000000 # 0.07*10^18 
-
-     nominal_qty_base:
-       type: integer [10^-18]
-       description: Integer part of the Tribute Draft value in coens. Derived from nominal_qty_minor. Expressed in natural coen units.
-       example: 300 coen
-
-     nominal_qty_atto:
-       type: integer [10^-18]
-       description: Fractional part of the Tribute value in coens. Derived from nominal_qty_minor. Expressed in atto-units.
-       example: 46000000000000000  # 0.046*10^18
       
       state:
         type: string
@@ -611,8 +560,6 @@ tribute_draft:
   "settlement_currency": "USD",
   "settlement_amount_base": 48,
   "settlement_amount_atto": 700000000000000000,
-  "nominal_qty_base": 300,
-  "nominal_qty_atto": 46000000000000000,
   "state": "created",
   "cu_hashes": [
     "a3f5e22c0c99eec9b0c8b9f7191d6a17872c34dbf6f3b0f9e7b124b456d39c87",
@@ -640,8 +587,6 @@ To offer a Tribute to the network, use the `offer()` command with the following 
         "settlement_currency": "USD",
         "settlement_amount_base": 48,
         "settlement_amount_atto": 700000000000000000,
-        "nominal_qty_base": 300,
-        "nominal_qty_atto": 46000000000000000,
         "owner": "0x1234abcd...abcd",
         "owner_signature": "0x98fd23...62ab"
       },
@@ -779,7 +724,7 @@ sequenceDiagram
 To ensure data privacy while maintaining on-chain verifiability, a Zero-Knowledge Proof (ZKP) is generated for each Tribute Draft before it is offered on L1 Network. This proof allows L1 Network to validate the authenticity and ownership of the underlying L2 data without accessing and exposing any private information.
 The proof generation and verification flow begins with User proof generation. Wallet App generates a ZKP for a specific Tribute Draft. This proof is constructed using a ZKP circuit that takes private and public data as inputs. After the proof is created, it is submitted to L1 Network along with the verification key derived from the public inputs. L1 Network verifies the proof to confirm the validity of Tribute offer.
 
-ZKP circuit relies on both private and public inputs to generate a valid proof. The private inputs include the complete set of attributes from Tribute Draft, such as owner, worldwide_day, settlement_amount (base +atto), nominal_qty (base+atto), and the list of CUs hashes. This data serves as the pre-image for the tribute_draft_hash. Additionally, the User’s L2 private key is included, corresponding to the owner address in Tribute Draft. The final private input is the Merkle Path, which is the set of sibling hashes required to prove that the tribute_draft_hash is a valid leaf in the L2 Merkle tree. The public inputs are the Merkle Root of L2 Block, which is the publicly known Root of the L2 Block Merkle Tree (committed to L1 Network), and the tribute_draft_id, a unique identifier derived from blake3(owner | worldwide_day). This identifier is used on L1 Network to prevent duplicate submissions for the same User.
+ZKP circuit relies on both private and public inputs to generate a valid proof. The private inputs include the complete set of attributes from Tribute Draft, such as owner, worldwide_day, settlement_amount (base +atto), and the list of CUs hashes. This data serves as the pre-image for the tribute_draft_hash. Additionally, the User’s L2 private key is included, corresponding to the owner address in Tribute Draft. The final private input is the Merkle Path, which is the set of sibling hashes required to prove that the tribute_draft_hash is a valid leaf in the L2 Merkle tree. The public inputs are the Merkle Root of L2 Block, which is the publicly known Root of the L2 Block Merkle Tree (committed to L1 Network), and the tribute_draft_id, a unique identifier derived from blake3(owner | worldwide_day). This identifier is used on L1 Network to prevent duplicate submissions for the same User.
 
 ZKP proves two statements at once, without revealing any private data. First, it confirms membership: it shows that the tribute_draft_hash, when calculated from the private Tribute Draft data is correct, and that its hash is included in the provided Merkle Path, which validates against the Merkle Root of the L2 Block, this proves that the Tribute Draft exists on the L2 Network. Second, it confirms ownership: it shows that the User holds the L2 private key corresponding to the owner address in the Tribute Draft, proving they are the rightful owner of the underlying Tribute Draft.
 
