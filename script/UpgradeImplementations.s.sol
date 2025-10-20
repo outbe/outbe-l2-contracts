@@ -4,6 +4,9 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 
 /// @title UpgradeImplementations Script
 /// @notice Script for upgrading implementation contracts while preserving proxy addresses
@@ -13,8 +16,10 @@ contract UpgradeImplementations is Script {
     struct UpgradeConfig {
         address craRegistryProxy;
         address consumptionRecordProxy;
+        address consumptionRecordAmendmentProxy;
         bool upgradeCraRegistry;
         bool upgradeConsumptionRecord;
+        bool upgradeConsumptionRecordAmendment;
         string newVersion;
     }
 
@@ -40,8 +45,10 @@ contract UpgradeImplementations is Script {
         UpgradeConfig memory config = UpgradeConfig({
             craRegistryProxy: vm.envOr("CRA_REGISTRY_ADDRESS", address(0)),
             consumptionRecordProxy: vm.envOr("CONSUMPTION_RECORD_ADDRESS", address(0)),
+            consumptionRecordAmendmentProxy: vm.envOr("CONSUMPTION_RECORD_AMENDMENT_ADDRESS", address(0)),
             upgradeCraRegistry: vm.envOr("UPGRADE_CRA_REGISTRY", true),
             upgradeConsumptionRecord: vm.envOr("UPGRADE_CONSUMPTION_RECORD", true),
+            upgradeConsumptionRecordAmendment: vm.envOr("UPGRADE_CONSUMPTION_RECORD_AMENDMENT", true),
             newVersion: vm.envOr("NEW_VERSION", string("v2"))
         });
 
@@ -80,6 +87,10 @@ contract UpgradeImplementations is Script {
         if (config.upgradeConsumptionRecord) {
             upgradeConsumptionRecord(config.consumptionRecordProxy, config.newVersion);
         }
+        // Upgrade Consumption Amendment Record if requested
+        if (config.upgradeConsumptionRecordAmendment) {
+            upgradeConsumptionRecordAmendment(config.consumptionRecordAmendmentProxy, config.newVersion);
+        }
 
         vm.stopBroadcast();
 
@@ -90,7 +101,8 @@ contract UpgradeImplementations is Script {
         console.log("All upgrades completed successfully!");
         console.log("Proxy addresses remain unchanged:");
         console.log("- CRA Registry:      ", config.craRegistryProxy);
-        console.log("- Consumption Record:", config.consumptionRecordProxy);
+        console.log("- Consumption Record:          ", config.consumptionRecordProxy);
+        console.log("- Consumption Record Amendment:", config.consumptionRecordAmendmentProxy);
     }
 
     /// @notice Upgrade CRA Registry implementation
@@ -139,6 +151,29 @@ contract UpgradeImplementations is Script {
         console.log("");
     }
 
+    /// @notice Upgrade Consumption Record implementation
+    /// @param proxyAddress Address of the Consumption Record proxy
+    /// @param version Version suffix for the new implementation
+    function upgradeConsumptionRecordAmendment(address proxyAddress, string memory version) internal {
+        console.log("Upgrading Consumption Record Amendment implementation...");
+
+        // Get current implementation info
+        ConsumptionRecordAmendmentUpgradeable proxy = ConsumptionRecordAmendmentUpgradeable(proxyAddress);
+        console.log("Current Consumption Record Amendment version:", proxy.VERSION());
+
+        // Deploy new implementation
+        string memory salt = string.concat("ConsumptionRecordAmendmentImpl_", version);
+        address newImpl = address(new ConsumptionRecordAmendmentUpgradeable{salt: bytes32(abi.encodePacked(salt))}());
+        console.log("New Consumption Record Amendment implementation:", newImpl);
+
+        // Perform upgrade
+        proxy.upgradeTo(newImpl);
+
+        console.log("Consumption Record Amendment upgrade completed");
+        console.log("New version:", proxy.VERSION());
+        console.log("");
+    }
+
     /// @notice Verify upgrades were successful
     /// @param config Upgrade configuration
     function verifyUpgrades(UpgradeConfig memory config) internal view {
@@ -162,6 +197,19 @@ contract UpgradeImplementations is Script {
             // Test basic functionality
             address craRegistry = consumptionRecord.getCRARegistry();
             console.log("Consumption Record still linked to CRA Registry:", craRegistry != address(0));
+        }
+
+        if (config.upgradeConsumptionRecordAmendment) {
+            ConsumptionRecordAmendmentUpgradeable consumptionRecord =
+                ConsumptionRecordAmendmentUpgradeable(config.consumptionRecordAmendmentProxy);
+            console.log(
+                "Consumption Record Amendment proxy still functional:", address(consumptionRecord) != address(0)
+            );
+            console.log("Consumption Record Amendment version:", consumptionRecord.VERSION());
+
+            // Test basic functionality
+            address craRegistry = consumptionRecord.getCRARegistry();
+            console.log("Consumption Record Amendment still linked to CRA Registry:", craRegistry != address(0));
         }
 
         console.log("All upgrade verifications passed");

@@ -30,12 +30,6 @@ interface IConsumptionRecord {
     /// @param timestamp The timestamp when the record was submitted
     event Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp);
 
-    /// @notice Emitted when a batch of consumption records is submitted
-    /// @param batchSize The number of records in the batch
-    /// @param cra The address of the CRA that submitted the batch
-    /// @param timestamp The timestamp when the batch was submitted
-    event BatchSubmitted(uint256 indexed batchSize, address indexed cra, uint256 timestamp);
-
     /// @notice Thrown when trying to submit a record that already exists
     error AlreadyExists();
 

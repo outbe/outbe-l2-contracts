@@ -4,6 +4,9 @@ pragma solidity ^0.8.13;
 import {Script, console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -19,12 +22,15 @@ contract DeployUpgradeable is Script {
     ConsumptionRecordUpgradeable public consumptionRecord;
     /// @notice Consumption Unit proxy instance
     ConsumptionUnitUpgradeable public consumptionUnit;
+    /// @notice Consumption Record Amendment proxy instance
+    ConsumptionRecordAmendmentUpgradeable public consumptionRecordAmendment;
     /// @notice Tribute Draft proxy instance
     TributeDraftUpgradeable public tributeDraft;
 
     /// @notice Implementation contracts
     address public craRegistryImpl;
     address public consumptionRecordImpl;
+    address public consumptionRecordAmendmentImpl;
     address public consumptionUnitImpl;
     address public tributeDraftImpl;
 
@@ -90,6 +96,8 @@ contract DeployUpgradeable is Script {
         string memory craProxySalt = string.concat("CRARegistryProxy_", saltSuffix);
         string memory crImplSalt = string.concat("ConsumptionRecordImpl_", saltSuffix);
         string memory crProxySalt = string.concat("ConsumptionRecordProxy_", saltSuffix);
+        string memory crAImplSalt = string.concat("ConsumptionRecordAmendmentImpl_", saltSuffix);
+        string memory crAProxySalt = string.concat("ConsumptionRecordAmendmentProxy_", saltSuffix);
         string memory cuImplSalt = string.concat("ConsumptionUnitImpl_", saltSuffix);
         string memory cuProxySalt = string.concat("ConsumptionUnitProxy_", saltSuffix);
         string memory tdImplSalt = string.concat("TributeDraftImpl_", saltSuffix);
@@ -102,6 +110,8 @@ contract DeployUpgradeable is Script {
         bytes32 craProxySaltBytes = keccak256(abi.encodePacked(craProxySalt));
         bytes32 crImplSaltBytes = keccak256(abi.encodePacked(crImplSalt));
         bytes32 crProxySaltBytes = keccak256(abi.encodePacked(crProxySalt));
+        bytes32 crAImplSaltBytes = keccak256(abi.encodePacked(crAImplSalt));
+        bytes32 crAProxySaltBytes = keccak256(abi.encodePacked(crAProxySalt));
         bytes32 cuImplSaltBytes = keccak256(abi.encodePacked(cuImplSalt));
         bytes32 cuProxySaltBytes = keccak256(abi.encodePacked(cuProxySalt));
         bytes32 tdImplSaltBytes = keccak256(abi.encodePacked(tdImplSalt));
@@ -114,6 +124,10 @@ contract DeployUpgradeable is Script {
 
         address predictedCrImpl = vm.computeCreate2Address(
             crImplSaltBytes, keccak256(type(ConsumptionRecordUpgradeable).creationCode), CREATE2_FACTORY
+        );
+
+        address predictedCrAImpl = vm.computeCreate2Address(
+            crAImplSaltBytes, keccak256(type(ConsumptionRecordAmendmentUpgradeable).creationCode), CREATE2_FACTORY
         );
 
         address predictedCuImpl = vm.computeCreate2Address(
@@ -138,8 +152,19 @@ contract DeployUpgradeable is Script {
         address predictedCrProxy =
             vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
 
+        bytes memory crAmendmentInitData =
+            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+        bytes memory crAProxyBytecode =
+            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrAImpl, crAmendmentInitData));
+        address predictedCrAProxy =
+            vm.computeCreate2Address(crAProxySaltBytes, keccak256(crAProxyBytecode), CREATE2_FACTORY);
+
         bytes memory consumptionUnitInitData = abi.encodeWithSignature(
-            "initialize(address,address,address)", predictedCraProxy, deployer, predictedCrProxy
+            "initialize(address,address,address,address)",
+            predictedCraProxy,
+            deployer,
+            predictedCrProxy,
+            predictedCrAProxy
         );
         bytes memory cuProxyBytecode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
@@ -166,6 +191,11 @@ contract DeployUpgradeable is Script {
             hasExistingContracts = true;
         }
 
+        if (predictedCrAImpl.code.length > 0) {
+            console.log("WARNING: CR Amendment implementation already exists at:", predictedCrAImpl);
+            hasExistingContracts = true;
+        }
+
         if (predictedCuImpl.code.length > 0) {
             console.log("WARNING: Consumption Unit implementation already exists at:", predictedCuImpl);
             hasExistingContracts = true;
@@ -183,6 +213,11 @@ contract DeployUpgradeable is Script {
 
         if (predictedCrProxy.code.length > 0) {
             console.log("WARNING: Consumption Record proxy already exists at:", predictedCrProxy);
+            hasExistingContracts = true;
+        }
+
+        if (predictedCrAProxy.code.length > 0) {
+            console.log("WARNING: CR Amendment proxy already exists at:", predictedCrAProxy);
             hasExistingContracts = true;
         }
 
@@ -236,6 +271,23 @@ contract DeployUpgradeable is Script {
         console.log("Consumption Record CRA Registry:", consumptionRecord.getCRARegistry());
         console.log("");
 
+        // Deploy Consumption Record Amendment implementation
+        console.log("Deploying CR Amendment implementation...");
+        consumptionRecordAmendmentImpl = address(new ConsumptionRecordAmendmentUpgradeable{salt: crAImplSaltBytes}());
+        console.log("CR Amendment implementation:", consumptionRecordAmendmentImpl);
+
+        // Deploy Consumption Record Amendment proxy
+        console.log("Deploying CR Amendment proxy...");
+        bytes memory crAInitData =
+            abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
+        address crAmendmentProxy =
+            address(new ERC1967Proxy{salt: crAProxySaltBytes}(consumptionRecordAmendmentImpl, crAInitData));
+        consumptionRecordAmendment = ConsumptionRecordAmendmentUpgradeable(crAmendmentProxy);
+        console.log("CR Amendment proxy:", address(consumptionRecordAmendment));
+        console.log("CR Amendment owner:", consumptionRecordAmendment.getOwner());
+        console.log("CR Amendment CRA Registry:", consumptionRecordAmendment.getCRARegistry());
+        console.log("");
+
         // Deploy Consumption Unit implementation
         console.log("Deploying Consumption Unit implementation...");
         consumptionUnitImpl = address(new ConsumptionUnitUpgradeable{salt: cuImplSaltBytes}());
@@ -244,7 +296,11 @@ contract DeployUpgradeable is Script {
         // Deploy Consumption Unit proxy
         console.log("Deploying Consumption Unit proxy...");
         bytes memory cuInitData = abi.encodeWithSignature(
-            "initialize(address,address,address)", address(craRegistry), deployer, address(consumptionRecord)
+            "initialize(address,address,address,address)",
+            address(craRegistry),
+            deployer,
+            address(consumptionRecord),
+            address(consumptionRecordAmendment)
         );
         address consumptionUnitProxy =
             address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
@@ -253,6 +309,7 @@ contract DeployUpgradeable is Script {
         console.log("Consumption Unit owner:", consumptionUnit.getOwner());
         console.log("Consumption Unit CRA Registry:", consumptionUnit.getCRARegistry());
         console.log("Consumption Unit CR Address:", consumptionUnit.getConsumptionRecordAddress());
+        console.log("Consumption Unit CR Amendment Address:", consumptionUnit.getConsumptionRecordAmendmentAddress());
         console.log("");
 
         // Deploy Tribute Draft implementation
@@ -361,23 +418,27 @@ contract DeployUpgradeable is Script {
         console.log("Implementation Addresses:");
         console.log("- CRA Registry Impl:      ", craRegistryImpl);
         console.log("- Consumption Record Impl:", consumptionRecordImpl);
+        console.log("- Consumption Record Amendment Impl:", consumptionRecordAmendmentImpl);
         console.log("- Consumption Unit Impl:  ", consumptionUnitImpl);
         console.log("- Tribute Draft Impl:     ", tributeDraftImpl);
         console.log("");
         console.log("Proxy Addresses (Use these for interactions):");
         console.log("- CRA Registry:      ", address(craRegistry));
         console.log("- Consumption Record:", address(consumptionRecord));
+        console.log("- Consumption Record Amendment:", address(consumptionRecordAmendment));
         console.log("- Consumption Unit:  ", address(consumptionUnit));
         console.log("- Tribute Draft:     ", address(tributeDraft));
         console.log("");
         console.log("Contract Owners:");
         console.log("- CRA Registry:      ", craRegistry.getOwner());
         console.log("- Consumption Record:", consumptionRecord.getOwner());
+        console.log("- Consumption Record Amendment:", consumptionRecordAmendment.getOwner());
         console.log("- Consumption Unit:  ", consumptionUnit.getOwner());
         // Tribute Draft is Ownable but no owner getter; no direct owner method in TD, skip owner here
         console.log("");
         console.log("Configuration:");
         console.log("- CR -> CRA Registry:", consumptionRecord.getCRARegistry());
+        console.log("- CR (A) -> CRA Registry:", consumptionRecordAmendment.getCRARegistry());
         console.log("- CU -> CRA Registry:", consumptionUnit.getCRARegistry());
         console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
@@ -401,10 +462,12 @@ contract DeployUpgradeable is Script {
         console.log("Environment Variables for .env:");
         console.log("CRA_REGISTRY_ADDRESS=", address(craRegistry));
         console.log("CONSUMPTION_RECORD_ADDRESS=", address(consumptionRecord));
+        console.log("CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", address(consumptionRecordAmendment));
         console.log("CONSUMPTION_UNIT_ADDRESS=", address(consumptionUnit));
         console.log("TRIBUTE_DRAFT_ADDRESS=", address(tributeDraft));
         console.log("CRA_REGISTRY_IMPL=", craRegistryImpl);
         console.log("CONSUMPTION_RECORD_IMPL=", consumptionRecordImpl);
+        console.log("CONSUMPTION_RECORD_AMENDMENT_IMPL=", consumptionRecordAmendmentImpl);
         console.log("CONSUMPTION_UNIT_IMPL=", consumptionUnitImpl);
         console.log("TRIBUTE_DRAFT_IMPL=", tributeDraftImpl);
     }

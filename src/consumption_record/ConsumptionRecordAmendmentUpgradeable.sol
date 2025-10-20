@@ -8,7 +8,7 @@ import {
 import {
     PausableUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
-import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {IConsumptionRecordAmendment} from "../interfaces/IConsumptionRecordAmendment.sol";
 import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {
@@ -16,15 +16,15 @@ import {
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
 import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
 
-/// @title ConsumptionRecordUpgradeable
-/// @notice Upgradeable contract for storing consumption record hashes with metadata
-/// @dev This contract allows active CRAs to submit consumption records with flexible metadata
+/// @title ConsumptionRecordAmendmentUpgradeable
+/// @notice Upgradeable contract for storing consumption record amendment hashes with metadata
+/// @dev This contract allows active CRAs to submit consumption record amendments with flexible metadata
 /// @author Outbe Team
-contract ConsumptionRecordUpgradeable is
+contract ConsumptionRecordAmendmentUpgradeable is
     PausableUpgradeable,
     UUPSUpgradeable,
     CRAAware,
-    IConsumptionRecord,
+    IConsumptionRecordAmendment,
     ISoulBoundNFT,
     ERC165Upgradeable,
     MulticallUpgradeable
@@ -35,10 +35,10 @@ contract ConsumptionRecordUpgradeable is
     /// @notice Maximum number of records that can be submitted in a single batch
     uint256 public constant MAX_BATCH_SIZE = 100;
 
-    /// @dev Mapping from record hash to record details
-    mapping(bytes32 => ConsumptionRecordEntity) public consumptionRecords;
+    /// @dev Mapping from amendment hash to amendment details
+    mapping(bytes32 => ConsumptionRecordAmendmentEntity) public consumptionRecordAmendments;
 
-    /// @dev Mapping from owner address to array of record hashes they own
+    /// @dev Mapping from owner address to array of amendment hashes they own
     mapping(address => bytes32[]) public ownerRecords;
 
     /// @dev Total number of records tracked by this contract
@@ -49,7 +49,7 @@ contract ConsumptionRecordUpgradeable is
         _disableInitializers();
     }
 
-    /// @notice Initialize the consumption record contract
+    /// @notice Initialize the consumption record amendment contract
     /// @dev Sets the CRA registry address and specified owner
     /// @param _craRegistry Address of the CRA Registry contract
     /// @param _owner Address of the contract owner
@@ -66,23 +66,23 @@ contract ConsumptionRecordUpgradeable is
         _totalRecords = 0;
     }
 
-    /// @notice Internal function to add a single consumption record
-    /// @param crHash The hash of the consumption record
-    /// @param recordOwner The owner of the record
+    /// @notice Internal function to add a single consumption record amendment
+    /// @param crAmendmentHash The hash of the consumption record amendment
+    /// @param recordOwner The owner of the amendment
     /// @param keys Array of metadata keys
     /// @param values Array of metadata values
     /// @param timestamp The timestamp to use for submission
     function _addEntity(
-        bytes32 crHash,
+        bytes32 crAmendmentHash,
         address recordOwner,
         string[] memory keys,
         bytes32[] memory values,
         uint256 timestamp
     ) internal {
         // Validate record parameters
-        if (crHash == bytes32(0)) revert InvalidHash();
+        if (crAmendmentHash == bytes32(0)) revert InvalidHash();
         if (recordOwner == address(0)) revert InvalidOwner();
-        if (isExists(crHash)) revert AlreadyExists();
+        if (isExists(crAmendmentHash)) revert AlreadyExists();
         if (keys.length != values.length) revert MetadataKeyValueMismatch();
 
         // Validate metadata keys
@@ -91,8 +91,8 @@ contract ConsumptionRecordUpgradeable is
         }
 
         // Store the record
-        consumptionRecords[crHash] = ConsumptionRecordEntity({
-            consumptionRecordId: crHash,
+        consumptionRecordAmendments[crAmendmentHash] = ConsumptionRecordAmendmentEntity({
+            consumptionRecordAmendmentId: crAmendmentHash,
             submittedBy: msg.sender,
             submittedAt: timestamp,
             owner: recordOwner,
@@ -101,22 +101,22 @@ contract ConsumptionRecordUpgradeable is
         });
 
         // Add record hash to owner's list
-        ownerRecords[recordOwner].push(crHash);
+        ownerRecords[recordOwner].push(crAmendmentHash);
 
         // Increment total supply
         _totalRecords += 1;
 
         // Emit submission event
-        emit Submitted(crHash, msg.sender, timestamp);
+        emit Submitted(crAmendmentHash, msg.sender, timestamp);
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function submit(bytes32 crHash, address recordOwner, string[] memory keys, bytes32[] memory values)
+    /// @inheritdoc IConsumptionRecordAmendment
+    function submit(bytes32 crAmendmentHash, address recordOwner, string[] memory keys, bytes32[] memory values)
         external
         onlyActiveCRA
         whenNotPaused
     {
-        _addEntity(crHash, recordOwner, keys, values, block.timestamp);
+        _addEntity(crAmendmentHash, recordOwner, keys, values, block.timestamp);
     }
 
     /// @notice Multicall entry point allowing multiple submits in a single transaction
@@ -139,18 +139,22 @@ contract ConsumptionRecordUpgradeable is
         }
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function isExists(bytes32 crHash) public view returns (bool) {
-        return consumptionRecords[crHash].submittedBy != address(0);
+    /// @inheritdoc IConsumptionRecordAmendment
+    function isExists(bytes32 crAmendmentHash) public view returns (bool) {
+        return consumptionRecordAmendments[crAmendmentHash].submittedBy != address(0);
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
-        return consumptionRecords[crHash];
+    /// @inheritdoc IConsumptionRecordAmendment
+    function getConsumptionRecordAmendment(bytes32 crAmendmentHash)
+        external
+        view
+        returns (ConsumptionRecordAmendmentEntity memory)
+    {
+        return consumptionRecordAmendments[crAmendmentHash];
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function getConsumptionRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
+    /// @inheritdoc IConsumptionRecordAmendment
+    function getConsumptionRecordAmendmentsByOwner(address _owner) external view returns (bytes32[] memory) {
         return ownerRecords[_owner];
     }
 
@@ -170,8 +174,8 @@ contract ConsumptionRecordUpgradeable is
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         // TODO add supported interfaces
         //      interfaceId == 0x780e9d63 // ERC721Enumerable
-        return interfaceId == type(IConsumptionRecord).interfaceId || interfaceId == type(ISoulBoundNFT).interfaceId
-            || super.supportsInterface(interfaceId);
+        return interfaceId == type(IConsumptionRecordAmendment).interfaceId
+            || interfaceId == type(ISoulBoundNFT).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

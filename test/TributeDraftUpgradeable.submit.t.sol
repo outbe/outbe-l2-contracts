@@ -6,6 +6,9 @@ import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC196
 
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
+import {
+    ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ITributeDraft} from "../src/interfaces/ITributeDraft.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
@@ -35,10 +38,17 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         ERC1967Proxy crProxy = new ERC1967Proxy(address(crImpl), crInit);
         cr = ConsumptionRecordUpgradeable(address(crProxy));
 
-        // Deploy CU behind proxy
+        // Deploy CRA (Amendment) behind proxy
+        ConsumptionRecordAmendmentUpgradeable craImpl = new ConsumptionRecordAmendmentUpgradeable();
+        bytes memory craInit =
+            abi.encodeWithSelector(ConsumptionRecordAmendmentUpgradeable.initialize.selector, address(registry), owner);
+        ERC1967Proxy craProxy = new ERC1967Proxy(address(craImpl), craInit);
+        ConsumptionRecordAmendmentUpgradeable cra = ConsumptionRecordAmendmentUpgradeable(address(craProxy));
+
+        // Deploy CU behind proxy with CR and CRA addresses
         ConsumptionUnitUpgradeable cuImpl = new ConsumptionUnitUpgradeable();
         bytes memory cuInit = abi.encodeWithSelector(
-            ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr)
+            ConsumptionUnitUpgradeable.initialize.selector, address(registry), owner, address(cr), address(cra)
         );
         ERC1967Proxy cuProxy = new ERC1967Proxy(address(cuImpl), cuInit);
         cu = ConsumptionUnitUpgradeable(address(cuProxy));
@@ -69,7 +79,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         bytes32[] memory crHashes = new bytes32[](1);
         crHashes[0] = crHash;
         vm.prank(craActive);
-        cu.submit(cuHash, recordOwner, currency, worldwideDay, base, atto, crHashes);
+        cu.submit(cuHash, recordOwner, currency, worldwideDay, base, atto, crHashes, new bytes32[](0));
     }
 
     function test_submit_success_persists_entity_aggregates_and_emits() public {
@@ -194,7 +204,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = keccak256("cr-owner-2");
         bytes32 cu2 = keccak256("cu-owner-2");
         vm.prank(craActive);
-        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes);
+        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes, new bytes32[](0));
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = cu1;
@@ -216,16 +226,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = cr2;
         bytes32 cu2 = keccak256("cu-cur-2");
         vm.prank(craActive);
-        cu.submit(
-            cu2,
-            recordOwner,
-            840,
-            /* USD */
-            worldwideDay,
-            1,
-            0,
-            crHashes
-        );
+        cu.submit(cu2, recordOwner, 840, worldwideDay, 1, 0, crHashes, new bytes32[](0));
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = cu1;
@@ -247,7 +248,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         crHashes[0] = cr2;
         bytes32 cu2 = keccak256("cu-day-2");
         vm.prank(craActive);
-        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes);
+        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes, new bytes32[](0));
 
         bytes32[] memory arr = new bytes32[](2);
         arr[0] = cu1;

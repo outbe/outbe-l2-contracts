@@ -17,7 +17,7 @@ interface IConsumptionUnit {
         address submittedBy;
         /// @notice Timestamp when the consumption unit was submitted
         uint256 submittedAt;
-        /// @notice Worldwide day in compact format (e.g., 20250923)
+        /// @notice Worldwide day in a compact format YYYYMMDD (e.g., 20250923)
         uint32 worldwideDay;
         /// @notice Amount expressed in natural units (base currency units).
         uint64 settlementAmountBase;
@@ -27,6 +27,8 @@ interface IConsumptionUnit {
         uint16 settlementCurrency;
         /// @notice Hashes identifying linked consumption records (unique per record)
         bytes32[] crHashes;
+        /// @notice Hashes identifying linked consumption records amendments (unique per record)
+        bytes32[] amendmentCrHashes;
     }
 
     event Submitted(bytes32 indexed cuHash, address indexed cra, uint256 timestamp);
@@ -68,6 +70,7 @@ interface IConsumptionUnit {
     /// @param settlementAmountBase Amount in base units (must be >= 0)
     /// @param settlementAmountAtto Amount in fractional units (0 <= amount < 1e18)
     /// @param hashes Linked consumption record hashes (each must be unique globally)
+    /// @param amendmentHashes Linked consumption record amendment hashes (each must be unique globally)
     function submit(
         bytes32 cuHash,
         address owner,
@@ -75,7 +78,8 @@ interface IConsumptionUnit {
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        bytes32[] memory hashes
+        bytes32[] memory hashes,
+        bytes32[] memory amendmentHashes
     ) external;
 
     /// @notice Check if a consumption unit exists
