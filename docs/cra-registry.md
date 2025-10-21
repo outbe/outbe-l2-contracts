@@ -134,9 +134,9 @@ function getCraInfo(address cra) external view craExists(cra) returns (CraInfo m
 ```
 Returns complete CRA information for registered CRAs.
 
-#### getAllCras()
+#### getAllCRAs()
 ```solidity
-function getAllCras() external view returns (address[] memory)
+function getAllCRAs() external view returns (address[] memory)
 ```
 Returns array of all registered CRA addresses.
 
@@ -241,7 +241,7 @@ cast call <PROXY_ADDRESS> "isCraActive(address)" <CRA_ADDRESS>
 cast send <PROXY_ADDRESS> "updateCraStatus(address,uint8)" <CRA_ADDRESS> 2 --private-key <PRIVATE_KEY>
 
 # Get all CRAs
-cast call <PROXY_ADDRESS> "getAllCras()"
+cast call <PROXY_ADDRESS> "getAllCRAs()"
 
 # Get contract version
 cast call <PROXY_ADDRESS> "VERSION()"
@@ -263,7 +263,7 @@ bool isActive = registry.isCraActive(craAddress);
 registry.updateCraStatus(craAddress, CRAStatus.Suspended);
 
 // Get all CRAs
-address[] memory allCRAs = registry.getAllCras();
+address[] memory allCRAs = registry.getAllCRAs();
 
 // Upgrade the contract (owner only)
 registry.upgradeTo(newImplementationAddress);
