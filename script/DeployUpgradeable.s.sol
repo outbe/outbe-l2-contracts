@@ -380,13 +380,19 @@ contract DeployUpgradeable is OutbeScriptBase {
         console.log("Environment Variables:");
         console.log(string.concat("export CRA_REGISTRY_ADDRESS=", vm.toString(address(craRegistry))));
         console.log(string.concat("export CONSUMPTION_RECORD_ADDRESS=", vm.toString(address(consumptionRecord))));
-        console.log(string.concat("export CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", vm.toString(address(consumptionRecordAmendment))));
+        console.log(
+            string.concat(
+                "export CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", vm.toString(address(consumptionRecordAmendment))
+            )
+        );
         console.log(string.concat("export CONSUMPTION_UNIT_ADDRESS=", vm.toString(address(consumptionUnit))));
         console.log(string.concat("export TRIBUTE_DRAFT_ADDRESS=", vm.toString(address(tributeDraft))));
         console.log(string.concat("export CRA_REGISTRY_IMPL=", vm.toString(craRegistryImpl)));
-        console.log(string.concat("export CONSUMPTION_RECORD_IMPL=", vm.toString( consumptionRecordImpl)));
-        console.log(string.concat("export CONSUMPTION_RECORD_AMENDMENT_IMPL=", vm.toString( consumptionRecordAmendmentImpl)));
-        console.log(string.concat("export CONSUMPTION_UNIT_IMPL=", vm.toString( consumptionUnitImpl)));
-        console.log(string.concat("export TRIBUTE_DRAFT_IMPL=", vm.toString( tributeDraftImpl)));
+        console.log(string.concat("export CONSUMPTION_RECORD_IMPL=", vm.toString(consumptionRecordImpl)));
+        console.log(
+            string.concat("export CONSUMPTION_RECORD_AMENDMENT_IMPL=", vm.toString(consumptionRecordAmendmentImpl))
+        );
+        console.log(string.concat("export CONSUMPTION_UNIT_IMPL=", vm.toString(consumptionUnitImpl)));
+        console.log(string.concat("export TRIBUTE_DRAFT_IMPL=", vm.toString(tributeDraftImpl)));
     }
 }
