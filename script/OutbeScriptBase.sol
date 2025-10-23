@@ -6,7 +6,7 @@ import {Script, console} from "forge-std/Script.sol";
 abstract contract OutbeScriptBase is Script {
     address internal deployer;
     uint256 internal deployerPrivateKey;
-    string internal  saltSuffix;
+    string internal saltSuffix;
 
     function setUp() public {
         _setUpDeployer();
