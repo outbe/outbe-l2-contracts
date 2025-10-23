@@ -72,4 +72,9 @@ abstract contract OutbeScriptBase is Script {
         return string(abi.encodePacked("Unknown (", vm.toString(chainId), ")"));
     }
 
+    function generateSalt(string memory prefix) public view returns (bytes32) {
+        string memory saltString = string.concat(prefix, saltSuffix);
+        bytes32 salt = keccak256(abi.encodePacked(saltString));
+        return salt;
+    }
 }

@@ -46,33 +46,21 @@ contract DeployUpgradeable is OutbeScriptBase {
     function run() public {
         vm.startBroadcast(deployerPrivateKey);
 
-        // Generate salt strings
-        string memory craImplSalt = string.concat("CRARegistryImpl_", saltSuffix);
-        string memory craProxySalt = string.concat("CRARegistryProxy_", saltSuffix);
-        string memory crImplSalt = string.concat("ConsumptionRecordImpl_", saltSuffix);
-        string memory crProxySalt = string.concat("ConsumptionRecordProxy_", saltSuffix);
-        string memory crAImplSalt = string.concat("ConsumptionRecordAmendmentImpl_", saltSuffix);
-        string memory crAProxySalt = string.concat("ConsumptionRecordAmendmentProxy_", saltSuffix);
-        string memory cuImplSalt = string.concat("ConsumptionUnitImpl_", saltSuffix);
-        string memory cuProxySalt = string.concat("ConsumptionUnitProxy_", saltSuffix);
-        string memory tdImplSalt = string.concat("TributeDraftImpl_", saltSuffix);
-        string memory tdProxySalt = string.concat("TributeDraftProxy_", saltSuffix);
-
-        // Convert salt strings to bytes32
-        bytes32 craImplSaltBytes = keccak256(abi.encodePacked(craImplSalt));
-        bytes32 craProxySaltBytes = keccak256(abi.encodePacked(craProxySalt));
-        bytes32 crImplSaltBytes = keccak256(abi.encodePacked(crImplSalt));
-        bytes32 crProxySaltBytes = keccak256(abi.encodePacked(crProxySalt));
-        bytes32 crAImplSaltBytes = keccak256(abi.encodePacked(crAImplSalt));
-        bytes32 crAProxySaltBytes = keccak256(abi.encodePacked(crAProxySalt));
-        bytes32 cuImplSaltBytes = keccak256(abi.encodePacked(cuImplSalt));
-        bytes32 cuProxySaltBytes = keccak256(abi.encodePacked(cuProxySalt));
-        bytes32 tdImplSaltBytes = keccak256(abi.encodePacked(tdImplSalt));
-        bytes32 tdProxySaltBytes = keccak256(abi.encodePacked(tdProxySalt));
+        // Generate salt
+        bytes32 craRegistryImplSaltBytes = generateSalt("CRARegistryImpl_");
+        bytes32 craRegistryProxySaltBytes = generateSalt("CRARegistryProxy_");
+        bytes32 crImplSaltBytes = generateSalt("ConsumptionRecordImpl_");
+        bytes32 crProxySaltBytes = generateSalt("ConsumptionRecordProxy_");
+        bytes32 crAImplSaltBytes = generateSalt("ConsumptionRecordAmendmentImpl_");
+        bytes32 crAProxySaltBytes = generateSalt("ConsumptionRecordAmendmentProxy_");
+        bytes32 cuImplSaltBytes = generateSalt("ConsumptionUnitImpl_");
+        bytes32 cuProxySaltBytes = generateSalt("ConsumptionUnitProxy_");
+        bytes32 tdImplSaltBytes = generateSalt("TributeDraftImpl_");
+        bytes32 tdProxySaltBytes = generateSalt("TributeDraftProxy_");
 
         // Check if contracts already exist at predicted addresses
-        address predictedCraImpl = vm.computeCreate2Address(
-            craImplSaltBytes, keccak256(type(CRARegistryUpgradeable).creationCode), CREATE2_FACTORY
+        address predictedCraRegistryImpl = vm.computeCreate2Address(
+            craRegistryImplSaltBytes, keccak256(type(CRARegistryUpgradeable).creationCode), CREATE2_FACTORY
         );
 
         address predictedCrImpl = vm.computeCreate2Address(
@@ -94,9 +82,9 @@ contract DeployUpgradeable is OutbeScriptBase {
         // For proxy addresses, we need to compute with init data
         bytes memory craRegistryInitData = abi.encodeWithSignature("initialize(address)", deployer);
         bytes memory craProxyBytecode =
-                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCraImpl, craRegistryInitData));
+                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCraRegistryImpl, craRegistryInitData));
         address predictedCraProxy =
-                            vm.computeCreate2Address(craProxySaltBytes, keccak256(craProxyBytecode), CREATE2_FACTORY);
+                            vm.computeCreate2Address(craRegistryProxySaltBytes, keccak256(craProxyBytecode), CREATE2_FACTORY);
 
         bytes memory consumptionRecordInitData =
                             abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
@@ -134,8 +122,8 @@ contract DeployUpgradeable is OutbeScriptBase {
         // Check for existing deployments
         bool hasExistingContracts = false;
 
-        if (predictedCraImpl.code.length > 0) {
-            console.log("WARNING: CRA Registry implementation already exists at:", predictedCraImpl);
+        if (predictedCraRegistryImpl.code.length > 0) {
+            console.log("WARNING: CRA Registry implementation already exists at:", predictedCraRegistryImpl);
             hasExistingContracts = true;
         }
 
@@ -196,13 +184,13 @@ contract DeployUpgradeable is OutbeScriptBase {
 
         // Deploy CRA Registry implementation
         console.log("Deploying CRA Registry implementation...");
-        craRegistryImpl = address(new CRARegistryUpgradeable{salt: craImplSaltBytes}());
+        craRegistryImpl = address(new CRARegistryUpgradeable{salt: craRegistryImplSaltBytes}());
         console.log("CRA Registry implementation:", craRegistryImpl);
 
         // Deploy CRA Registry proxy
         console.log("Deploying CRA Registry proxy...");
         address craRegistryProxy =
-                        address(new ERC1967Proxy{salt: craProxySaltBytes}(craRegistryImpl, craRegistryInitData));
+                        address(new ERC1967Proxy{salt: craRegistryProxySaltBytes}(craRegistryImpl, craRegistryInitData));
         craRegistry = CRARegistryUpgradeable(craRegistryProxy);
         console.log("CRA Registry proxy:", address(craRegistry));
         console.log("CRA Registry owner:", craRegistry.getOwner());
@@ -326,40 +314,22 @@ contract DeployUpgradeable is OutbeScriptBase {
     /// @dev Performs basic checks on deployed contracts
     /// @param expectedOwner The expected owner address
     function verifyDeployment(address expectedOwner) internal view {
-        console.log("=== Deployment Verification ===");
-
         // Check CRA Registry
         require(address(craRegistry) != address(0), "CRA Registry deployment failed");
         require(craRegistry.getOwner() == expectedOwner, "CRA Registry owner incorrect");
-        console.log("CRA Registry verification passed");
-
         // Check Consumption Record
         require(address(consumptionRecord) != address(0), "Consumption Record deployment failed");
         require(consumptionRecord.getOwner() == expectedOwner, "Consumption Record owner incorrect");
         require(consumptionRecord.getCRARegistry() == address(craRegistry), "CRA Registry linkage incorrect");
-        console.log("Consumption Record verification passed");
 
         // Check Consumption Unit
         require(address(consumptionUnit) != address(0), "Consumption Unit deployment failed");
         require(consumptionUnit.getOwner() == expectedOwner, "Consumption Unit owner incorrect");
         require(consumptionUnit.getCRARegistry() == address(craRegistry), "CU CRA Registry linkage incorrect");
-        console.log("Consumption Unit verification passed");
 
         // Check Tribute Draft
         require(address(tributeDraft) != address(0), "Tribute Draft deployment failed");
         require(tributeDraft.getConsumptionUnitAddress() == address(consumptionUnit), "TD CU linkage incorrect");
-        console.log("Tribute Draft verification passed");
-
-        // Check contract versions
-        string memory craVersion = craRegistry.VERSION();
-        string memory crVersion = consumptionRecord.VERSION();
-        string memory cuVersion = consumptionUnit.VERSION();
-        string memory tdVersion = tributeDraft.VERSION();
-        console.log("CRA Registry version:", craVersion);
-        console.log("Consumption Record version:", crVersion);
-        console.log("Consumption Unit version:", cuVersion);
-        console.log("Tribute Draft version:", tdVersion);
-        console.log("");
     }
 
     /// @notice Log deployment summary with all important information
