@@ -174,6 +174,7 @@ contract DeployUpgradeable is OutbeScriptBase {
         }
 
         if (hasExistingContracts) {
+            console.log("");
             console.log("ERROR: Some contracts already exist at predicted addresses!");
             console.log("Solutions:");
             console.log("1. Use different SALT_SUFFIX environment variable");
@@ -376,23 +377,16 @@ contract DeployUpgradeable is OutbeScriptBase {
             console.log("");
         }
 
-        console.log("Next Steps:");
-        console.log("1. Verify contracts on block explorer (if on public network)");
-        console.log("2. Register CRAs using registerCra(address, string)");
-        console.log("3. CRAs can submit consumption records using submit()");
-        console.log("4. Use proxy addresses for all interactions");
-        console.log("5. Implementations can be upgraded while preserving proxy addresses");
-        console.log("");
-        console.log("Environment Variables for .env:");
-        console.log("CRA_REGISTRY_ADDRESS=", address(craRegistry));
-        console.log("CONSUMPTION_RECORD_ADDRESS=", address(consumptionRecord));
-        console.log("CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", address(consumptionRecordAmendment));
-        console.log("CONSUMPTION_UNIT_ADDRESS=", address(consumptionUnit));
-        console.log("TRIBUTE_DRAFT_ADDRESS=", address(tributeDraft));
-        console.log("CRA_REGISTRY_IMPL=", craRegistryImpl);
-        console.log("CONSUMPTION_RECORD_IMPL=", consumptionRecordImpl);
-        console.log("CONSUMPTION_RECORD_AMENDMENT_IMPL=", consumptionRecordAmendmentImpl);
-        console.log("CONSUMPTION_UNIT_IMPL=", consumptionUnitImpl);
-        console.log("TRIBUTE_DRAFT_IMPL=", tributeDraftImpl);
+        console.log("Environment Variables:");
+        console.log(string.concat("export CRA_REGISTRY_ADDRESS=", vm.toString(address(craRegistry))));
+        console.log(string.concat("export CONSUMPTION_RECORD_ADDRESS=", vm.toString(address(consumptionRecord))));
+        console.log(string.concat("export CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", vm.toString(address(consumptionRecordAmendment))));
+        console.log(string.concat("export CONSUMPTION_UNIT_ADDRESS=", vm.toString(address(consumptionUnit))));
+        console.log(string.concat("export TRIBUTE_DRAFT_ADDRESS=", vm.toString(address(tributeDraft))));
+        console.log(string.concat("export CRA_REGISTRY_IMPL=", vm.toString(craRegistryImpl)));
+        console.log(string.concat("export CONSUMPTION_RECORD_IMPL=", vm.toString( consumptionRecordImpl)));
+        console.log(string.concat("export CONSUMPTION_RECORD_AMENDMENT_IMPL=", vm.toString( consumptionRecordAmendmentImpl)));
+        console.log(string.concat("export CONSUMPTION_UNIT_IMPL=", vm.toString( consumptionUnitImpl)));
+        console.log(string.concat("export TRIBUTE_DRAFT_IMPL=", vm.toString( tributeDraftImpl)));
     }
 }

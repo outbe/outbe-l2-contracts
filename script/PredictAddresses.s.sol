@@ -168,16 +168,16 @@ contract PredictAddresses is OutbeScriptBase {
         console.log("");
 
         console.log("Environment variables:");
-        console.log("export CRA_REGISTRY_ADDRESS=", predictedCraProxy);
-        console.log("export CONSUMPTION_RECORD_ADDRESS=", predictedCrProxy);
-        console.log("export CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", predictedCrAProxy);
-        console.log("export CONSUMPTION_UNIT_ADDRESS=", predictedCuProxy);
-        console.log("export TRIBUTE_DRAFT_ADDRESS=", predictedTdProxy);
-        console.log("export CRA_REGISTRY_IMPL=", predictedCraImpl);
-        console.log("export CONSUMPTION_RECORD_IMPL=", predictedCrImpl);
-        console.log("export CONSUMPTION_RECORD_AMENDMENT_IMPL=", predictedCrAImpl);
-        console.log("export CONSUMPTION_UNIT_IMPL=", predictedCuImpl);
-        console.log("export TRIBUTE_DRAFT_IMPL=", predictedTdImpl);
+        console.log(string.concat("export CRA_REGISTRY_ADDRESS=", vm.toString(predictedCraProxy)));
+        console.log(string.concat("export CONSUMPTION_RECORD_ADDRESS=", vm.toString(predictedCrProxy)));
+        console.log(string.concat("export CONSUMPTION_RECORD_AMENDMENT_ADDRESS=", vm.toString(predictedCrAProxy)));
+        console.log(string.concat("export CONSUMPTION_UNIT_ADDRESS=", vm.toString(predictedCuProxy)));
+        console.log(string.concat("export TRIBUTE_DRAFT_ADDRESS=", vm.toString(predictedTdProxy)));
+        console.log(string.concat("export CRA_REGISTRY_IMPL=", vm.toString(predictedCraImpl)));
+        console.log(string.concat("export CONSUMPTION_RECORD_IMPL=", vm.toString(predictedCrImpl)));
+        console.log(string.concat("export CONSUMPTION_RECORD_AMENDMENT_IMPL=", vm.toString(predictedCrAImpl)));
+        console.log(string.concat("export CONSUMPTION_UNIT_IMPL=", vm.toString(predictedCuImpl)));
+        console.log(string.concat("export TRIBUTE_DRAFT_IMPL=", vm.toString(predictedTdImpl)));
     }
 
     function computeCreate2Address(bytes32 salt, bytes32 bytecodeHash, address deployer)
