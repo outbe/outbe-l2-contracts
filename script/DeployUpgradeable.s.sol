@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Script, console} from "forge-std/Script.sol";
+import "./OutbeScriptBase.sol";
+import {
+ConsumptionRecordAmendmentUpgradeable
+} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
-import {
-    ConsumptionRecordAmendmentUpgradeable
-} from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
-import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {Script, console} from "forge-std/Script.sol";
+import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 
 /// @title DeployUpgradeable Script
 /// @notice Deployment script for upgradeable CRA Registry and Consumption Record contracts
 /// @dev Deploys implementation contracts and creates proxies with deterministic addresses
-contract DeployUpgradeable is Script {
+contract DeployUpgradeable is OutbeScriptBase {
     /// @notice CRA Registry proxy instance
     CRARegistryUpgradeable public craRegistry;
 
@@ -34,61 +35,15 @@ contract DeployUpgradeable is Script {
     address public consumptionUnitImpl;
     address public tributeDraftImpl;
 
-    /// @notice Deployment configuration
-    struct DeploymentConfig {
-        address deployer;
-        bool verify;
-        bool setupInitialCras;
-    }
-
     /// @notice Initial CRAs to register (optional)
     struct InitialCra {
         address craAddress;
         string name;
     }
 
-    function setUp() public {}
-
     /// @notice Main deployment function
     /// @dev Deploys implementation contracts and creates proxies
     function run() public {
-        // Load deployment parameters
-        uint256 deployerPrivateKey;
-
-        try vm.envUint("PRIVATE_KEY") returns (uint256 key) {
-            deployerPrivateKey = key;
-        } catch {
-            // Use default Anvil private key for testing
-            deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
-            console.log("WARNING: Using default Anvil private key for testing");
-        }
-
-        address deployer = vm.addr(deployerPrivateKey);
-
-        // Load or generate salt suffix for CREATE2 deterministic addresses
-        string memory saltSuffix = vm.envOr("SALT_SUFFIX", string("v1"));
-        bool useTimestampSalt = vm.envOr("USE_TIMESTAMP_SALT", false);
-
-        if (useTimestampSalt) {
-            saltSuffix = vm.toString(block.timestamp);
-            console.log("Using timestamp salt:", saltSuffix);
-        }
-
-        console.log("=== Outbe L2 Upgradeable Contracts Deployment ===");
-        console.log("Deployer address:", deployer);
-        console.log("Chain ID:", block.chainid);
-        console.log("Block number:", block.number);
-        console.log("");
-
-        // Check deployer balance
-        uint256 balance = deployer.balance;
-        console.log("Deployer balance:", balance / 1e18, "ETH");
-
-        if (balance < 0.01 ether) {
-            console.log("WARNING: Low balance, deployment may fail");
-        }
-        console.log("");
-
         vm.startBroadcast(deployerPrivateKey);
 
         // Generate salt strings
@@ -102,8 +57,6 @@ contract DeployUpgradeable is Script {
         string memory cuProxySalt = string.concat("ConsumptionUnitProxy_", saltSuffix);
         string memory tdImplSalt = string.concat("TributeDraftImpl_", saltSuffix);
         string memory tdProxySalt = string.concat("TributeDraftProxy_", saltSuffix);
-
-        console.log("Using salt suffix:", saltSuffix);
 
         // Convert salt strings to bytes32
         bytes32 craImplSaltBytes = keccak256(abi.encodePacked(craImplSalt));
@@ -141,23 +94,23 @@ contract DeployUpgradeable is Script {
         // For proxy addresses, we need to compute with init data
         bytes memory craRegistryInitData = abi.encodeWithSignature("initialize(address)", deployer);
         bytes memory craProxyBytecode =
-            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCraImpl, craRegistryInitData));
+                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCraImpl, craRegistryInitData));
         address predictedCraProxy =
-            vm.computeCreate2Address(craProxySaltBytes, keccak256(craProxyBytecode), CREATE2_FACTORY);
+                            vm.computeCreate2Address(craProxySaltBytes, keccak256(craProxyBytecode), CREATE2_FACTORY);
 
         bytes memory consumptionRecordInitData =
-            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+                            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
         bytes memory crProxyBytecode =
-            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrImpl, consumptionRecordInitData));
+                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrImpl, consumptionRecordInitData));
         address predictedCrProxy =
-            vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
+                            vm.computeCreate2Address(crProxySaltBytes, keccak256(crProxyBytecode), CREATE2_FACTORY);
 
         bytes memory crAmendmentInitData =
-            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
+                            abi.encodeWithSignature("initialize(address,address)", predictedCraProxy, deployer);
         bytes memory crAProxyBytecode =
-            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrAImpl, crAmendmentInitData));
+                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCrAImpl, crAmendmentInitData));
         address predictedCrAProxy =
-            vm.computeCreate2Address(crAProxySaltBytes, keccak256(crAProxyBytecode), CREATE2_FACTORY);
+                            vm.computeCreate2Address(crAProxySaltBytes, keccak256(crAProxyBytecode), CREATE2_FACTORY);
 
         bytes memory consumptionUnitInitData = abi.encodeWithSignature(
             "initialize(address,address,address,address)",
@@ -167,16 +120,16 @@ contract DeployUpgradeable is Script {
             predictedCrAProxy
         );
         bytes memory cuProxyBytecode =
-            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
+                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedCuImpl, consumptionUnitInitData));
         address predictedCuProxy =
-            vm.computeCreate2Address(cuProxySaltBytes, keccak256(cuProxyBytecode), CREATE2_FACTORY);
+                            vm.computeCreate2Address(cuProxySaltBytes, keccak256(cuProxyBytecode), CREATE2_FACTORY);
 
         // Tribute Draft init and predicted proxy
         bytes memory tributeDraftInitData = abi.encodeWithSignature("initialize(address)", predictedCuProxy);
         bytes memory tdProxyBytecode =
-            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedTdImpl, tributeDraftInitData));
+                            abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedTdImpl, tributeDraftInitData));
         address predictedTdProxy =
-            vm.computeCreate2Address(tdProxySaltBytes, keccak256(tdProxyBytecode), CREATE2_FACTORY);
+                            vm.computeCreate2Address(tdProxySaltBytes, keccak256(tdProxyBytecode), CREATE2_FACTORY);
 
         // Check for existing deployments
         bool hasExistingContracts = false;
@@ -249,7 +202,7 @@ contract DeployUpgradeable is Script {
         // Deploy CRA Registry proxy
         console.log("Deploying CRA Registry proxy...");
         address craRegistryProxy =
-            address(new ERC1967Proxy{salt: craProxySaltBytes}(craRegistryImpl, craRegistryInitData));
+                        address(new ERC1967Proxy{salt: craProxySaltBytes}(craRegistryImpl, craRegistryInitData));
         craRegistry = CRARegistryUpgradeable(craRegistryProxy);
         console.log("CRA Registry proxy:", address(craRegistry));
         console.log("CRA Registry owner:", craRegistry.getOwner());
@@ -264,7 +217,7 @@ contract DeployUpgradeable is Script {
         console.log("Deploying Consumption Record proxy...");
         bytes memory crInitData = abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
         address consumptionRecordProxy =
-            address(new ERC1967Proxy{salt: crProxySaltBytes}(consumptionRecordImpl, crInitData));
+                        address(new ERC1967Proxy{salt: crProxySaltBytes}(consumptionRecordImpl, crInitData));
         consumptionRecord = ConsumptionRecordUpgradeable(consumptionRecordProxy);
         console.log("Consumption Record proxy:", address(consumptionRecord));
         console.log("Consumption Record owner:", consumptionRecord.getOwner());
@@ -279,9 +232,9 @@ contract DeployUpgradeable is Script {
         // Deploy Consumption Record Amendment proxy
         console.log("Deploying CR Amendment proxy...");
         bytes memory crAInitData =
-            abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
+                            abi.encodeWithSignature("initialize(address,address)", address(craRegistry), deployer);
         address crAmendmentProxy =
-            address(new ERC1967Proxy{salt: crAProxySaltBytes}(consumptionRecordAmendmentImpl, crAInitData));
+                        address(new ERC1967Proxy{salt: crAProxySaltBytes}(consumptionRecordAmendmentImpl, crAInitData));
         consumptionRecordAmendment = ConsumptionRecordAmendmentUpgradeable(crAmendmentProxy);
         console.log("CR Amendment proxy:", address(consumptionRecordAmendment));
         console.log("CR Amendment owner:", consumptionRecordAmendment.getOwner());
@@ -303,7 +256,7 @@ contract DeployUpgradeable is Script {
             address(consumptionRecordAmendment)
         );
         address consumptionUnitProxy =
-            address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
+                        address(new ERC1967Proxy{salt: cuProxySaltBytes}(consumptionUnitImpl, cuInitData));
         consumptionUnit = ConsumptionUnitUpgradeable(consumptionUnitProxy);
         console.log("Consumption Unit proxy:", address(consumptionUnit));
         console.log("Consumption Unit owner:", consumptionUnit.getOwner());
@@ -472,22 +425,4 @@ contract DeployUpgradeable is Script {
         console.log("TRIBUTE_DRAFT_IMPL=", tributeDraftImpl);
     }
 
-    /// @notice Get network name based on chain ID
-    /// @return Network name string
-    function getNetworkName() internal view returns (string memory) {
-        uint256 chainId = block.chainid;
-
-        if (chainId == 424242) return "Outbe Dev Net";
-        if (chainId == 512512) return "Outbe Private Net";
-        if (chainId == 1) return "Mainnet";
-        if (chainId == 11155111) return "Sepolia";
-        if (chainId == 17000) return "Holesky";
-        if (chainId == 137) return "Polygon";
-        if (chainId == 42161) return "Arbitrum One";
-        if (chainId == 10) return "Optimism";
-        if (chainId == 8453) return "Base";
-        if (chainId == 31337) return "Foundry Anvil";
-
-        return string(abi.encodePacked("Unknown (", vm.toString(chainId), ")"));
-    }
 }
