@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {Script, console} from "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
 import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {
@@ -14,16 +14,10 @@ import {OutbeScriptBase} from "./OutbeScriptBase.sol";
 
 contract PredictAddresses is OutbeScriptBase {
     function run() public view {
-        console.log("=== CREATE2 Address Predictions ===");
-        console.log("Deployer:", deployer);
-        console.log("Chain ID:", block.chainid);
-        console.log("Salt suffix:", saltSuffix);
-        console.log("");
-
-        predictUpgradeableAddresses(deployer, saltSuffix);
+        predictUpgradeableAddresses(deployer);
     }
 
-    function predictUpgradeableAddresses(address deployer, string memory saltSuffix) internal view {
+    function predictUpgradeableAddresses(address deployer) internal view {
         console.log("=== Upgradeable Contracts (UUPS Proxy Pattern) ===");
 
         // Generate salt

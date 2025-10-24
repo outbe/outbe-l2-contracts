@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./OutbeScriptBase.sol";
+import {OutbeScriptBase} from "./OutbeScriptBase.sol";
 import {
     ConsumptionRecordAmendmentUpgradeable
 } from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
@@ -9,7 +9,7 @@ import {CRARegistryUpgradeable} from "../src/cra_registry/CRARegistryUpgradeable
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ConsumptionUnitUpgradeable} from "../src/consumption_unit/ConsumptionUnitUpgradeable.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {Script, console} from "forge-std/Script.sol";
+import {console} from "forge-std/Script.sol";
 import {TributeDraftUpgradeable} from "../src/tribute_draft/TributeDraftUpgradeable.sol";
 
 /// @title DeployUpgradeable Script
