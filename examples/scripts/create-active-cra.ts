@@ -4,46 +4,55 @@
  * Helper functions for registering and activating CRAs
  */
 
-import { CRARegistryClient, CRAStatus } from '../lib/cra-registry';
 
-/**
- * Create and activate CRA (register if needed, then set status to Active)
- */
-export async function createActiveCRA(
-  registryClient: CRARegistryClient,
-  craAddress: string,
-  name: string = 'Test CRA'
-): Promise<void> {
-  console.log('\n🔍 Checking CRA registration status...');
+import { CONFIG } from "./utils";
+import { ethers, Wallet } from "ethers";
+import { ICRARegistryAbi__factory } from "../contracts";
 
-  try {
-    const isActive = await registryClient.isCraActive(craAddress);
+async function main() {
+    console.log('Configuration:');
+    console.log(`  - RPC URL: ${CONFIG.RPC_URL}`);
+    console.log(`  - CRA Registry Address: ${CONFIG.CRA_REGISTRY_ADDRESS}`);
+    console.log('🚀 Creating CRA to Registry');
+    console.log('');
+
+    // Setup provider and wallet
+    const provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
+    const ownerWallet = new Wallet(CONFIG.PRIVATE_KEY, provider);
+    const craWallet = new Wallet(CONFIG.CRA_PRIVATE_KEY, provider);
+
+    const registry = ICRARegistryAbi__factory.connect(CONFIG.CRA_REGISTRY_ADDRESS, ownerWallet);
+
+    console.log(`CRA Address: ${craWallet.address}`);
+
+    const isActive = await registry.isCRAActive(craWallet.address);
 
     if (isActive) {
-      console.log(`✅ CRA ${craAddress} is already registered and active`);
-      return;
+        console.log(`✅ CRA is already registered and active`);
+    } else {
+        try {
+            await registry.registerCRA(craWallet.address, "test-cra")
+        } catch (error) {
+            console.error('\n❌ registerCRA Error:', error);
+            return
+        }
+        console.log(` ✅CRA Registered!`)
     }
 
-    console.log(`⚠️  CRA ${craAddress} is not active`);
+    console.log("List all CRA:")
 
-    // Try to register
-    try {
-      await registryClient.registerCra(craAddress, name);
-      console.log(`✅ CRA registered successfully`);
-    } catch (regError: any) {
-      if (!regError.message.includes('already registered')) {
-        throw regError;
-      }
-      console.log(`ℹ️  CRA is already registered`);
+    let allCra = await registry.getAllCRAs()
+    for (let cra of allCra) {
+        console.log(" ->>  CRA", cra, "active", await registry.isCRAActive(cra))
     }
+}
 
-    // Ensure status is Active
-    console.log(`🔄 Setting CRA status to Active...`);
-    await registryClient.updateCraStatus(craAddress, CRAStatus.Active);
-    console.log(`✅ CRA status set to Active`);
-
-  } catch (error: any) {
-    console.error(`❌ Failed to setup CRA:`, error.message);
-    throw error;
-  }
+// Execute if run directly
+if (require.main === module) {
+    main()
+        .then(() => process.exit(0))
+        .catch((error) => {
+            console.error('\n❌ Error:', error);
+            process.exit(1);
+        });
 }

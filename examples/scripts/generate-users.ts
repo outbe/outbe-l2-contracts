@@ -7,25 +7,8 @@
  * Usage: ts-node generate-users.ts
  */
 
-import {ethers, Wallet} from 'ethers';
-import {config} from 'dotenv';
-import {resolve} from 'path';
-
-// Load environment variables from examples/.env
-config({path: resolve(__dirname, '../.env')});
-
-// Configuration
-const CONFIG = {
-    // Network settings
-    RPC_URL: process.env.RPC_URL!,
-    OWNER_PRIVATE_KEY: process.env.OWNER_PRIVATE_KEY!,
-
-    PROCESS_DELAY_MS: parseInt(process.env.PROCESS_DELAY_MS!),
-
-    // Test parameters
-    TOTAL_USERS: parseInt(process.env.TOTAL_USERS!),
-    FUNDING_AMOUNT: '1', // ETH per user
-};
+import { ethers, Wallet } from 'ethers';
+import { CONFIG } from "./utils";
 
 /**
  * Generate random users
@@ -129,7 +112,7 @@ async function main() {
 
     // Setup funder wallet
     const provider = new ethers.JsonRpcProvider(CONFIG.RPC_URL);
-    const funder = new Wallet(CONFIG.OWNER_PRIVATE_KEY, provider);
+    const funder = new Wallet(CONFIG.PRIVATE_KEY, provider);
 
     console.log(`\n🔑 Funder Address: ${funder.address}`);
 
@@ -177,4 +160,4 @@ if (require.main === module) {
         });
 }
 
-export {main, generateUsers};
+export { main, generateUsers };

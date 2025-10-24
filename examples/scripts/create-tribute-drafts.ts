@@ -16,16 +16,13 @@ import {
   TributeDraftAggregator,
   MintTributeDraftParams
 } from '../lib/tribute-draft';
-
-// Load environment variables from examples/.env
-config({ path: resolve(__dirname, '../.env') });
+import { loadUsers } from "./utils";
 
 // Configuration
 const CONFIG = {
   // Network settings
   RPC_URL: process.env.RPC_URL!,
   PRIVATE_KEY: process.env.OWNER_PRIVATE_KEY!,
-  TRIBUTE_DRAFT_PROXY: process.env.TRIBUTE_DRAFT_PROXY!,
 
   // Test parameters
   PROCESS_DELAY_MS: parseInt(process.env.PROCESS_DELAY_MS!), // Delay between submissions
@@ -34,24 +31,6 @@ const CONFIG = {
   CU_HASHES_FILE: './results/generated-cu-hashes.json',
   USERS_FILE: './results/generated-users.json',
 };
-
-/**
- * Load users from the generated users file
- */
-async function loadUsers(): Promise<Array<{ address: string; privateKey: string }>> {
-  const fs = await import('fs');
-  const path = await import('path');
-
-  const filePath = path.resolve(__dirname, CONFIG.USERS_FILE);
-
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`Users file not found: ${filePath}\nPlease run generate-users.ts first.`);
-  }
-
-  const data = fs.readFileSync(filePath, 'utf-8');
-  const parsed = JSON.parse(data);
-  return parsed.users;
-}
 
 /**
  * Load CU hashes from the previous script

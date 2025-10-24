@@ -4,13 +4,16 @@ Example scripts for using Outbe L2 contracts.
 
 ## Quick Start
 
-### 1. Start local network and deploy contracts
+### 1. Start a local network and deploy contracts
 
-```bash
+```shell
 # Terminal 1: Start Anvil
 anvil
 
-# Terminal 2: Deploy contracts
+# Terminal 2: 
+# Build contracts and export ABI
+make export-abi
+# Deploy contracts
 make deploy-local
 ```
 
