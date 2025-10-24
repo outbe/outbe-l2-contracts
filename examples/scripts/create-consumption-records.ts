@@ -30,7 +30,7 @@ function generateConsumptionData(userIndex: number, recordIndex: number) {
     };
 }
 
-export type SubmitRequest = {
+type SubmitRequest = {
     crHash: string;
     owner: string;
     metadataKeys: string[];
@@ -135,8 +135,6 @@ async function main() {
 
     // Generate all records
     console.log('\n📋 Generating consumption records...');
-
-    const startGenTime = Date.now();
 
     const allRecords = generateSubmitRecords(users, CONFIG.RECORDS_PER_USER);
 

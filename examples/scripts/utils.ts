@@ -1,5 +1,5 @@
-import {config} from 'dotenv';
-import {resolve} from 'path';
+import { config } from 'dotenv';
+import { resolve } from 'path';
 
 // Load environment variables from examples/.env
 config({path: resolve(__dirname, '../.env')});
@@ -13,6 +13,7 @@ export const CONFIG = {
     // Contracts
     CRA_REGISTRY_ADDRESS: process.env.CRA_REGISTRY_ADDRESS!,
     CONSUMPTION_RECORD_ADDRESS: process.env.CONSUMPTION_RECORD_ADDRESS!,
+    CONSUMPTION_UNIT_ADDRESS: process.env.CONSUMPTION_UNIT_ADDRESS!,
     TRIBUTE_DRAFT_ADDRESS: process.env.TRIBUTE_DRAFT_ADDRESS!,
 
     // Test parameters
@@ -22,8 +23,9 @@ export const CONFIG = {
     FUNDING_AMOUNT: process.env.FUNDING_AMOUNT || '1', // ETH per user
     PROCESS_DELAY_MS: parseInt(process.env.PROCESS_DELAY_MS!),
 
-    // Input file
+    // Input files
     USERS_FILE: './results/generated-users.json',
+    CR_HASHES_FILE: './results/generated-cr-hashes.json',
 
     // Energy sources for realistic data
     ENERGY_SOURCES: ['solar', 'wind', 'hydro', 'geothermal', 'biomass'],
