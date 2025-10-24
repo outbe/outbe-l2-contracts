@@ -391,3 +391,33 @@ forge --help    # Foundry help
 anvil --help    # Local node help  
 cast --help     # Blockchain interaction help
 ```
+
+## Using the Test Container (Docker)
+
+This project includes a Dockerized Anvil testnet preloaded with the Outbe L2 contracts. The image is built in two stages:
+- Stage 1 starts Anvil, deploys contracts via Forge script, and snapshots the chain state to anvil-state.json.
+- Stage 2 runs Anvil with that state and provides a simple entrypoint that can optionally register a CRA for you.
+
+### Run the container
+- Basic run (exposes RPC on 8545):
+  ```sh
+    docker run --rm -p 8545:8545 --name outbe-anvil ghcr.io/outbe/outbe-l2-test-node:latest
+  ```
+- Run with auto-registering a CRA address and fund it with 1000 ETH on startup:
+  ```sh
+  docker run --rm -p 8545:8545 \
+    -e CRA_ADDRESS=0xYourCraAddressHere \
+    --name outbe-anvil outbe-l2-test
+  ```
+### Environment variables (with defaults in the image)
+- OWNER_PRIVATE_KEY: `0xac0974...ff80` (Anvil default first key)
+- OWNER_ADDRESS: `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+- CRA_REGISTRY_PROXY: `0xEa1A0965aafA480e12cdC1a86a19DD1fB53B6c8c`
+- CRA_ADDRESS: if set, entrypoint registers this CRA in the registry and funds it
+
+### Readiness and health
+- Logs will print `READY` when the node is up and `CRA REGISTERED` if a CRA address was provided
+- You can also wait for Docker health status to become healthy (readiness only):
+  ```sh
+  docker inspect --format='{{json .State.Health.Status}}' outbe-anvil
+  ```
