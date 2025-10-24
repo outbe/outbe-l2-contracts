@@ -23,12 +23,17 @@ cd examples
 npm install
 ```
 
+Generate bindings for TypeScript:
+
+```shell
+npm run generate-types
+```
+
 ### 3. Create test data
 
 #### Generate Users
 
 ```bash
-cd examples
 npx ts-node scripts/generate-users.ts
 ```
 
