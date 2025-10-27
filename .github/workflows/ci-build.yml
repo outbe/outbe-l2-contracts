@@ -27,10 +27,6 @@ jobs:
         run: |
           forge --version
 
-      - name: Check formatting
-        run: |
-          forge fmt --check
-
       - name: Run Forge build
         run: |
           forge build --sizes
