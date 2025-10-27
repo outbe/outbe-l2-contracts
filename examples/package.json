@@ -4,15 +4,18 @@
   "description": "TypeScript examples for Outbe L2 contracts",
   "main": "index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "generate-types": "typechain --target ethers-v6 --out-dir contracts '../abi-export/*.json'"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
     "ethers": "^6.8.0"
   },
   "devDependencies": {
+    "@typechain/ethers-v6": "^0.5.1",
     "@types/node": "^20.0.0",
     "ts-node": "^10.9.0",
+    "typechain": "^8.3.2",
     "typescript": "^5.0.0"
   },
   "keywords": [

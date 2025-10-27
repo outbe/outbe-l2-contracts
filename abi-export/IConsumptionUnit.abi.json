@@ -1,0 +1,244 @@
+[
+  {
+    "type": "function",
+    "name": "getConsumptionUnit",
+    "inputs": [
+      {
+        "name": "cuHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IConsumptionUnit.ConsumptionUnitEntity",
+        "components": [
+          {
+            "name": "consumptionUnitId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "submittedBy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "submittedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "worldwideDay",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "settlementAmountBase",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "settlementAmountAtto",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "settlementCurrency",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "crHashes",
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
+          },
+          {
+            "name": "amendmentCrHashes",
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getConsumptionUnitsByOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isExists",
+    "inputs": [
+      {
+        "name": "cuHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "submit",
+    "inputs": [
+      {
+        "name": "cuHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "settlementCurrency",
+        "type": "uint16",
+        "internalType": "uint16"
+      },
+      {
+        "name": "worldwideDay",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "settlementAmountBase",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "settlementAmountAtto",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "hashes",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      },
+      {
+        "name": "amendmentHashes",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Submitted",
+    "inputs": [
+      {
+        "name": "cuHash",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "cra",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AlreadyExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "BatchSizeTooLarge",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ConsumptionRecordAlreadyExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EmptyBatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EmptyMetadataKey",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidAmount",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidCall",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidConsumptionRecords",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidHash",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidOwner",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidSettlementCurrency",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "MetadataKeyValueMismatch",
+    "inputs": []
+  }
+]

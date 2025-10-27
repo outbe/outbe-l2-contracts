@@ -13,17 +13,8 @@ The `CRARegistryUpgradeable` contract is an upgradeable registry for managing Co
 - **Pattern**: UUPS Upgradeable Proxy
 - **Deployment**: CREATE2 deterministic addresses
 
-## Architecture
-
-The contract implements the `ICRARegistry` interface and uses the UUPS upgradeable pattern:
-
-```
-User/Client → Proxy Contract → Implementation Contract
-              (Fixed Address)   (Upgradeable Logic)
-              (Stores State)
-```
-
 **Key Features:**
+
 - Registry of CRA addresses with their information
 - Status management for CRAs (Active, Inactive, Suspended)
 - Owner-controlled access for administrative functions
@@ -34,6 +25,7 @@ User/Client → Proxy Contract → Implementation Contract
 ## Core Data Structures
 
 ### CRAStatus Enum
+
 ```solidity
 enum CRAStatus {
     Inactive,  // 0: CRA is not active
@@ -43,6 +35,7 @@ enum CRAStatus {
 ```
 
 ### CraInfo Struct
+
 ```solidity
 struct CraInfo {
     string name;           // Human-readable name of the CRA
@@ -70,6 +63,7 @@ struct CraInfo {
 ### Initialization
 
 #### initialize()
+
 ```solidity
 function initialize(address _owner) public initializer
 ```
@@ -77,67 +71,82 @@ function initialize(address _owner) public initializer
 Initializes the upgradeable contract (replaces constructor).
 
 **Requirements:**
+
 - Can only be called once (initializer modifier)
 - Owner cannot be zero address
 
 **Effects:**
+
 - Initializes OpenZeppelin upgradeable components
 - Sets the contract owner
 
 ### CRA Management
 
 #### registerCra()
+
 ```solidity
-function registerCra(address cra, string calldata name) external onlyOwner
+function registerCRA(address cra, string calldata name) external onlyOwner
 ```
 
 Registers a new CRA in the system.
 
 **Requirements:**
+
 - Only callable by owner
 - CRA must not already be registered
 - Name cannot be empty
 
 **Effects:**
+
 - Adds CRA to registry with Active status
 - Adds to CRA list
 - Sets registration timestamp
 
 **Events Emitted:**
+
 - `CRARegistered(cra, name, block.timestamp)`
 
 ### updateCraStatus()
+
 ```solidity
-function updateCraStatus(address cra, CRAStatus status) external onlyOwner craExists(cra)
+function updateCRAStatus(address cra, CRAStatus status) external onlyOwner craExists(cra)
 ```
 
 Updates the status of an existing CRA.
 
 **Requirements:**
+
 - Only callable by owner
 - CRA must be registered
 
 **Events Emitted:**
+
 - `CRAStatusUpdated(cra, oldStatus, newStatus, block.timestamp)`
 
 ### Query Functions
 
 #### isCraActive()
+
 ```solidity
-function isCraActive(address cra) external view returns (bool)
+function isCRAActive(address cra) external view returns (bool)
 ```
+
 Returns true if CRA is registered and has Active status.
 
 #### getCraInfo()
+
 ```solidity
-function getCraInfo(address cra) external view craExists(cra) returns (CraInfo memory)
+function getCRAInfo(address cra) external view craExists(cra) returns (CraInfo memory)
 ```
+
 Returns complete CRA information for registered CRAs.
 
 #### getAllCRAs()
+
 ```solidity
 function getAllCRAs() external view returns (address[] memory)
 ```
+
 Returns array of all registered CRA addresses.
 
 ### Administrative Functions
@@ -145,41 +154,14 @@ Returns array of all registered CRA addresses.
 - `getOwner()`: Get contract owner address (from OwnableUpgradeable)
 - `transferOwnership(address newOwner)`: Transfer ownership to new address (from OwnableUpgradeable)
 
-### Upgrade Functions
-
-#### upgradeTo()
-```solidity
-function upgradeTo(address newImplementation) external onlyOwner
-```
-
-Upgrades the contract to a new implementation.
-
-**Requirements:**
-- Only callable by owner
-- New implementation must be a valid contract
-
-#### upgradeToAndCall()
-```solidity
-function upgradeToAndCall(address newImplementation, bytes calldata data) external payable onlyOwner
-```
-
-Upgrades and calls a function on the new implementation in a single transaction.
-
-#### VERSION()
-```solidity
-function VERSION() external pure returns (string memory)
-```
-
-Returns the current contract version ("1.0.0").
-
 ## Events
 
 ```solidity
 event CRARegistered(address indexed cra, string name, uint256 timestamp);
 event CRAStatusUpdated(
-    address indexed cra, 
-    CRAStatus oldStatus, 
-    CRAStatus newStatus, 
+    address indexed cra,
+    CRAStatus oldStatus,
+    CRAStatus newStatus,
     uint256 timestamp
 );
 ```
@@ -199,94 +181,6 @@ event CRAStatusUpdated(
 3. **Reactivation**: Owner can change status back to Active
 4. **No Removal**: CRAs cannot be removed once registered, only status changes
 
-## Status Definitions
-
-- **Inactive (0)**: CRA is not permitted to submit consumption records
-- **Active (1)**: CRA can submit consumption records and perform operations  
-- **Suspended (2)**: CRA is temporarily disabled but remains registered
-
-## Security Considerations
-
-1. **Centralized Control**: Only owner can register CRAs and manage statuses
-2. **Immutable Registration**: CRAs cannot be removed once registered
-3. **Status Flexibility**: Owner can quickly suspend/reactivate CRAs as needed
-4. **Access Control**: All administrative functions protected by owner modifier
-5. **Ownership Transfer**: Owner can transfer control to new address
-
-## Deployment
-
-### Using DeployUpgradeable Script
-
-```bash
-# Deploy with CREATE2 deterministic addresses
-forge script script/DeployUpgradeable.s.sol --rpc-url <RPC_URL> --broadcast --private-key <PRIVATE_KEY>
-
-# Deploy with custom salt suffix
-SALT_SUFFIX=mainnet_v1 forge script script/DeployUpgradeable.s.sol --rpc-url <RPC_URL> --broadcast --private-key <PRIVATE_KEY>
-
-# Predict addresses before deployment
-forge script script/PredictAddresses.s.sol
-```
-
-### Using Cast for Interactions
-
-```bash
-# Register a new CRA (owner only)
-cast send <PROXY_ADDRESS> "registerCra(address,string)" <CRA_ADDRESS> "My CRA Service" --private-key <PRIVATE_KEY>
-
-# Check if CRA is active
-cast call <PROXY_ADDRESS> "isCraActive(address)" <CRA_ADDRESS>
-
-# Update CRA status (owner only)
-cast send <PROXY_ADDRESS> "updateCraStatus(address,uint8)" <CRA_ADDRESS> 2 --private-key <PRIVATE_KEY>
-
-# Get all CRAs
-cast call <PROXY_ADDRESS> "getAllCRAs()"
-
-# Get contract version
-cast call <PROXY_ADDRESS> "VERSION()"
-```
-
 ## Usage Example
 
-```solidity
-// Get the deployed proxy address (not the implementation!)
-CRARegistryUpgradeable registry = CRARegistryUpgradeable(<PROXY_ADDRESS>);
-
-// Register a new CRA (owner only)
-registry.registerCra(craAddress, "My CRA Service");
-
-// Check if CRA is active
-bool isActive = registry.isCraActive(craAddress);
-
-// Update CRA status (owner only)
-registry.updateCraStatus(craAddress, CRAStatus.Suspended);
-
-// Get all CRAs
-address[] memory allCRAs = registry.getAllCRAs();
-
-// Upgrade the contract (owner only)
-registry.upgradeTo(newImplementationAddress);
-```
-
-## Integration with Consumption Record
-
-The CRA Registry serves as the authority for:
-- Determining which addresses can submit consumption records
-- Providing CRA validation for the ConsumptionRecordUpgradeable contract
-- Centralized management of CRA permissions
-
-The ConsumptionRecordUpgradeable contract queries `isCraActive()` to verify permissions before allowing record submissions.
-
-**Important:** Both contracts use the same proxy pattern and CREATE2 deployment for consistent addresses across networks.
-
-## Testing Coverage
-
-The contract includes comprehensive test coverage:
-- Registration validation and events
-- Status update functionality
-- Access control enforcement
-- Edge cases and error conditions
-- Fuzz testing for name validation
-- Multi-CRA scenarios
-- Ownership transfer functionality
+See the TypeScript example in [create-active-cra.ts](../examples/scripts/create-active-cra.ts).

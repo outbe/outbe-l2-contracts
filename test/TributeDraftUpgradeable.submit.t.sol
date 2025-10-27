@@ -58,7 +58,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
 
         // Deploy TributeDraft behind proxy
         TributeDraftUpgradeable tdImpl = new TributeDraftUpgradeable();
-        bytes memory tdInit = abi.encodeWithSelector(TributeDraftUpgradeable.initialize.selector, address(cu));
+        bytes memory tdInit = abi.encodeWithSelector(TributeDraftUpgradeable.initialize.selector, address(cu), owner);
         ERC1967Proxy tdProxy = new ERC1967Proxy(address(tdImpl), tdInit);
         td = TributeDraftUpgradeable(address(tdProxy));
     }

@@ -7,7 +7,24 @@ permissions:
   contents: read
   pull-requests: write # Required to post comments on PRs
 
+env:
+  FOUNDRY_PROFILE: ci
+
 jobs:
+  fmt_check:
+    name: Check Code Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: 'v1.4.1'
+
+      - name: Check formatting
+        run: |
+          forge fmt --check
+
   codex_review:
     name: Codex Review
     runs-on: ubuntu-latest
@@ -179,3 +196,26 @@ jobs:
           message: ${{ steps.review.outputs.msg }}
           mode: upsert
           comment-tag: codex-review
+
+  abi_check:
+    name: Lint ABI
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: 'v1.4.1'
+      - name: Ensure jq is installed
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+      - name: Build and Export ABI
+        run: make export-abi
+      - name: Verify no changes in ABI
+        # fails if any changes not committed
+        run: |
+          CHANGES=$(git status --porcelain)
+          echo "${CHANGES:-ABI is up to date}"
+          test -z "$CHANGES"

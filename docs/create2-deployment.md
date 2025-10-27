@@ -7,6 +7,7 @@ The Outbe L2 contracts use CREATE2 for deterministic deployment addresses across
 ## What is CREATE2?
 
 CREATE2 is an Ethereum opcode that allows deploying contracts to deterministic addresses. Unlike regular CREATE deployments (which use sender address + nonce), CREATE2 uses:
+
 - Deployer address
 - Salt (arbitrary bytes32)
 - Contract bytecode hash
@@ -16,6 +17,7 @@ This produces the same address on any EVM-compatible chain.
 ## CREATE2 Factory
 
 The deployment scripts use the standard CREATE2 factory at address:
+
 ```
 0x4e59b44847b379578588920cA78FbF26c0B4956C
 ```
@@ -90,12 +92,14 @@ always_use_create_2_factory = false
 This script deploys the standard CREATE2 factory using the canonical deployment method:
 
 **Features:**
+
 - Uses the official signed transaction
 - Funds the one-time deployer account
 - Verifies successful deployment
 - Works on any EVM-compatible chain
 
 **Usage:**
+
 ```bash
 forge script script/DeployCREATE2Factory.s.sol \
   --rpc-url <YOUR_RPC_URL> \
@@ -108,12 +112,14 @@ forge script script/DeployCREATE2Factory.s.sol \
 The main deployment script with CREATE2 support:
 
 **Features:**
+
 - Deterministic contract addresses
 - UUPS proxy pattern
 - Salt-based address prediction
 - Collision detection and prevention
 
 **Configuration:**
+
 ```bash
 # Use custom salt suffix
 SALT_SUFFIX=production_v1 forge script script/DeployUpgradeable.s.sol --broadcast
@@ -127,12 +133,14 @@ USE_TIMESTAMP_SALT=true forge script script/DeployUpgradeable.s.sol --broadcast
 Fallback deployment script without CREATE2:
 
 **Features:**
+
 - Regular CREATE deployment
 - Same proxy pattern
 - No deterministic addresses
 - Immediate deployment capability
 
 **Usage:**
+
 ```bash
 forge script script/DeployWithoutCREATE2.s.sol \
   --rpc-url <YOUR_RPC_URL> \
@@ -173,24 +181,25 @@ forge script script/PredictAddresses.s.sol
 ### Common Issues
 
 1. **"missing CREATE2 deployer" Error**
-   - Solution: Deploy the CREATE2 factory first
-   - Command: `forge script script/DeployCREATE2Factory.s.sol --broadcast`
+    - Solution: Deploy the CREATE2 factory first
+    - Command: `forge script script/DeployCREATE2Factory.s.sol --broadcast`
 
 2. **"Contracts already deployed" Error**
-   - Solution: Use different salt suffix
-   - Command: `SALT_SUFFIX=new_version forge script ...`
+    - Solution: Use different salt suffix
+    - Command: `SALT_SUFFIX=new_version forge script ...`
 
 3. **Gas Estimation Failures**
-   - Solution: Use higher gas limits or different RPC endpoint
-   - Command: Add `--gas-limit 10000000` to forge command
+    - Solution: Use higher gas limits or different RPC endpoint
+    - Command: Add `--gas-limit 10000000` to forge command
 
 4. **Insufficient Balance**
-   - Solution: Fund deployer account with more ETH
-   - Check: `cast balance <DEPLOYER_ADDRESS> --rpc-url <RPC_URL>`
+    - Solution: Fund deployer account with more ETH
+    - Check: `cast balance <DEPLOYER_ADDRESS> --rpc-url <RPC_URL>`
 
 ### Network-Specific Issues
 
 #### Anvil (Local Testing)
+
 ```bash
 # Start Anvil with CREATE2 factory
 anvil --create2-deployer
@@ -200,6 +209,7 @@ forge script script/DeployCREATE2Factory.s.sol --rpc-url http://localhost:8545 -
 ```
 
 #### Private Networks
+
 ```bash
 # Fund the one-time deployer account first
 cast send 0x3fab184622dc19b6109349b94811493bf2a45362 \
@@ -212,7 +222,9 @@ forge script script/DeployCREATE2Factory.s.sol --broadcast
 ```
 
 #### Public Testnets
+
 Most public testnets already have the CREATE2 factory deployed. Verify with:
+
 ```bash
 cast code 0x4e59b44847b379578588920cA78FbF26c0B4956C --rpc-url <TESTNET_RPC>
 ```
@@ -220,6 +232,7 @@ cast code 0x4e59b44847b379578588920cA78FbF26c0B4956C --rpc-url <TESTNET_RPC>
 ## Security Considerations
 
 ### Factory Verification
+
 Always verify the CREATE2 factory bytecode matches the expected code:
 
 ```bash
@@ -231,11 +244,13 @@ cast code 0x4e59b44847b379578588920cA78FbF26c0B4956C --rpc-url <RPC_URL>
 ```
 
 ### Salt Generation
+
 - Use unpredictable salts for production deployments
 - Avoid using sensitive data in salt generation
 - Consider using commit-reveal schemes for competitive deployments
 
 ### Address Verification
+
 Always verify deployed addresses match predictions:
 
 ```bash
@@ -265,7 +280,7 @@ forge script script/DeployUpgradeable.s.sol --broadcast
 name: Deploy Contracts
 on:
   push:
-    branches: [main]
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -274,7 +289,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-      
+
       - name: Check CREATE2 Factory
         run: |
           if cast code 0x4e59b44847b379578588920cA78FbF26c0B4956C --rpc-url ${{ secrets.RPC_URL }} | grep -q "0x"; then
@@ -283,7 +298,7 @@ jobs:
             echo "Deploying CREATE2 factory"
             forge script script/DeployCREATE2Factory.s.sol --broadcast --rpc-url ${{ secrets.RPC_URL }} --private-key ${{ secrets.PRIVATE_KEY }}
           fi
-      
+
       - name: Deploy Contracts
         run: |
           forge script script/DeployUpgradeable.s.sol --broadcast --verify --rpc-url ${{ secrets.RPC_URL }} --private-key ${{ secrets.PRIVATE_KEY }}
@@ -294,6 +309,7 @@ jobs:
 ## Conclusion
 
 CREATE2 deployment provides deterministic addresses across chains, essential for:
+
 - Multi-chain protocol deployments
 - Predictable contract interactions
 - Cross-chain address consistency
