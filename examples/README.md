@@ -1,38 +1,45 @@
 # Outbe L2 Examples
 
-Example scripts for using Outbe L2 contracts.
+Example scripts in TypeScript for interaction with the Outbe L2 contracts.
 
 ## Quick Start
 
-### 1. Start a local network and deploy contracts
+### 0. Prepare environment
 
-```shell
-# Terminal 1: Start Anvil
-anvil
-
-# Terminal 2: 
-# Build contracts and export ABI
-make export-abi
-# Deploy contracts
-make deploy-local
-```
-
-After deployment, update contract addresses in `examples/.env`.
-
-### 2. Install dependencies
+Install dependencies:
 
 ```bash
-cd examples
 npm install
 ```
 
-Generate bindings for TypeScript:
+Generate bindings for smart contracts:
 
 ```shell
 npm run generate-types
 ```
 
-### 3. Create test data
+Copy `.env.example` to `.env` to set environment variables required for running scripts and deployments.
+
+```shell
+cp .env.example .env
+cp .env.example ../.env # copy to the repo root as well
+```
+
+Start Anvil (local node).
+
+```shell
+anvil
+```
+
+### 1. Deploy contracts
+
+From the root directory, deploy contracts to the local node.
+
+```shell
+make deploy-local
+```
+
+### 2. Actual Examples Running Flow
 
 #### Generate Users
 
@@ -42,24 +49,24 @@ npx ts-node scripts/generate-users.ts
 
 **What it does:**
 - Generates and founds test user accounts with private keys
-- Saves user data to `scripts/generated-users.json`
+- Saves user data to `scripts/results/generated-users.json`
 - These users will be used for creating consumption records
 
 #### Create Consumption Records (CR)
 
 ```bash
-cd examples
 npx ts-node scripts/create-consumption-records.ts
 ```
 
 **What it does:**
 - Automatically registers and activates CRA
-- Uses generated user addresses from `scripts/generated-users.json`
+- Uses generated user addresses from `scripts/results/generated-users.json`
 - Generates consumption records for users
 - Submits records in batches to the contract
-- Saves CR hashes to `scripts/generated-cr-hashes.json`
+- Saves CR hashes to `scripts/results/generated-cr-hashes.json`
 
-**Configuration in `.env`:**
+**See configuration in `.env`:**
+
 ```env
 TOTAL_USERS=10           # Number of users
 RECORDS_PER_USER=5       # Records per user
@@ -77,7 +84,7 @@ npx ts-node scripts/create-consumption-units.ts
 - Loads CR hashes from `generated-cr-hashes.json`
 - Groups CRs into Consumption Units
 - Creates CUs in batches
-- Saves CU IDs to `scripts/generated-cu-ids.json`
+- Saves CU IDs to `scripts/results/generated-cu-ids.json`
 
 
 #### Create Tribute Drafts (TD)
@@ -90,46 +97,3 @@ npx ts-node scripts/create-tribute-drafts.ts
 - Loads CU IDs from `generated-cu-ids.json`
 - Groups CUs into Tribute Drafts
 - Creates TDs 
-- Saves TD IDs to `scripts/generated-td-ids.json`
-
-### 4. Full workflow (all commands)
-
-```bash
-cd examples
-
-# 1. Generate users
-npx ts-node scripts/generate-users.ts
-
-# 2. Create CRs
-npx ts-node scripts/create-consumption-records.ts
-
-# 3. Create CUs from CRs
-npx ts-node scripts/create-consumption-units.ts
-
-# 4. Create TDs from CUs
-npx ts-node scripts/create-tribute-drafts.ts
-```
-
-
-## Environment Variables (.env)
-
-```env
-# RPC
-RPC_URL=http://localhost:8545
-
-# Private key (Anvil default)
-OWNER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-
-# Contract addresses (updated after deployment)
-CRA_REGISTRY_PROXY=0x...
-CONSUMPTION_RECORD_PROXY=0x...
-CONSUMPTION_UNIT_PROXY=0x...
-TRIBUTE_DRAFT_PROXY=0x...
-
-# Test parameters
-TOTAL_USERS=10
-RECORDS_PER_USER=5
-BATCH_SIZE=10
-PROCESS_DELAY_MS=200
-
-```
