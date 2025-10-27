@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {
     ERC165Upgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {
-    PausableUpgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
-import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
-import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
-import {CRAAware} from "../utils/CRAAware.sol";
-import {
     MulticallUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
+import {
+    PausableUpgradeable
+} from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
 import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
+import {CRAAware} from "../utils/CRAAware.sol";
+import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
+import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
+import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
@@ -119,11 +119,10 @@ contract ConsumptionRecordUpgradeable is
         _addEntity(crHash, recordOwner, keys, values, block.timestamp);
     }
 
-    /// @notice Multicall entry point allowing multiple submits in a single transaction
-    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    /// @inheritdoc IConsumptionRecord
     function multicall(bytes[] calldata data)
         external
-        override
+        override(IConsumptionRecord, MulticallUpgradeable)
         onlyActiveCRA
         whenNotPaused
         returns (bytes[] memory results)

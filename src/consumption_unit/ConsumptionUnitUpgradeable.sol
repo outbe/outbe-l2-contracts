@@ -194,11 +194,10 @@ contract ConsumptionUnitUpgradeable is
         );
     }
 
-    /// @notice Multicall entry point allowing multiple submits in a single transaction
-    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    /// @inheritdoc IConsumptionUnit
     function multicall(bytes[] calldata data)
         external
-        override
+        override(IConsumptionUnit, MulticallUpgradeable)
         onlyActiveCRA
         whenNotPaused
         returns (bytes[] memory results)

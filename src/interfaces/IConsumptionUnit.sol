@@ -82,6 +82,10 @@ interface IConsumptionUnit {
         bytes32[] memory amendmentHashes
     ) external;
 
+    /// @notice Multicall entry point allowing multiple submits in a single transaction
+    /// @dev Restricted to active CRAs and when not paused.
+    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
+
     /// @notice Check if a consumption unit exists
     /// @param cuHash The CU hash to check
     /// @return True if exists, false otherwise

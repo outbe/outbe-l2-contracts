@@ -119,11 +119,10 @@ contract ConsumptionRecordAmendmentUpgradeable is
         _addEntity(crAmendmentHash, recordOwner, keys, values, block.timestamp);
     }
 
-    /// @notice Multicall entry point allowing multiple submits in a single transaction
-    /// @dev Restricted to active CRAs and when not paused. Applies batch size limits consistent with submitBatch.
+    /// @inheritdoc IConsumptionRecordAmendment
     function multicall(bytes[] calldata data)
         external
-        override
+        override(IConsumptionRecordAmendment, MulticallUpgradeable)
         onlyActiveCRA
         whenNotPaused
         returns (bytes[] memory results)

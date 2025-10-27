@@ -62,6 +62,10 @@ interface IConsumptionRecord {
     /// @param values Array of metadata values (must match keys array length)
     function submit(bytes32 crHash, address owner, string[] memory keys, bytes32[] memory values) external;
 
+    /// @notice Multicall entry point allowing multiple submits in a single transaction
+    /// @dev Restricted to active CRAs and when not paused.
+    function multicall(bytes[] calldata data) external returns (bytes[] memory results);
+
     /// @notice Check if a consumption record exists
     /// @param crHash The hash to check
     /// @return true if the record exists, false otherwise
