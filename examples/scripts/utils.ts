@@ -26,6 +26,7 @@ export const CONFIG = {
     // Input files
     USERS_FILE: './results/generated-users.json',
     CR_HASHES_FILE: './results/generated-cr-hashes.json',
+    CU_HASHES_FILE: './results/generated-cu-hashes.json',
 
     // Energy sources for realistic data
     ENERGY_SOURCES: ['solar', 'wind', 'hydro', 'geothermal', 'biomass'],

@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "generate-types": "typechain --target ethers-v6 --out-dir contracts '../out/abi-export/*.json'"
+    "generate-types": "typechain --target ethers-v6 --out-dir contracts '../abi-export/*.json'"
   },
   "dependencies": {
     "dotenv": "^17.2.3",

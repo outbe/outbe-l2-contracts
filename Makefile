@@ -13,14 +13,14 @@ build: ## Build Solidity contracts using forge
 .PHONY: export-abi
 export-abi: build ## Export contracts ABI
 	@echo 'Exporting ABI for smart contracts'
-	mkdir -p ./out/abi-export
+	mkdir -p ./abi-export
 	for contract in IConsumptionRecord ConsumptionRecordUpgradeable \
 		IConsumptionRecordAmendment ConsumptionRecordAmendmentUpgradeable \
 		IConsumptionUnit ConsumptionUnitUpgradeable \
 		ITributeDraft TributeDraftUpgradeable \
 		ICRARegistry CRARegistryUpgradeable ICRAAware; \
 	do \
-		cat ./out/$${contract}.sol/$${contract}.json | jq -r '.abi' > ./out/abi-export/$${contract}.abi.json; \
+		cat ./out/$${contract}.sol/$${contract}.json | jq -r '.abi' > ./abi-export/$${contract}.abi.json; \
 	done
 
 .PHONY: test

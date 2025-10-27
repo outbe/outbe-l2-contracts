@@ -1,0 +1,46 @@
+[
+  {
+    "type": "function",
+    "name": "getCRARegistry",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "registry",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setCRARegistry",
+    "inputs": [
+      {
+        "name": "_craRegistry",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "RegistryUpdated",
+    "inputs": [
+      {
+        "name": "registry",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "CRANotActive",
+    "inputs": []
+  }
+]

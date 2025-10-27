@@ -1,0 +1,187 @@
+[
+  {
+    "type": "function",
+    "name": "getConsumptionUnitAddress",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTributeDraft",
+    "inputs": [
+      {
+        "name": "tdId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct ITributeDraft.TributeDraftEntity",
+        "components": [
+          {
+            "name": "tributeDraftId",
+            "type": "bytes32",
+            "internalType": "bytes32"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "settlementCurrency",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "worldwideDay",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "settlementAmountBase",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "settlementAmountAtto",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "cuHashes",
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
+          },
+          {
+            "name": "submittedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setConsumptionUnitAddress",
+    "inputs": [
+      {
+        "name": "consumptionUnitAddress",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "submit",
+    "inputs": [
+      {
+        "name": "cuHashes",
+        "type": "bytes32[]",
+        "internalType": "bytes32[]"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "tdId",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Submitted",
+    "inputs": [
+      {
+        "name": "tdId",
+        "type": "bytes32",
+        "indexed": true,
+        "internalType": "bytes32"
+      },
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "submittedBy",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "cuCount",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AlreadyExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "EmptyArray",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotFound",
+    "inputs": [
+      {
+        "name": "cuHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotSameOwner",
+    "inputs": [
+      {
+        "name": "cuHash",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotSameWorldwideDay",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotSettlementCurrencyCurrency",
+    "inputs": []
+  }
+]
