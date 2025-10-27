@@ -76,8 +76,9 @@ contract UpgradeImplementations is OutbeScriptBase {
         console.log("Proxy Addresses (selected):");
         if (config.upgradeCraRegistry) console.log("- CRA Registry:", config.craRegistryProxy);
         if (config.upgradeConsumptionRecord) console.log("- Consumption Record:", config.consumptionRecordProxy);
-        if (config.upgradeConsumptionRecordAmendment)
+        if (config.upgradeConsumptionRecordAmendment) {
             console.log("- Consumption Record Amendment:", config.consumptionRecordAmendmentProxy);
+        }
         if (config.upgradeConsumptionUnit) console.log("- Consumption Unit:", config.consumptionUnitProxy);
         if (config.upgradeTributeDraft) console.log("- Tribute Draft:", config.tributeDraftProxy);
         console.log("");
@@ -115,8 +116,9 @@ contract UpgradeImplementations is OutbeScriptBase {
         console.log("All upgrades completed (selected targets)!");
         if (config.upgradeCraRegistry) console.log("- CRA Registry:", config.craRegistryProxy);
         if (config.upgradeConsumptionRecord) console.log("- Consumption Record:", config.consumptionRecordProxy);
-        if (config.upgradeConsumptionRecordAmendment)
+        if (config.upgradeConsumptionRecordAmendment) {
             console.log("- Consumption Record Amendment:", config.consumptionRecordAmendmentProxy);
+        }
         if (config.upgradeConsumptionUnit) console.log("- Consumption Unit:", config.consumptionUnitProxy);
         if (config.upgradeTributeDraft) console.log("- Tribute Draft:", config.tributeDraftProxy);
     }
@@ -199,7 +201,6 @@ contract UpgradeImplementations is OutbeScriptBase {
         ConsumptionUnitUpgradeable proxy = ConsumptionUnitUpgradeable(proxyAddress);
         console.log("Current Consumption Unit version:", proxy.VERSION());
         console.log("Current Consumption Unit owner:", proxy.owner());
-
 
         // Deploy new implementation with deterministic salt
         bytes32 salt = generateSalt(string.concat("ConsumptionUnitImpl_", version));
