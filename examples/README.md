@@ -48,6 +48,7 @@ npx ts-node scripts/generate-users.ts
 ```
 
 **What it does:**
+
 - Generates and founds test user accounts with private keys
 - Saves user data to `scripts/results/generated-users.json`
 - These users will be used for creating consumption records
@@ -59,6 +60,7 @@ npx ts-node scripts/create-consumption-records.ts
 ```
 
 **What it does:**
+
 - Automatically registers and activates CRA
 - Uses generated user addresses from `scripts/results/generated-users.json`
 - Generates consumption records for users
@@ -81,11 +83,11 @@ npx ts-node scripts/create-consumption-units.ts
 ```
 
 **What it does:**
+
 - Loads CR hashes from `generated-cr-hashes.json`
 - Groups CRs into Consumption Units
 - Creates CUs in batches
 - Saves CU IDs to `scripts/results/generated-cu-ids.json`
-
 
 #### Create Tribute Drafts (TD)
 
@@ -94,6 +96,7 @@ npx ts-node scripts/create-tribute-drafts.ts
 ```
 
 **What it does:**
+
 - Loads CU IDs from `generated-cu-ids.json`
 - Groups CUs into Tribute Drafts
 - Creates TDs 
