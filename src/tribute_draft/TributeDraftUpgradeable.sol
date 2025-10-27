@@ -37,14 +37,14 @@ contract TributeDraftUpgradeable is
         _disableInitializers();
     }
 
-    function initialize(address _consumptionUnit) public initializer {
+    function initialize(address _consumptionUnit, address _owner) public initializer {
         require(_consumptionUnit != address(0), "CU addr zero");
         __Ownable_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
         __ERC165_init();
         _setConsumptionUnitAddress(_consumptionUnit);
-        _transferOwnership(msg.sender);
+        _transferOwnership(_owner);
         _totalRecords = 0;
     }
 

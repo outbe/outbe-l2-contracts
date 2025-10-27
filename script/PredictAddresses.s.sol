@@ -88,7 +88,7 @@ contract PredictAddresses is OutbeScriptBase {
             vm.computeCreate2Address(cuProxySaltBytes, keccak256(cuProxyBytecode), CREATE2_FACTORY);
 
         // Tribute Draft init and proxy
-        bytes memory tributeDraftInitData = abi.encodeWithSignature("initialize(address)", predictedCuProxy);
+        bytes memory tributeDraftInitData = abi.encodeWithSignature("initialize(address,address)", predictedCuProxy, deployer);
         bytes memory tdProxyBytecode =
             abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(predictedTdImpl, tributeDraftInitData));
         address predictedTdProxy =

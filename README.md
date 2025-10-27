@@ -1,6 +1,12 @@
 # Outbe L2 Contracts
 
-Smart contracts for the Outbe Layer 2 solution, built with Foundry.
+Smart contracts for the Outbe Layer 2 chain.
+
+## Requirements
+
+- [Foundry](https://getfoundry.sh/)
+- Npm and TypeScript (for running examples)
+- Make
 
 ## Overview
 
@@ -8,26 +14,14 @@ This repository contains the core smart contracts for the Outbe L2 ecosystem, in
 
 - **CRA Registry**: Registry for managing Consumption Reflection Agents (CRAs)
 - **Consumption Record**: Storage system for consumption record hashes with metadata  
+- **Consumption Record Amendment**: Storage system for consumption record amendment hashes with metadata  
 - **Consumption Unit**: Aggregation of consumption records into settlement units with currency and amounts
 - **Tribute Draft**: User-mintable tokens backed by multiple consumption units for trading/transfer
-- **Upgradeable Contracts**: UUPS upgradeable versions with proxy pattern for seamless updates
-- **Interfaces**: Clean contract interfaces for external integrations
 - **Examples**: TypeScript integration examples
-
-## Technology Stack
-
-Built using **Foundry** - a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.
-
-Foundry consists of:
-
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools)
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL
 
 ## Smart Contracts
 
-### CRA Registry (`CRARegistry.sol`)
+### CRA Registry
 The CRA Registry manages Consumption Reflection Agents with the following features:
 
 **Core Functions:**
@@ -41,7 +35,7 @@ The CRA Registry manages Consumption Reflection Agents with the following featur
 
 **Location**: `src/cra_registry/CRARegistry.sol`
 
-### Consumption Record (`ConsumptionRecord.sol`)
+### Consumption Record
 The Consumption Record contract stores consumption record hashes with metadata:
 
 **Core Functions:**
@@ -61,7 +55,7 @@ The Consumption Record contract stores consumption record hashes with metadata:
 
 **Location**: `src/consumption_record/ConsumptionRecordUpgradeable.sol`
 
-### Consumption Unit (`ConsumptionUnitUpgradeable.sol`)
+### Consumption Unit
 The Consumption Unit contract aggregates consumption records into settlement units:
 
 **Core Functions:**
@@ -87,7 +81,7 @@ The Consumption Unit contract aggregates consumption records into settlement uni
 
 **Location**: `src/consumption_unit/ConsumptionUnitUpgradeable.sol`
 
-### Tribute Draft (`TributeDraftUpgradeable.sol`)
+### Tribute Draft
 The Tribute Draft contract enables users to mint tradeable tokens by aggregating consumption units:
 
 **Core Functions:**
@@ -267,10 +261,20 @@ cast code 0x4e59b44847b379578588920cA78FbF26c0B4956C --rpc-url <RPC_URL>
 **Upgrade contracts:**
 ```shell
 # Upgrade implementations while preserving proxy addresses and data
-CRA_REGISTRY_ADDRESS=<proxy_address> CONSUMPTION_RECORD_ADDRESS=<proxy_address> forge script script/UpgradeImplementations.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
+CRA_REGISTRY_ADDRESS=<proxy_address> \
+CONSUMPTION_RECORD_ADDRESS=<proxy_address> \
+CONSUMPTION_RECORD_AMENDMENT_ADDRESS=<proxy_address> \
+CONSUMPTION_UNIT_ADDRESS=<proxy_address> \
+TRIBUTE_DRAFT_ADDRESS=<proxy_address> \
+forge script script/UpgradeImplementations.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
 
-# Upgrade only specific contracts
-UPGRADE_CRA_REGISTRY=true UPGRADE_CONSUMPTION_RECORD=false forge script script/UpgradeImplementations.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
+# Upgrade only specific contracts (toggle any combination)
+UPGRADE_CRA_REGISTRY=true \
+UPGRADE_CONSUMPTION_RECORD=false \
+UPGRADE_CONSUMPTION_RECORD_AMENDMENT=false \
+UPGRADE_CONSUMPTION_UNIT=true \
+UPGRADE_TRIBUTE_DRAFT=false \
+forge script script/UpgradeImplementations.s.sol --rpc-url http://localhost:8545 --broadcast --private-key <PRIVATE_KEY>
 ```
 
 ### Interacting with Contracts
@@ -303,54 +307,6 @@ cast send <TRIBUTE_DRAFT_ADDRESS> "mint(bytes32[])" '[<CU_HASH_1>,<CU_HASH_2>]' 
 
 # Get tribute draft details
 cast call <TRIBUTE_DRAFT_ADDRESS> "get(bytes32)" <TD_ID>
-```
-
-## Project Structure
-
-```
-outbe-l2-contracts/
-├── src/                                    # Smart contracts source code
-│   ├── interfaces/                         # Contract interfaces
-│   │   ├── ICRARegistry.sol               # CRA Registry interface
-│   │   ├── IConsumptionRecord.sol         # Consumption Record interface
-│   │   ├── IConsumptionUnit.sol           # Consumption Unit interface
-│   │   └── ITributeDraft.sol              # Tribute Draft interface
-│   ├── cra_registry/                      # CRA Registry implementation
-│   │   └── CRARegistryUpgradeable.sol     # UUPS upgradeable CRA Registry contract
-│   ├── consumption_record/                # Consumption Record implementation
-│   │   └── ConsumptionRecordUpgradeable.sol # UUPS upgradeable Consumption Record contract
-│   ├── consumption_unit/                  # Consumption Unit implementation
-│   │   └── ConsumptionUnitUpgradeable.sol # UUPS upgradeable Consumption Unit contract
-│   └── tribute_draft/                     # Tribute Draft implementation
-│       └── TributeDraftUpgradeable.sol    # UUPS upgradeable Tribute Draft contract
-├── test/                                  # Test files
-│   ├── cra_registry/                      # CRA Registry tests
-│   │   └── CRARegistryUpgradeable.t.sol   # Comprehensive test suite
-│   ├── consumption_record/                # Consumption Record tests
-│   │   └── ConsumptionRecordUpgradeable.t.sol # Comprehensive test suite
-│   ├── consumption_unit/                  # Consumption Unit tests
-│   │   └── ConsumptionUnitUpgradeable.t.sol # Comprehensive test suite
-│   ├── tribute_draft/                     # Tribute Draft tests
-│   │   └── TributeDraftUpgradeable.t.sol  # Comprehensive test suite
-│   ├── deployment/                        # Deployment tests
-│   │   └── CREATE2Deployment.t.sol        # CREATE2 deployment tests
-│   └── upgrades/                          # Upgrade workflow tests
-│       └── UpgradeWorkflow.t.sol          # UUPS upgrade tests
-├── script/                                # Deployment and interaction scripts
-│   ├── DeployUpgradeable.s.sol            # Upgradeable deployment with proxy pattern
-│   ├── UpgradeImplementations.s.sol       # Contract upgrade script
-│   └── PredictAddresses.s.sol             # CREATE2 address prediction script
-├── docs/                                  # Documentation
-│   ├── cra-registry.md                    # CRA Registry docs
-│   └── consumption-record.md              # Consumption Record docs
-├── examples/                              # TypeScript integration examples
-│   ├── cra-registry.ts                    # CRA Registry examples
-│   ├── consumption-record.ts              # Consumption Record examples
-│   ├── consumption-unit.ts                # Consumption Unit examples
-│   ├── tribute-draft.ts                   # Tribute Draft examples
-│   └── package.json                       # Node.js dependencies
-└── lib/                                   # Dependencies (Foundry submodules)
-    └── forge-std/                         # Foundry standard library
 ```
 
 ## Testing
