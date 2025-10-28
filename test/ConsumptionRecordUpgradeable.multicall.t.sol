@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {Test} from "../lib/forge-std/src/Test.sol";
-import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
+import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ICRAAware} from "../src/interfaces/ICRAAware.sol";
 import {IConsumptionRecord} from "../src/interfaces/IConsumptionRecord.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
+import {Test} from "../lib/forge-std/src/Test.sol";
 
 contract ConsumptionRecordUpgradeableMulticallTest is Test {
     ConsumptionRecordUpgradeable cr;
@@ -45,7 +46,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         returns (bytes memory)
     {
         (string[] memory keys, bytes32[] memory values) = _singleKV(k, v);
-        return abi.encodeWithSelector(ConsumptionRecordUpgradeable.submit.selector, crHash, owner_, keys, values);
+        return abi.encodeWithSelector(ConsumptionRecordUpgradeable.submit.selector, uint256(crHash), owner_, keys, values);
     }
 
     function test_multicall_two_submits_persist_and_emit_and_count() public {
@@ -59,9 +60,9 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
 
         // Expect two Submitted events
         vm.expectEmit(true, true, false, true);
-        emit IConsumptionRecord.Submitted(h1, craActive, ts);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256 (h1));
         vm.expectEmit(true, true, false, true);
-        emit IConsumptionRecord.Submitted(h2, craActive, ts);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256 (h2));
 
         vm.prank(craActive);
         bytes[] memory batch = new bytes[](2);
@@ -70,8 +71,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         cr.multicall(batch);
 
         // First entity
-        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getConsumptionRecord(h1);
-        assertEq(e1.consumptionRecordId, h1);
+        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getTokenData(uint256( h1));
         assertEq(e1.submittedBy, craActive);
         assertEq(e1.submittedAt, ts);
         assertEq(e1.owner, recordOwner);
@@ -81,8 +81,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         assertEq(e1.metadataValues[0], bytes32(uint256(111)));
 
         // Second entity
-        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getConsumptionRecord(h2);
-        assertEq(e2.consumptionRecordId, h2);
+        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getTokenData(uint256( h2));
         assertEq(e2.submittedBy, craActive);
         assertEq(e2.submittedAt, ts);
         assertEq(e2.owner, recordOwner);
@@ -90,8 +89,8 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         assertEq(e2.metadataValues[0], bytes32(uint256(222)));
 
         // Owner index and total supply
-        bytes32[] memory owned = cr.getConsumptionRecordsByOwner(recordOwner);
-        assertEq(owned.length, 2);
+        uint256 ownedCount = cr.balanceOf(recordOwner);
+        assertEq(ownedCount, 2);
         assertEq(cr.totalSupply(), 2);
     }
 

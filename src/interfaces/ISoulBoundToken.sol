@@ -9,7 +9,13 @@ import {
  * partially supports IERC721 (without transfer) methods.
  */
 interface ISoulBoundToken is IERC165Upgradeable {
+
     event Minted(address indexed minter, address indexed to, uint256 indexed tokenId);
+
+    /// @notice Thrown when trying to submit a token that already exists
+    error AlreadyExists();
+
+    function exists(uint256 tokenId) external view returns (bool);
 
     // Inherited from IERC721
 

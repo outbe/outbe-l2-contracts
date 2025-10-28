@@ -1,10 +1,11 @@
 pragma solidity ^0.8.27;
 
+import "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 import {Address} from "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
-import {Strings} from "../../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ISoulBoundToken} from "./ISoulBoundToken.sol";
+import {Strings} from "../../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
-abstract contract SoulBoundTokenBase is ISoulBoundToken {
+abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
     using Strings for uint256;
     using Address for address;
 
@@ -23,6 +24,11 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken {
 
     // Mapping from token id to position in the allTokens array
     mapping(uint256 => uint256) private _allTokensIndex;
+
+
+    function __Base_initialize() public initializer {
+        __ERC165_init();
+    }
 
     /// @inheritdoc ISoulBoundToken
     function balanceOf(address owner) public view virtual override returns (uint256) {
@@ -45,8 +51,12 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken {
      *
      * This function call must use less than 30 000 gas.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(ISoulBoundToken).interfaceId;
+    function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165Upgradeable, IERC165Upgradeable) returns (bool) {
+        return interfaceId == type(ISoulBoundToken).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    function exists(uint256 tokenId) external view virtual returns (bool) {
+        return _exists(tokenId);
     }
 
     /// @inheritdoc ISoulBoundToken
@@ -100,16 +110,16 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken {
         _beforeTokenMint(minter, to, tokenId);
 
         // Check that tokenId was not minted by `_beforeTokenTransfer` hook
-        require(!_exists(tokenId), "ERC721: token already minted");
+        require(!_exists(tokenId), AlreadyExists());
 
         _addTokenToAllTokensEnumeration(tokenId);
         _addTokenToOwnerEnumeration(to, tokenId);
 
         unchecked {
-            // Will not overflow unless all 2**256 token ids are minted to the same owner.
-            // Given that tokens are minted one by one, it is impossible in practice that
-            // this ever happens. Might change if we allow batch minting.
-            // The ERC fails to describe this case.
+        // Will not overflow unless all 2**256 token ids are minted to the same owner.
+        // Given that tokens are minted one by one, it is impossible in practice that
+        // this ever happens. Might change if we allow batch minting.
+        // The ERC fails to describe this case.
             _balances[to] += 1;
         }
 

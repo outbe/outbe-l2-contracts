@@ -45,7 +45,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
             keys[0] = "seed";
             vals[0] = bytes32(uint256(1));
             vm.prank(craActive);
-            cr.submit(keccak256("cr-seed"), recordOwner, keys, vals);
+            cr.submit(uint256(keccak256("cr-seed")), recordOwner, keys, vals);
         }
 
         // Deploy CRA (Consumption Record Amendment) and initialize via ERC1967Proxy
@@ -79,7 +79,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         }
     }
 
-    function _seedCR(bytes32 crHash) internal {
+    function _seedCR(uint256 crHash) internal {
         string[] memory keys = new string[](1);
         bytes32[] memory vals = new bytes32[](1);
         keys[0] = "k";

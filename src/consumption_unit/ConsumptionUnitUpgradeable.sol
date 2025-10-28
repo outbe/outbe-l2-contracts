@@ -36,7 +36,7 @@ contract ConsumptionUnitUpgradeable is
     /// @dev Mapping CU hash to CU entity
     mapping(bytes32 => ConsumptionUnitEntity) public consumptionUnits;
     /// @dev Tracks uniqueness of linked consumption record (CR) hashes across all CU submissions
-    mapping(bytes32 => bool) public usedConsumptionRecordHashes;
+    mapping(uint256 => bool) public usedConsumptionRecordHashes;
     /// @dev Tracks uniqueness of linked consumption record amendment hashes across all CU submissions
     mapping(bytes32 => bool) public usedConsumptionRecordAmendmentHashes;
     /// @dev Owner address to CU ids owned by the address
@@ -95,14 +95,14 @@ contract ConsumptionUnitUpgradeable is
     /// @param crHashes Linked consumption record hashes (each must be unique globally)
     /// @param amendmentHashes Linked consumption record amendment hashes (each must be unique globally)
     /// @param timestamp Submission timestamp to record
-    function _addEntity(
+    function _submit(
         bytes32 cuHash,
         address recordOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        bytes32[] memory crHashes,
+        uint256[] memory crHashes,
         bytes32[] memory amendmentHashes,
         uint256 timestamp
     ) private {
@@ -117,7 +117,6 @@ contract ConsumptionUnitUpgradeable is
         _validateAmendmentHashes(amendmentHashes);
 
         consumptionUnits[cuHash] = ConsumptionUnitEntity({
-            consumptionUnitId: cuHash,
             owner: recordOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
@@ -138,14 +137,14 @@ contract ConsumptionUnitUpgradeable is
     }
 
     /// @dev check hashes uniqueness and existence in CR contract
-    function _validateHashes(bytes32[] memory _hashes) private {
+    function _validateHashes(uint256[] memory _hashes) private {
         // TODO add limitation for hashes size
         uint256 n = _hashes.length;
         if (n == 0 || n > 100) revert InvalidConsumptionRecords();
         for (uint256 i = 0; i < n; i++) {
-            bytes32 _hash = _hashes[i];
+            uint256 _hash = _hashes[i];
             // verify CR exists in ConsumptionRecord contract
-            if (!consumptionRecord.isExists(_hash)) revert InvalidConsumptionRecords();
+            if (!consumptionRecord.exists(_hash)) revert InvalidConsumptionRecords();
 
             if (usedConsumptionRecordHashes[_hash]) {
                 revert ConsumptionRecordAlreadyExists();
@@ -178,10 +177,10 @@ contract ConsumptionUnitUpgradeable is
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        bytes32[] memory hashes,
+        uint256[] memory hashes,
         bytes32[] memory amendmentHashes
     ) external onlyActiveCRA whenNotPaused {
-        _addEntity(
+        _submit(
             cuHash,
             recordOwner,
             settlementCurrency,

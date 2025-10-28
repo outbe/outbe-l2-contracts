@@ -38,8 +38,8 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         registry.setActive(craInactive, false);
 
         // Seed CRs that CU records will reference (must exist and be unique globally)
-        _seedCR(keccak256("cr-A"));
-        _seedCR(keccak256("cr-B"));
+        _seedCR(uint256(keccak256("cr-A")));
+        _seedCR(uint256(keccak256("cr-B")));
 
         // Deploy CRA (Consumption Record Amendment) and initialize via ERC1967Proxy
         ConsumptionRecordAmendmentUpgradeable cra;
@@ -63,7 +63,7 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         }
     }
 
-    function _seedCR(bytes32 crHash) internal {
+    function _seedCR(uint256 crHash) internal {
         string[] memory keys = new string[](1);
         bytes32[] memory vals = new bytes32[](1);
         keys[0] = "k";
@@ -170,7 +170,7 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
             // Use different cu hashes and fresh CRs for uniqueness; seed on the fly
             bytes32 cuHash = keccak256(abi.encodePacked("cu-", i));
             bytes32 crh = keccak256(abi.encodePacked("cr-X-", i));
-            _seedCR(crh);
+            _seedCR(uint256(crh));
             bytes32[] memory arr = new bytes32[](1);
             arr[0] = crh;
             calls[i] = _encodeSubmit(cuHash, recordOwner, 978, 20251231, 1, 0, arr);

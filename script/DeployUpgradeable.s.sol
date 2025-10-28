@@ -210,7 +210,7 @@ contract DeployUpgradeable is OutbeScriptBase {
             address(new ERC1967Proxy{salt: crProxySaltBytes}(consumptionRecordImpl, crInitData));
         consumptionRecord = ConsumptionRecordUpgradeable(consumptionRecordProxy);
         console.log("Consumption Record proxy:", address(consumptionRecord));
-        console.log("Consumption Record owner:", consumptionRecord.getOwner());
+        console.log("Consumption Record owner:", consumptionRecord.owner());
         console.log("Consumption Record CRA Registry:", consumptionRecord.getCRARegistry());
         console.log("");
 
@@ -322,7 +322,7 @@ contract DeployUpgradeable is OutbeScriptBase {
         require(craRegistry.getOwner() == expectedOwner, "CRA Registry owner incorrect");
         // Check Consumption Record
         require(address(consumptionRecord) != address(0), "Consumption Record deployment failed");
-        require(consumptionRecord.getOwner() == expectedOwner, "Consumption Record owner incorrect");
+        require(consumptionRecord.owner() == expectedOwner, "Consumption Record owner incorrect");
         require(consumptionRecord.getCRARegistry() == address(craRegistry), "CRA Registry linkage incorrect");
 
         // Check Consumption Unit
@@ -357,7 +357,7 @@ contract DeployUpgradeable is OutbeScriptBase {
         console.log("");
         console.log("Contract Owners:");
         console.log("- CRA Registry:      ", craRegistry.getOwner());
-        console.log("- Consumption Record:", consumptionRecord.getOwner());
+        console.log("- Consumption Record:", consumptionRecord.owner());
         console.log("- Consumption Record Amendment:", consumptionRecordAmendment.getOwner());
         console.log("- Consumption Unit:  ", consumptionUnit.getOwner());
         // Tribute Draft is Ownable but no owner getter; no direct owner method in TD, skip owner here

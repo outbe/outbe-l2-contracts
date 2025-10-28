@@ -9,8 +9,6 @@ pragma solidity ^0.8.27;
 interface IConsumptionUnit {
     /// @notice Record information for a consumption unit
     struct ConsumptionUnitEntity {
-        /// @notice Unique ID of the consumption unit
-        bytes32 consumptionUnitId;
         /// @notice Owner of the consumption unit
         address owner;
         /// @notice Address of the CRA agent who submitted this consumption unit
@@ -26,7 +24,7 @@ interface IConsumptionUnit {
         /// @notice Numeric currency code using ISO 4217
         uint16 settlementCurrency;
         /// @notice Hashes identifying linked consumption records (unique per record)
-        bytes32[] crHashes;
+        uint256[] crHashes;
         /// @notice Hashes identifying linked consumption records amendments (unique per record)
         bytes32[] amendmentCrHashes;
     }
@@ -78,7 +76,7 @@ interface IConsumptionUnit {
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        bytes32[] memory hashes,
+uint256[] memory hashes,
         bytes32[] memory amendmentHashes
     ) external;
 
