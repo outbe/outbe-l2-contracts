@@ -49,20 +49,20 @@ clean-all: clean ## Clean all build artifacts and caches
 
 ## Deployment
 .PHONY: predict-local
-predict-local:  ## Predict contract addresses local
+predict-local: build ## Predict contract addresses local
 	forge script script/PredictAddresses.s.sol \
 		--rpc-url http://127.0.0.1:8545 \
 		--broadcast
 
 .PHONY: deploy-local
-deploy-local:  ## Deploy contracts to local Anvil node
+deploy-local: build ## Deploy contracts to local Anvil node
 	forge script script/DeployUpgradeable.s.sol \
 		--rpc-url http://127.0.0.1:8545 \
 		--broadcast \
 		-vvvv
 
 .PHONY: upgrade-local
-upgrade-local:  ## Upgrade contracts at local Anvil node
+upgrade-local: build ## Upgrade contracts at local Anvil node
 	forge script script/UpgradeImplementations.s.sol \
 		--rpc-url http://127.0.0.1:8545 \
 		--broadcast \
