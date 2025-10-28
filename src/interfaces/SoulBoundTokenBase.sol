@@ -26,7 +26,6 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
     // Mapping from token id to position in the allTokens array
     mapping(uint256 => uint256) private _allTokensIndex;
 
-
     function __Base_initialize() public initializer {
         __ERC165_init();
     }
@@ -52,7 +51,13 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
      *
      * This function call must use less than 30 000 gas.
      */
-    function supportsInterface(bytes4 interfaceId) public view virtual override (ERC165Upgradeable, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC165Upgradeable, IERC165Upgradeable)
+        returns (bool)
+    {
         return interfaceId == type(ISoulBoundToken).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -117,10 +122,10 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
         _addTokenToOwnerEnumeration(to, tokenId);
 
         unchecked {
-        // Will not overflow unless all 2**256 token ids are minted to the same owner.
-        // Given that tokens are minted one by one, it is impossible in practice that
-        // this ever happens. Might change if we allow batch minting.
-        // The ERC fails to describe this case.
+            // Will not overflow unless all 2**256 token ids are minted to the same owner.
+            // Given that tokens are minted one by one, it is impossible in practice that
+            // this ever happens. Might change if we allow batch minting.
+            // The ERC fails to describe this case.
             _balances[to] += 1;
         }
 

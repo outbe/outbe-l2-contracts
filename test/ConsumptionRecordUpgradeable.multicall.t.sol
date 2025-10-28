@@ -46,7 +46,8 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         returns (bytes memory)
     {
         (string[] memory keys, bytes32[] memory values) = _singleKV(k, v);
-        return abi.encodeWithSelector(ConsumptionRecordUpgradeable.submit.selector, uint256(crHash), owner_, keys, values);
+        return
+            abi.encodeWithSelector(ConsumptionRecordUpgradeable.submit.selector, uint256(crHash), owner_, keys, values);
     }
 
     function test_multicall_two_submits_persist_and_emit_and_count() public {
@@ -60,9 +61,9 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
 
         // Expect two Submitted events
         vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256 (h1));
+        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256(h1));
         vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256 (h2));
+        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256(h2));
 
         vm.prank(craActive);
         bytes[] memory batch = new bytes[](2);
@@ -71,7 +72,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         cr.multicall(batch);
 
         // First entity
-        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getTokenData(uint256( h1));
+        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getTokenData(uint256(h1));
         assertEq(e1.submittedBy, craActive);
         assertEq(e1.submittedAt, ts);
         assertEq(e1.owner, recordOwner);
@@ -81,7 +82,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         assertEq(e1.metadataValues[0], bytes32(uint256(111)));
 
         // Second entity
-        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getTokenData(uint256( h2));
+        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getTokenData(uint256(h2));
         assertEq(e2.submittedBy, craActive);
         assertEq(e2.submittedAt, ts);
         assertEq(e2.owner, recordOwner);

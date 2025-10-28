@@ -8,7 +8,7 @@ import {
 } from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {IConsumptionRecordAmendment} from "../src/interfaces/IConsumptionRecordAmendment.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
-import {ISoulBoundToken} from  "../src/interfaces/ISoulBoundToken.sol";
+import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 
 contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
     ConsumptionRecordAmendmentUpgradeable cra;
@@ -41,7 +41,7 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
     }
 
     function test_submit_persists_full_entity_and_indexes_and_emits_event() public {
-        uint256  crAHash = uint256 (keccak256("amend-1"));
+        uint256 crAHash = uint256(keccak256("amend-1"));
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 111);
 
         uint256 ts = 1_696_000_000;
@@ -49,7 +49,7 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
 
         // expect Submitted event
         vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive,recordOwner, crAHash);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, crAHash);
 
         vm.prank(craActive);
         cra.submit(crAHash, recordOwner, keys, values);
@@ -113,7 +113,7 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
     }
 
     function test_submit_reverts_on_duplicate_hash() public {
-        uint256 crAHash = uint256 (keccak256("dup"));
+        uint256 crAHash = uint256(keccak256("dup"));
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 5);
 
         vm.startPrank(craActive);

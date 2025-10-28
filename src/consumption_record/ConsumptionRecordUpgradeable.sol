@@ -3,10 +3,10 @@ pragma solidity ^0.8.27;
 
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import {
-MulticallUpgradeable
+    MulticallUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
 import {
-PausableUpgradeable
+    PausableUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
 import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
@@ -57,12 +57,22 @@ contract ConsumptionRecordUpgradeable is
     }
 
     /// @inheritdoc SoulBoundTokenBase
-    function supportsInterface(bytes4 interfaceId) public view virtual override (SoulBoundTokenBase, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(SoulBoundTokenBase, IERC165Upgradeable)
+        returns (bool)
+    {
         return interfaceId == type(IConsumptionRecord).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc MulticallUpgradeable
-    function multicall(bytes[] calldata data) external override (IConsumptionRecord, MulticallUpgradeable) returns (bytes[] memory results) {
+    function multicall(bytes[] calldata data)
+        external
+        override(IConsumptionRecord, MulticallUpgradeable)
+        returns (bytes[] memory results)
+    {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {
             results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
@@ -72,15 +82,15 @@ contract ConsumptionRecordUpgradeable is
 
     /// @inheritdoc IConsumptionRecord
     function submit(uint256 tokenId, address recordOwner, string[] memory keys, bytes32[] memory values)
-    external
-    onlyActiveCRA
-    whenNotPaused
+        external
+        onlyActiveCRA
+        whenNotPaused
     {
         _submit(tokenId, recordOwner, keys, values, block.timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getTokenData(uint256 tokenId) external override view returns (ConsumptionRecordEntity memory) {
+    function getTokenData(uint256 tokenId) external view override returns (ConsumptionRecordEntity memory) {
         return _data[tokenId];
     }
 

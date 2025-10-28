@@ -25,7 +25,7 @@ contract TributeDraftUpgradeable is
     IConsumptionUnit public consumptionUnit;
 
     // mapping from tribute draft id (hash) to entity
-    mapping(uint256  => TributeDraftEntity) private _data;
+    mapping(uint256 => TributeDraftEntity) private _data;
     mapping(uint256 => bool) public usedConsumptionUnitIds;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -44,7 +44,13 @@ contract TributeDraftUpgradeable is
     }
 
     /// @inheritdoc SoulBoundTokenBase
-    function supportsInterface(bytes4 interfaceId) public view virtual override (SoulBoundTokenBase, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(SoulBoundTokenBase, IERC165Upgradeable)
+        returns (bool)
+    {
         return interfaceId == type(ITributeDraft).interfaceId || super.supportsInterface(interfaceId);
     }
 
@@ -100,7 +106,7 @@ contract TributeDraftUpgradeable is
         }
 
         // generate tribute draft id as hash of provided CU hashes
-        tokenId = uint256 (keccak256(abi.encode(owner_, worldwideDay_, consumptionUnitIds)));
+        tokenId = uint256(keccak256(abi.encode(owner_, worldwideDay_, consumptionUnitIds)));
 
         _mint(address(0), owner_, tokenId);
 

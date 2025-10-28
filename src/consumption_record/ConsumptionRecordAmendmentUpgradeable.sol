@@ -4,10 +4,10 @@ pragma solidity ^0.8.27;
 import {SoulBoundTokenBase} from "../interfaces/SoulBoundTokenBase.sol";
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import {
-MulticallUpgradeable
+    MulticallUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
 import {
-PausableUpgradeable
+    PausableUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
 import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
@@ -51,18 +51,28 @@ contract ConsumptionRecordAmendmentUpgradeable is
         __Pausable_init();
         __UUPSUpgradeable_init();
         __Base_initialize();
-    __CRAAware_init(_craRegistry);
+        __CRAAware_init(_craRegistry);
         __Multicall_init();
         _transferOwnership(_owner);
     }
 
     /// @inheritdoc SoulBoundTokenBase
-    function supportsInterface(bytes4 interfaceId) public view virtual override (SoulBoundTokenBase, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(SoulBoundTokenBase, IERC165Upgradeable)
+        returns (bool)
+    {
         return interfaceId == type(IConsumptionRecordAmendment).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc MulticallUpgradeable
-    function multicall(bytes[] calldata data) external override (IConsumptionRecordAmendment , MulticallUpgradeable) returns (bytes[] memory results) {
+    function multicall(bytes[] calldata data)
+        external
+        override(IConsumptionRecordAmendment, MulticallUpgradeable)
+        returns (bytes[] memory results)
+    {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {
             results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
@@ -72,9 +82,9 @@ contract ConsumptionRecordAmendmentUpgradeable is
 
     /// @inheritdoc IConsumptionRecordAmendment
     function submit(uint256 tokenId, address tokenOwner, string[] memory keys, bytes32[] memory values)
-    external
-    onlyActiveCRA
-    whenNotPaused
+        external
+        onlyActiveCRA
+        whenNotPaused
     {
         _submit(tokenId, tokenOwner, keys, values, block.timestamp);
     }
@@ -105,7 +115,7 @@ contract ConsumptionRecordAmendmentUpgradeable is
     }
 
     /// @inheritdoc IConsumptionRecordAmendment
-    function getTokenData(uint256 tokenId) external override view returns (ConsumptionRecordAmendmentEntity memory) {
+    function getTokenData(uint256 tokenId) external view override returns (ConsumptionRecordAmendmentEntity memory) {
         return _data[tokenId];
     }
 

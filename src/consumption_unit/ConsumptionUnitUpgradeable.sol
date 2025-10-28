@@ -68,12 +68,16 @@ contract ConsumptionUnitUpgradeable is
     }
 
     /// @inheritdoc SoulBoundTokenBase
-    function supportsInterface(bytes4 interfaceId) public view override (SoulBoundTokenBase) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view override(SoulBoundTokenBase) returns (bool) {
         return interfaceId == type(IConsumptionUnit).interfaceId || super.supportsInterface(interfaceId);
     }
 
     /// @inheritdoc MulticallUpgradeable
-    function multicall(bytes[] calldata data) external override (IConsumptionUnit, MulticallUpgradeable) returns (bytes[] memory results) {
+    function multicall(bytes[] calldata data)
+        external
+        override(IConsumptionUnit, MulticallUpgradeable)
+        returns (bytes[] memory results)
+    {
         results = new bytes[](data.length);
         for (uint256 i = 0; i < data.length; i++) {
             results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);

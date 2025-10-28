@@ -11,7 +11,6 @@ import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
 import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 
-
 contract ConsumptionUnitUpgradeableSubmitTest is Test {
     ConsumptionRecordUpgradeable cr;
     ConsumptionRecordAmendmentUpgradeable cra;
@@ -66,7 +65,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
             keys[0] = "seed";
             vals[0] = bytes32(uint256(1));
             vm.prank(craActive);
-            cra.submit(uint256 (keccak256("cra-seed")), recordOwner, keys, vals);
+            cra.submit(uint256(keccak256("cra-seed")), recordOwner, keys, vals);
         }
 
         // Deploy CU and initialize via ERC1967Proxy with CR and CRA addresses configured
@@ -120,7 +119,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         vm.warp(ts);
 
         vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted( craActive, recordOwner, cuHash);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash);
 
         vm.prank(craActive);
         cu.submit(cuHash, recordOwner, currency, wday, baseAmt, attoAmt, crHashes, amendmentHashes);
@@ -150,201 +149,201 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         assertEq(cu.totalSupply(), 1);
     }
 
-//    function test_submit_reverts_on_zero_hash() public {
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = keccak256("cr-x");
-//        _seedCR(crHashes[0]);
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidHash.selector);
-//        cu.submit(bytes32(0), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_zero_owner() public {
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = keccak256("cr-y");
-//        _seedCR(crHashes[0]);
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidOwner.selector);
-//        cu.submit(keccak256("cu-x"), address(0), 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_invalid_currency_zero() public {
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = keccak256("cr-curr");
-//        _seedCR(crHashes[0]);
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidSettlementCurrency.selector);
-//        cu.submit(keccak256("cu-curr"), recordOwner, 0, 20250101, 1, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_invalid_amount_both_zero() public {
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = keccak256("cr-amt0");
-//        _seedCR(crHashes[0]);
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-//        cu.submit(keccak256("cu-amt0"), recordOwner, 978, 20250101, 0, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_invalid_amount_atto_ge_1e18() public {
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = keccak256("cr-amt1");
-//        _seedCR(crHashes[0]);
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-//        cu.submit(keccak256("cu-amt1"), recordOwner, 978, 20250101, 0, uint128(1e18), crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_empty_cr_hashes() public {
-//        bytes32[] memory crHashes = new bytes32[](0);
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-//        cu.submit(keccak256("cu-empty"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_unknown_cr_hash() public {
-//        // don't seed this CR
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = keccak256("cr-unknown");
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-//        cu.submit(keccak256("cu-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
-//        bytes32 h = keccak256("cr-dupe");
-//        _seedCR(h);
-//        bytes32[] memory crHashes = new bytes32[](2);
-//        crHashes[0] = h;
-//        crHashes[1] = h;
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-//        cu.submit(keccak256("cu-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-//    }
-//
-//    function test_submit_reverts_on_cr_hash_used_globally_before() public {
-//        bytes32 h = keccak256("cr-used");
-//        _seedCR(h);
-//
-//        bytes32[] memory arr = new bytes32[](1);
-//        arr[0] = h;
-//
-//        vm.startPrank(craActive);
-//        cu.submit(keccak256("cu-first"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-//        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-//        cu.submit(keccak256("cu-second"), recordOwner, 978, 20250101, 2, 0, arr, new bytes32[](0));
-//        vm.stopPrank();
-//    }
-//
-//    function test_submit_reverts_on_duplicate_cu_hash() public {
-//        bytes32 h = keccak256("cr-dup-cu");
-//        _seedCR(h);
-//        bytes32[] memory arr = new bytes32[](1);
-//        arr[0] = h;
-//
-//        vm.startPrank(craActive);
-//        bytes32 cuHash = keccak256("cu-dup");
-//        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-//        vm.expectRevert(IConsumptionUnit.AlreadyExists.selector);
-//        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-//        vm.stopPrank();
-//    }
-//
-//    function test_submit_reverts_for_inactive_or_unknown_CRA() public {
-//        bytes32 h = keccak256("cr-inact");
-//        _seedCR(h);
-//        bytes32[] memory arr = new bytes32[](1);
-//        arr[0] = h;
-//
-//        vm.prank(craInactive);
-//        vm.expectRevert(ICRAAware.CRANotActive.selector);
-//        cu.submit(keccak256("cu-inact"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-//
-//        address craUnknown = address(0xEefe);
-//        vm.prank(craUnknown);
-//        vm.expectRevert(ICRAAware.CRANotActive.selector);
-//        cu.submit(keccak256("cu-unk"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-//    }
-//
-//    // Amendment hashes tests
-//    function test_submit_reverts_on_unknown_amendment_hash() public {
-//        // seed base CR only
-//        bytes32 base = keccak256("cr-amend-unknown-base");
-//        _seedCR(base);
-//        bytes32 unknown = keccak256("cr-amend-unknown"); // not seeded
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = base;
-//        bytes32[] memory amendmentHashes = new bytes32[](1);
-//        amendmentHashes[0] = unknown;
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-//        cu.submit(keccak256("cu-amend-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
-//    }
-//
-//    function test_submit_reverts_on_duplicate_amendment_hash_in_input_array() public {
-//        bytes32 base = keccak256("cr-amend-dupe-base");
-//        _seedCR(base);
-//        bytes32 amend = keccak256("cr-amend-dupe");
-//        _seedCRA(amend);
-//        bytes32[] memory crHashes = new bytes32[](1);
-//        crHashes[0] = base;
-//        bytes32[] memory amendmentHashes = new bytes32[](2);
-//        amendmentHashes[0] = amend;
-//        amendmentHashes[1] = amend;
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-//        cu.submit(keccak256("cu-amend-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
-//    }
-//
-//    function test_submit_reverts_on_amendment_hash_used_globally_before() public {
-//        bytes32 base1 = keccak256("cr-amend-used-base1");
-//        _seedCR(base1);
-//        bytes32 amend = keccak256("cr-amend-used");
-//        _seedCRA(amend);
-//
-//        bytes32[] memory crHashes1 = new bytes32[](1);
-//        crHashes1[0] = base1;
-//        bytes32[] memory amendment1 = new bytes32[](1);
-//        amendment1[0] = amend;
-//
-//        vm.startPrank(craActive);
-//        cu.submit(keccak256("cu-amend-first"), recordOwner, 978, 20250101, 1, 0, crHashes1, amendment1);
-//        vm.stopPrank();
-//
-//        // now try to reuse the same amendment hash in another CU
-//        bytes32 base2 = keccak256("cr-amend-used-base2");
-//        _seedCR(base2);
-//        bytes32[] memory crHashes2 = new bytes32[](1);
-//        crHashes2[0] = base2;
-//        bytes32[] memory amendment2 = new bytes32[](1);
-//        amendment2[0] = amend;
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-//        cu.submit(keccak256("cu-amend-second"), recordOwner, 978, 20250101, 2, 0, crHashes2, amendment2);
-//    }
-//
-//    function test_submit_reverts_when_amendment_and_base_overlap_in_same_submission() public {
-//        // same CR hash appears in both arrays
-//        bytes32 h = keccak256("cr-amend-overlap");
-//        _seedCR(h);
-//        bytes32[] memory baseArr = new bytes32[](1);
-//        baseArr[0] = h;
-//        bytes32[] memory amendArr = new bytes32[](1);
-//        amendArr[0] = h;
-//
-//        vm.prank(craActive);
-//        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-//        cu.submit(keccak256("cu-amend-overlap"), recordOwner, 978, 20250101, 1, 0, baseArr, amendArr);
-//    }
+    //    function test_submit_reverts_on_zero_hash() public {
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = keccak256("cr-x");
+    //        _seedCR(crHashes[0]);
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidHash.selector);
+    //        cu.submit(bytes32(0), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_zero_owner() public {
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = keccak256("cr-y");
+    //        _seedCR(crHashes[0]);
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidOwner.selector);
+    //        cu.submit(keccak256("cu-x"), address(0), 978, 20250101, 1, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_invalid_currency_zero() public {
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = keccak256("cr-curr");
+    //        _seedCR(crHashes[0]);
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidSettlementCurrency.selector);
+    //        cu.submit(keccak256("cu-curr"), recordOwner, 0, 20250101, 1, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_invalid_amount_both_zero() public {
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = keccak256("cr-amt0");
+    //        _seedCR(crHashes[0]);
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
+    //        cu.submit(keccak256("cu-amt0"), recordOwner, 978, 20250101, 0, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_invalid_amount_atto_ge_1e18() public {
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = keccak256("cr-amt1");
+    //        _seedCR(crHashes[0]);
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
+    //        cu.submit(keccak256("cu-amt1"), recordOwner, 978, 20250101, 0, uint128(1e18), crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_empty_cr_hashes() public {
+    //        bytes32[] memory crHashes = new bytes32[](0);
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+    //        cu.submit(keccak256("cu-empty"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_unknown_cr_hash() public {
+    //        // don't seed this CR
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = keccak256("cr-unknown");
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+    //        cu.submit(keccak256("cu-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
+    //        bytes32 h = keccak256("cr-dupe");
+    //        _seedCR(h);
+    //        bytes32[] memory crHashes = new bytes32[](2);
+    //        crHashes[0] = h;
+    //        crHashes[1] = h;
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+    //        cu.submit(keccak256("cu-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
+    //    }
+    //
+    //    function test_submit_reverts_on_cr_hash_used_globally_before() public {
+    //        bytes32 h = keccak256("cr-used");
+    //        _seedCR(h);
+    //
+    //        bytes32[] memory arr = new bytes32[](1);
+    //        arr[0] = h;
+    //
+    //        vm.startPrank(craActive);
+    //        cu.submit(keccak256("cu-first"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
+    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+    //        cu.submit(keccak256("cu-second"), recordOwner, 978, 20250101, 2, 0, arr, new bytes32[](0));
+    //        vm.stopPrank();
+    //    }
+    //
+    //    function test_submit_reverts_on_duplicate_cu_hash() public {
+    //        bytes32 h = keccak256("cr-dup-cu");
+    //        _seedCR(h);
+    //        bytes32[] memory arr = new bytes32[](1);
+    //        arr[0] = h;
+    //
+    //        vm.startPrank(craActive);
+    //        bytes32 cuHash = keccak256("cu-dup");
+    //        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
+    //        vm.expectRevert(IConsumptionUnit.AlreadyExists.selector);
+    //        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
+    //        vm.stopPrank();
+    //    }
+    //
+    //    function test_submit_reverts_for_inactive_or_unknown_CRA() public {
+    //        bytes32 h = keccak256("cr-inact");
+    //        _seedCR(h);
+    //        bytes32[] memory arr = new bytes32[](1);
+    //        arr[0] = h;
+    //
+    //        vm.prank(craInactive);
+    //        vm.expectRevert(ICRAAware.CRANotActive.selector);
+    //        cu.submit(keccak256("cu-inact"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
+    //
+    //        address craUnknown = address(0xEefe);
+    //        vm.prank(craUnknown);
+    //        vm.expectRevert(ICRAAware.CRANotActive.selector);
+    //        cu.submit(keccak256("cu-unk"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
+    //    }
+    //
+    //    // Amendment hashes tests
+    //    function test_submit_reverts_on_unknown_amendment_hash() public {
+    //        // seed base CR only
+    //        bytes32 base = keccak256("cr-amend-unknown-base");
+    //        _seedCR(base);
+    //        bytes32 unknown = keccak256("cr-amend-unknown"); // not seeded
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = base;
+    //        bytes32[] memory amendmentHashes = new bytes32[](1);
+    //        amendmentHashes[0] = unknown;
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+    //        cu.submit(keccak256("cu-amend-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
+    //    }
+    //
+    //    function test_submit_reverts_on_duplicate_amendment_hash_in_input_array() public {
+    //        bytes32 base = keccak256("cr-amend-dupe-base");
+    //        _seedCR(base);
+    //        bytes32 amend = keccak256("cr-amend-dupe");
+    //        _seedCRA(amend);
+    //        bytes32[] memory crHashes = new bytes32[](1);
+    //        crHashes[0] = base;
+    //        bytes32[] memory amendmentHashes = new bytes32[](2);
+    //        amendmentHashes[0] = amend;
+    //        amendmentHashes[1] = amend;
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+    //        cu.submit(keccak256("cu-amend-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
+    //    }
+    //
+    //    function test_submit_reverts_on_amendment_hash_used_globally_before() public {
+    //        bytes32 base1 = keccak256("cr-amend-used-base1");
+    //        _seedCR(base1);
+    //        bytes32 amend = keccak256("cr-amend-used");
+    //        _seedCRA(amend);
+    //
+    //        bytes32[] memory crHashes1 = new bytes32[](1);
+    //        crHashes1[0] = base1;
+    //        bytes32[] memory amendment1 = new bytes32[](1);
+    //        amendment1[0] = amend;
+    //
+    //        vm.startPrank(craActive);
+    //        cu.submit(keccak256("cu-amend-first"), recordOwner, 978, 20250101, 1, 0, crHashes1, amendment1);
+    //        vm.stopPrank();
+    //
+    //        // now try to reuse the same amendment hash in another CU
+    //        bytes32 base2 = keccak256("cr-amend-used-base2");
+    //        _seedCR(base2);
+    //        bytes32[] memory crHashes2 = new bytes32[](1);
+    //        crHashes2[0] = base2;
+    //        bytes32[] memory amendment2 = new bytes32[](1);
+    //        amendment2[0] = amend;
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+    //        cu.submit(keccak256("cu-amend-second"), recordOwner, 978, 20250101, 2, 0, crHashes2, amendment2);
+    //    }
+    //
+    //    function test_submit_reverts_when_amendment_and_base_overlap_in_same_submission() public {
+    //        // same CR hash appears in both arrays
+    //        bytes32 h = keccak256("cr-amend-overlap");
+    //        _seedCR(h);
+    //        bytes32[] memory baseArr = new bytes32[](1);
+    //        baseArr[0] = h;
+    //        bytes32[] memory amendArr = new bytes32[](1);
+    //        amendArr[0] = h;
+    //
+    //        vm.prank(craActive);
+    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+    //        cu.submit(keccak256("cu-amend-overlap"), recordOwner, 978, 20250101, 1, 0, baseArr, amendArr);
+    //    }
 }

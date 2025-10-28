@@ -22,7 +22,7 @@ contract ConsumptionRecordUpgradeableSubmitTest is Test {
         // Deploy implementation and initialize via ERC1967Proxy
         ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
         bytes memory initData =
-                            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
+            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         cr = ConsumptionRecordUpgradeable(address(proxy));
 
@@ -39,7 +39,7 @@ contract ConsumptionRecordUpgradeableSubmitTest is Test {
     }
 
     function test_submit_persists_full_entity_and_indexes_and_emits_event() public {
-        uint256 crHash = uint256 (keccak256("rec-1"));
+        uint256 crHash = uint256(keccak256("rec-1"));
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 111);
 
         uint256 ts = 1_696_000_000;

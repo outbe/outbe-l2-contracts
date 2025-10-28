@@ -97,8 +97,8 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
 
     function test_multicall_two_submits_persist_and_emit_and_count() public {
         // Prepare two CU submits with distinct CR references
-        uint256  cuHash1 = uint256 (keccak256("cu-1"));
-        uint256 cuHash2 = uint256 (keccak256("cu-2"));
+        uint256 cuHash1 = uint256(keccak256("cu-1"));
+        uint256 cuHash2 = uint256(keccak256("cu-2"));
 
         uint16 currency = 978; // EUR
         uint32 wday = 20251231;
@@ -119,9 +119,9 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
 
         // Expect two Submitted events in order
         vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash1 );
+        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash1);
         vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash2 );
+        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash2);
 
         vm.prank(craActive);
         cu.multicall(calls);

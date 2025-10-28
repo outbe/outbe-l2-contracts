@@ -9,7 +9,6 @@ import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 /// @author Outbe Team
 /// @custom:version 0.0.1
 interface IConsumptionRecord is ISoulBoundToken {
-
     /// @notice Record information for a consumption record
     /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
     struct ConsumptionRecordEntity {
