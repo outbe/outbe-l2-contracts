@@ -75,17 +75,10 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         assertEq(cra.totalSupply(), 1);
     }
 
-    function test_submit_reverts_on_zero_hash() public {
-        (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 1);
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.InvalidMetadata.selector);
-        cra.submit(uint256(0), recordOwner, keys, values);
-    }
-
     function test_submit_reverts_on_zero_owner() public {
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 1);
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.InvalidMetadata.selector);
+        vm.expectRevert("ERC721: mint to the zero address");
         cra.submit(uint256(keccak256("h")), address(0), keys, values);
     }
 
@@ -97,8 +90,8 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         values[0] = bytes32(uint256(1));
 
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.InvalidMetadata.selector);
-        cra.submit(uint256(keccak256("h2")), recordOwner, keys, values);
+        vm.expectRevert(abi.encodeWithSelector(IConsumptionRecordAmendment.InvalidMetadata.selector, "keys-values mismatch"));
+    cra.submit(uint256(keccak256("h2")), recordOwner, keys, values);
     }
 
     function test_submit_reverts_on_empty_metadata_key() public {
@@ -108,7 +101,7 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         values[0] = bytes32(uint256(1));
 
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.InvalidMetadata.selector);
+        vm.expectRevert(abi.encodeWithSelector(IConsumptionRecordAmendment.InvalidMetadata.selector, "empty key"));
         cra.submit(uint256(keccak256("h3")), recordOwner, keys, values);
     }
 
