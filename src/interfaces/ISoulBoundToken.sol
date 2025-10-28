@@ -9,6 +9,8 @@ import {
  * partially supports IERC721 (without transfer) methods.
  */
 interface ISoulBoundToken is IERC165Upgradeable {
+    event Minted(address indexed minter, address indexed to, uint256 indexed tokenId);
+
     // Inherited from IERC721
 
     /**
