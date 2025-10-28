@@ -76,14 +76,14 @@ contract ConsumptionRecordUpgradeableSubmitTest is Test {
     function test_submit_reverts_on_zero_hash() public {
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 1);
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.InvalidHash.selector);
+        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
         cr.submit(uint256(0), recordOwner, keys, values);
     }
 
     function test_submit_reverts_on_zero_owner() public {
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 1);
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.InvalidOwner.selector);
+        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
         cr.submit(uint256(keccak256("h")), address(0), keys, values);
     }
 

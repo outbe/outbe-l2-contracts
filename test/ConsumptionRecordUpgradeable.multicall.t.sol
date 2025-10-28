@@ -97,7 +97,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
     function test_multicall_reverts_on_empty_batch() public {
         bytes[] memory empty;
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.EmptyBatch.selector);
+        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
         cr.multicall(empty);
     }
 
@@ -109,7 +109,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
             batch[i] = _encodeSubmit(keccak256(abi.encode("rec", i)), recordOwner, "k", i);
         }
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.BatchSizeTooLarge.selector);
+        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
         cr.multicall(batch);
     }
 

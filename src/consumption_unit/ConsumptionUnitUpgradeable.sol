@@ -2,15 +2,14 @@
 pragma solidity ^0.8.27;
 
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
-import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
 import {IConsumptionRecordAmendment} from "../interfaces/IConsumptionRecordAmendment.sol";
 import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import {SoulBoundTokenBase} from "../interfaces/SoulBoundTokenBase.sol";
 
 /// @title ConsumptionUnitUpgradeable
 /// @notice Upgradeable contract for storing consumption unit (CU) records with settlement currency and amounts
@@ -19,9 +18,8 @@ contract ConsumptionUnitUpgradeable is
     PausableUpgradeable,
     UUPSUpgradeable,
     CRAAware,
+    SoulBoundTokenBase,
     IConsumptionUnit,
-    ISoulBoundNFT,
-    ERC165Upgradeable,
     MulticallUpgradeable
 {
     /// @notice Reference to the Consumption Record contract
@@ -30,20 +28,15 @@ contract ConsumptionUnitUpgradeable is
     IConsumptionRecordAmendment public consumptionRecordAmendment;
     /// @notice Contract version
     string public constant VERSION = "1.0.0";
-    /// @notice Maximum number of CU records that can be submitted in a single batch
+    /// @notice Maximum number of tokens that can be submitted in a single batch
     uint256 public constant MAX_BATCH_SIZE = 100;
 
     /// @dev Mapping CU hash to CU entity
-    mapping(bytes32 => ConsumptionUnitEntity) public consumptionUnits;
+    mapping(uint256 => ConsumptionUnitEntity) private _data;
     /// @dev Tracks uniqueness of linked consumption record (CR) hashes across all CU submissions
-    mapping(uint256 => bool) public usedConsumptionRecordHashes;
+    mapping(uint256 => bool) public usedConsumptionRecordIds;
     /// @dev Tracks uniqueness of linked consumption record amendment hashes across all CU submissions
-    mapping(bytes32 => bool) public usedConsumptionRecordAmendmentHashes;
-    /// @dev Owner address to CU ids owned by the address
-    mapping(address => bytes32[]) public ownerRecords;
-
-    /// @dev Total number of records tracked by this contract
-    uint256 private _totalRecords;
+    mapping(uint256 => bool) public usedConsumptionRecordAmendmentIds;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -66,13 +59,26 @@ contract ConsumptionUnitUpgradeable is
         __Ownable_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
-        __ERC165_init();
+        __Base_initialize();
         __CRAAware_init(_craRegistry);
         __Multicall_init();
         _transferOwnership(_owner);
-        _totalRecords = 0;
         _setConsumptionRecordAddress(_consumptionRecord);
         _setConsumptionRecordAmendmentAddress(_consumptionRecordAmendment);
+    }
+
+    /// @inheritdoc SoulBoundTokenBase
+    function supportsInterface(bytes4 interfaceId) public view override (SoulBoundTokenBase) returns (bool) {
+        return interfaceId == type(IConsumptionUnit).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /// @inheritdoc MulticallUpgradeable
+    function multicall(bytes[] calldata data) external override (IConsumptionUnit, MulticallUpgradeable) returns (bytes[] memory results) {
+        results = new bytes[](data.length);
+        for (uint256 i = 0; i < data.length; i++) {
+            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
+        }
+        return results;
     }
 
     function _validateAmounts(uint64 baseAmt, uint128 attoAmt) internal pure {
@@ -85,55 +91,34 @@ contract ConsumptionUnitUpgradeable is
         if (code == 0) revert InvalidSettlementCurrency();
     }
 
-    /// @dev Internal helper to validate and store a CU record and update indexes
-    /// @param cuHash CU id/hash (must be non-zero and unique)
-    /// @param recordOwner Owner address of the CU (must be non-zero)
-    /// @param settlementCurrency ISO-4217 numeric currency code (must be non-zero)
-    /// @param worldwideDay Worldwide day in ISO-8601 compact form, e.g. 20250923
-    /// @param settlementAmountBase Natural units amount (can be zero only if atto amount is non-zero)
-    /// @param settlementAmountAtto Fractional units amount in 1e-18 units (must be < 1e18)
-    /// @param crHashes Linked consumption record hashes (each must be unique globally)
-    /// @param amendmentHashes Linked consumption record amendment hashes (each must be unique globally)
-    /// @param timestamp Submission timestamp to record
     function _submit(
-        bytes32 cuHash,
-        address recordOwner,
+        uint256 tokenId,
+        address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        uint256[] memory crHashes,
-        bytes32[] memory amendmentHashes,
+        uint256[] memory crIds,
+        uint256[] memory amendmentIds,
         uint256 timestamp
     ) private {
-        if (cuHash == bytes32(0)) revert InvalidHash();
-        if (recordOwner == address(0)) revert InvalidOwner();
-        if (isExists(cuHash)) revert AlreadyExists();
-
         _validateCurrency(settlementCurrency);
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
-        _validateHashes(crHashes);
-        _validateAmendmentHashes(amendmentHashes);
+        _validateHashes(crIds);
+        _validateAmendmentHashes(amendmentIds);
 
-        consumptionUnits[cuHash] = ConsumptionUnitEntity({
-            owner: recordOwner,
+        _data[tokenId] = ConsumptionUnitEntity({
+            owner: tokenOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
             worldwideDay: worldwideDay,
             settlementAmountBase: settlementAmountBase,
             settlementAmountAtto: settlementAmountAtto,
-            crHashes: crHashes,
-            amendmentCrHashes: amendmentHashes,
+            crIds: crIds,
+            amendmentCrIds: amendmentIds,
             submittedAt: timestamp
         });
-
-        ownerRecords[recordOwner].push(cuHash);
-
-        // Increment total supply for each new CU record
-        _totalRecords += 1;
-
-        emit Submitted(cuHash, msg.sender, timestamp);
     }
 
     /// @dev check hashes uniqueness and existence in CR contract
@@ -146,85 +131,55 @@ contract ConsumptionUnitUpgradeable is
             // verify CR exists in ConsumptionRecord contract
             if (!consumptionRecord.exists(_hash)) revert InvalidConsumptionRecords();
 
-            if (usedConsumptionRecordHashes[_hash]) {
+            if (usedConsumptionRecordIds[_hash]) {
                 revert ConsumptionRecordAlreadyExists();
             }
-            usedConsumptionRecordHashes[_hash] = true;
+            usedConsumptionRecordIds[_hash] = true;
         }
     }
 
     /// @dev check amendment hashes uniqueness and existence in CR Amendment contract
-    function _validateAmendmentHashes(bytes32[] memory _hashes) private {
+    function _validateAmendmentHashes(uint256[] memory _hashes) private {
         uint256 n = _hashes.length;
         if (n > 100) revert InvalidConsumptionRecords();
         for (uint256 i = 0; i < n; i++) {
-            bytes32 _hash = _hashes[i];
+            uint256 _hash = _hashes[i];
             // verify CR Amendment exists in ConsumptionRecordAmendment contract
-            if (!consumptionRecordAmendment.isExists(_hash)) revert InvalidConsumptionRecords();
+            if (!consumptionRecordAmendment.exists(_hash)) revert InvalidConsumptionRecords();
 
-            if (usedConsumptionRecordAmendmentHashes[_hash]) {
+            if (usedConsumptionRecordAmendmentIds[_hash]) {
                 revert ConsumptionRecordAlreadyExists();
             }
-            usedConsumptionRecordAmendmentHashes[_hash] = true;
+            usedConsumptionRecordAmendmentIds[_hash] = true;
         }
     }
 
     /// @inheritdoc IConsumptionUnit
     function submit(
-        bytes32 cuHash,
-        address recordOwner,
+        uint256 tokenId,
+        address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        uint256[] memory hashes,
-        bytes32[] memory amendmentHashes
+        uint256[] memory crIds,
+        uint256[] memory amendmentCrIds
     ) external onlyActiveCRA whenNotPaused {
         _submit(
-            cuHash,
-            recordOwner,
+            tokenId,
+            tokenOwner,
             settlementCurrency,
             worldwideDay,
             settlementAmountBase,
             settlementAmountAtto,
-            hashes,
-            amendmentHashes,
+            crIds,
+            amendmentCrIds,
             block.timestamp
         );
     }
 
-    /// @inheritdoc IConsumptionUnit
-    function multicall(bytes[] calldata data)
-        external
-        override(IConsumptionUnit, MulticallUpgradeable)
-        onlyActiveCRA
-        whenNotPaused
-        returns (bytes[] memory results)
-    {
-        uint256 n = data.length;
-        if (n == 0) revert EmptyBatch();
-        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-        results = new bytes[](n);
-        for (uint256 i = 0; i < n; i++) {
-            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
-            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
-        }
-    }
-
-    function isExists(bytes32 cuHash) public view returns (bool) {
-        return consumptionUnits[cuHash].submittedBy != address(0);
-    }
-
-    function getConsumptionUnit(bytes32 cuHash) external view returns (ConsumptionUnitEntity memory) {
-        return consumptionUnits[cuHash];
-    }
-
-    function getConsumptionUnitsByOwner(address _owner) external view returns (bytes32[] memory) {
-        return ownerRecords[_owner];
-    }
-
-    function getOwner() external view returns (address) {
-        return owner();
+    function getTokenData(uint256 tokenId) external view returns (ConsumptionUnitEntity memory) {
+        return _data[tokenId];
     }
 
     function getConsumptionRecordAddress() external view returns (address) {
@@ -251,19 +206,6 @@ contract ConsumptionUnitUpgradeable is
     function _setConsumptionRecordAmendmentAddress(address _consumptionRecordAmendment) private {
         require(_consumptionRecordAmendment != address(0), "CRA addr zero");
         consumptionRecordAmendment = IConsumptionRecordAmendment(_consumptionRecordAmendment);
-    }
-
-    /// @inheritdoc ISoulBoundNFT
-    function totalSupply() external view returns (uint256) {
-        return _totalRecords;
-    }
-
-    /// @inheritdoc ERC165Upgradeable
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        // TODO add supported interfaces
-        //      interfaceId == 0x780e9d63 // ERC721Enumerable
-        return interfaceId == type(IConsumptionUnit).interfaceId || interfaceId == type(ISoulBoundNFT).interfaceId
-            || super.supportsInterface(interfaceId);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}

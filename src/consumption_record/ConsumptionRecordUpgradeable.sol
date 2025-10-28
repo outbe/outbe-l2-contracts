@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {
-ERC165Upgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import {
 MulticallUpgradeable
 } from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
@@ -13,10 +11,8 @@ PausableUpgradeable
 import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
-import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
 import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {SoulBoundTokenBase} from "../interfaces/SoulBoundTokenBase.sol";
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
@@ -65,6 +61,15 @@ contract ConsumptionRecordUpgradeable is
         return interfaceId == type(IConsumptionRecord).interfaceId || super.supportsInterface(interfaceId);
     }
 
+    /// @inheritdoc MulticallUpgradeable
+    function multicall(bytes[] calldata data) external override (IConsumptionRecord, MulticallUpgradeable) returns (bytes[] memory results) {
+        results = new bytes[](data.length);
+        for (uint256 i = 0; i < data.length; i++) {
+            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
+        }
+        return results;
+    }
+
     /// @inheritdoc IConsumptionRecord
     function submit(uint256 tokenId, address recordOwner, string[] memory keys, bytes32[] memory values)
     external
@@ -72,25 +77,6 @@ contract ConsumptionRecordUpgradeable is
     whenNotPaused
     {
         _submit(tokenId, recordOwner, keys, values, block.timestamp);
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function multicall(bytes[] calldata data)
-    external
-    override(IConsumptionRecord, MulticallUpgradeable)
-    onlyActiveCRA
-    whenNotPaused
-    returns (bytes[] memory results)
-    {
-        uint256 n = data.length;
-        if (n == 0) revert EmptyBatch();
-        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-        // Inline implementation of OZ Multicall to allow access control modifiers
-        results = new bytes[](n);
-        for (uint256 i = 0; i < n; i++) {
-            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
-            results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
-        }
     }
 
     /// @inheritdoc IConsumptionRecord

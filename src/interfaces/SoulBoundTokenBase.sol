@@ -1,6 +1,7 @@
 pragma solidity ^0.8.27;
 
-import "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import {Address} from "../../lib/openzeppelin-contracts/contracts/utils/Address.sol";
 import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 import {Strings} from "../../lib/openzeppelin-contracts/contracts/utils/Strings.sol";

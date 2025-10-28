@@ -25,23 +25,8 @@ interface IConsumptionRecord is ISoulBoundToken {
         bytes32[] metadataValues;
     }
 
-    /// @notice Thrown when an invalid hash (zero hash) is provided
-    error InvalidHash();
-
     /// @notice Thrown when the submitted metadata is invalid
     error InvalidMetadata(string reason);
-
-    /// @notice Thrown when an invalid owner address (zero address) is provided
-    error InvalidOwner();
-
-    /// @notice Thrown when batch size exceeds the maximum allowed (100)
-    error BatchSizeTooLarge();
-
-    /// @notice Thrown when trying to submit an empty batch
-    error EmptyBatch();
-
-    /// @notice Thrown when trying to submit an invalid multicall tx
-    error InvalidCall();
 
     /// @notice Submit a consumption record with optional metadata
     /// @dev Only active CRAs can submit records. Hash must be non-zero and unique.
@@ -59,5 +44,4 @@ interface IConsumptionRecord is ISoulBoundToken {
     /// @param tokenId id of the record
     /// @return struct with complete record data
     function getTokenData(uint256 tokenId) external view returns (ConsumptionRecordEntity memory);
-
 }

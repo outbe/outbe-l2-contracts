@@ -34,7 +34,7 @@ contract ConsumptionUnitUpgradeableInitializeTest is Test {
         cu = _deployInitializedProxy(address(registry), owner);
 
         // owner() is exposed via getOwner() helper
-        assertEq(cu.getOwner(), owner);
+        assertEq(cu.owner(), owner);
         // CRA registry address is exposed by ICRAAware.getCRARegistry
         assertEq(ICRAAware(address(cu)).getCRARegistry(), address(registry));
     }
