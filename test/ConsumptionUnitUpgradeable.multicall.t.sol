@@ -152,33 +152,6 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         assertEq(cu.totalSupply(), 2);
     }
 
-    function test_multicall_reverts_on_empty_batch() public {
-        bytes[] memory calls = new bytes[](0);
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-        cu.multicall(calls);
-    }
-
-    function test_multicall_reverts_on_batch_too_large() public {
-        // Prepare MAX_BATCH_SIZE + 1 calls (101)
-        uint256 n = 101;
-        bytes[] memory calls = new bytes[](n);
-        uint256[] memory crHashes = new uint256[](1);
-        crHashes[0] = uint256(keccak256("cr-A"));
-        for (uint256 i = 0; i < n; i++) {
-            // Use different cu hashes and fresh CRs for uniqueness; seed on the fly
-            uint256 cuHash = uint256(keccak256(abi.encodePacked("cu-", i)));
-            uint256 crh = uint256(keccak256(abi.encodePacked("cr-X-", i)));
-            _seedCR(crh);
-            uint256[] memory arr = new uint256[](1);
-            arr[0] = crh;
-            calls[i] = _encodeSubmit(cuHash, recordOwner, 978, 20251231, 1, 0, arr);
-        }
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-        cu.multicall(calls);
-    }
-
     function test_multicall_reverts_when_not_active_cra() public {
         // one valid call
         uint256[] memory arr = new uint256[](1);

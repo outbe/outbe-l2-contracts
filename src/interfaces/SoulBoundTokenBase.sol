@@ -10,6 +10,9 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
     using Strings for uint256;
     using Address for address;
 
+    // @dev max value of 31 bytes length
+    uint256 private _max31bytes = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     mapping(uint256 tokenId => address) private _owners;
 
     mapping(address owner => uint256) private _balances;
@@ -112,6 +115,7 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
      */
     function _mint(address minter, address to, uint256 tokenId) internal virtual {
         require(to != address(0), "ERC721: mint to the zero address");
+        _validateTokenId(tokenId);
 
         _beforeTokenMint(minter, to, tokenId);
 
@@ -136,15 +140,23 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
         _afterTokenMint(minter, to, tokenId);
     }
 
+
+    /**
+     * @dev Validates a submitted tokenId by checking that it should fully consume 32 bytes length
+     */
+    function _validateTokenId(uint256 tokenId) internal {
+        require(tokenId > _max31bytes, InvalidTokenId());
+    }
+
     /**
      * @dev Hook that is called before any token mint.
      */
-    function _beforeTokenMint(address minter, address to, uint256 firstTokenId) internal virtual {}
+    function _beforeTokenMint(address minter, address to, uint256 tokenId) internal virtual {}
 
     /**
      * @dev Hook that is called after any token mint.
      */
-    function _afterTokenMint(address minter, address to, uint256 firstTokenId) internal virtual {}
+    function _afterTokenMint(address minter, address to, uint256 tokenId) internal virtual {}
 
     /**
      * @dev Private function to add a token to this extension's ownership-tracking data structures.

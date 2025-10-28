@@ -112,6 +112,8 @@ contract ConsumptionUnitUpgradeable is
         _validateHashes(crIds);
         _validateAmendmentHashes(amendmentIds);
 
+        _mint(_msgSender(), tokenOwner, tokenId);
+
         _data[tokenId] = ConsumptionUnitEntity({
             owner: tokenOwner,
             submittedBy: msg.sender,

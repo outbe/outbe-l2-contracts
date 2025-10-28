@@ -10,6 +10,7 @@ import {ConsumptionUnitUpgradeable} from "src/consumption_unit/ConsumptionUnitUp
 import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
 import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
+import {ICRAAware} from "../src/interfaces/ICRAAware.sol";
 
 contract ConsumptionUnitUpgradeableSubmitTest is Test {
     ConsumptionRecordUpgradeable cr;
@@ -22,6 +23,10 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
     address craInactive = address(0xDEAD);
     address recordOwner = address(0xBEEF);
 
+    uint256[] private  defaultCrHashes;
+    uint256 private  defaultCuId = uint256(keccak256("cu-seed"));
+
+
     function setUp() public {
         registry = new MockCRARegistry();
 
@@ -29,7 +34,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         {
             ConsumptionRecordUpgradeable implCR = new ConsumptionRecordUpgradeable();
             bytes memory initCR =
-                abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
+                                abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
             ERC1967Proxy proxyCR = new ERC1967Proxy(address(implCR), initCR);
             cr = ConsumptionRecordUpgradeable(address(proxyCR));
         }
@@ -45,7 +50,11 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
             keys[0] = "seed";
             vals[0] = bytes32(uint256(1));
             vm.prank(craActive);
-            cr.submit(uint256(keccak256("cr-seed")), recordOwner, keys, vals);
+
+            defaultCrHashes = new uint256[](1);
+            defaultCrHashes[0] = uint256(keccak256("cr-seed"));
+
+            cr.submit(defaultCrHashes[0], recordOwner, keys, vals);
         }
 
         // Deploy CRA (Consumption Record Amendment) and initialize via ERC1967Proxy
@@ -141,138 +150,111 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         assertEq(e.amendmentCrIds.length, 1);
         assertEq(e.amendmentCrIds[0], amendHash);
 
-        // owner index
-        uint256 owned = cu.balanceOf(recordOwner);
-        assertEq(owned, 1);
+        assertEq(cu.balanceOf(recordOwner), 1);
 
         // totalSupply tracks count
         assertEq(cu.totalSupply(), 1);
     }
 
-    //    function test_submit_reverts_on_zero_hash() public {
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-x");
-    //        _seedCR(crHashes[0]);
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidHash.selector);
-    //        cu.submit(bytes32(0), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_zero_owner() public {
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-y");
-    //        _seedCR(crHashes[0]);
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidOwner.selector);
-    //        cu.submit(keccak256("cu-x"), address(0), 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_invalid_currency_zero() public {
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-curr");
-    //        _seedCR(crHashes[0]);
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidSettlementCurrency.selector);
-    //        cu.submit(keccak256("cu-curr"), recordOwner, 0, 20250101, 1, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_invalid_amount_both_zero() public {
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-amt0");
-    //        _seedCR(crHashes[0]);
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-    //        cu.submit(keccak256("cu-amt0"), recordOwner, 978, 20250101, 0, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_invalid_amount_atto_ge_1e18() public {
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-amt1");
-    //        _seedCR(crHashes[0]);
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
-    //        cu.submit(keccak256("cu-amt1"), recordOwner, 978, 20250101, 0, uint128(1e18), crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_empty_cr_hashes() public {
-    //        bytes32[] memory crHashes = new bytes32[](0);
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-    //        cu.submit(keccak256("cu-empty"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_unknown_cr_hash() public {
-    //        // don't seed this CR
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-unknown");
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-    //        cu.submit(keccak256("cu-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
-    //        bytes32 h = keccak256("cr-dupe");
-    //        _seedCR(h);
-    //        bytes32[] memory crHashes = new bytes32[](2);
-    //        crHashes[0] = h;
-    //        crHashes[1] = h;
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-    //        cu.submit(keccak256("cu-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, new bytes32[](0));
-    //    }
-    //
-    //    function test_submit_reverts_on_cr_hash_used_globally_before() public {
-    //        bytes32 h = keccak256("cr-used");
-    //        _seedCR(h);
-    //
-    //        bytes32[] memory arr = new bytes32[](1);
-    //        arr[0] = h;
-    //
-    //        vm.startPrank(craActive);
-    //        cu.submit(keccak256("cu-first"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-    //        cu.submit(keccak256("cu-second"), recordOwner, 978, 20250101, 2, 0, arr, new bytes32[](0));
-    //        vm.stopPrank();
-    //    }
-    //
-    //    function test_submit_reverts_on_duplicate_cu_hash() public {
-    //        bytes32 h = keccak256("cr-dup-cu");
-    //        _seedCR(h);
-    //        bytes32[] memory arr = new bytes32[](1);
-    //        arr[0] = h;
-    //
-    //        vm.startPrank(craActive);
-    //        bytes32 cuHash = keccak256("cu-dup");
-    //        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-    //        vm.expectRevert(IConsumptionUnit.AlreadyExists.selector);
-    //        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-    //        vm.stopPrank();
-    //    }
-    //
-    //    function test_submit_reverts_for_inactive_or_unknown_CRA() public {
-    //        bytes32 h = keccak256("cr-inact");
-    //        _seedCR(h);
-    //        bytes32[] memory arr = new bytes32[](1);
-    //        arr[0] = h;
-    //
-    //        vm.prank(craInactive);
-    //        vm.expectRevert(ICRAAware.CRANotActive.selector);
-    //        cu.submit(keccak256("cu-inact"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-    //
-    //        address craUnknown = address(0xEefe);
-    //        vm.prank(craUnknown);
-    //        vm.expectRevert(ICRAAware.CRANotActive.selector);
-    //        cu.submit(keccak256("cu-unk"), recordOwner, 978, 20250101, 1, 0, arr, new bytes32[](0));
-    //    }
-    //
+    function test_submit_reverts_on_zero_hash() public {
+        vm.prank(craActive);
+        vm.expectRevert(ISoulBoundToken.InvalidTokenId.selector);
+        cu.submit(uint256(0), recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+    }
+
+    function test_submit_reverts_on_zero_owner() public {
+        vm.prank(craActive);
+        vm.expectRevert("ERC721: mint to the zero address");
+        cu.submit(defaultCuId, address(0), 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+    }
+
+    function test_submit_reverts_on_invalid_currency_zero() public {
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidSettlementCurrency.selector);
+        cu.submit(defaultCuId, recordOwner, 0, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+    }
+
+    function test_submit_reverts_on_invalid_amount_both_zero() public {
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 0, 0, defaultCrHashes, new uint256[](0));
+    }
+
+    function test_submit_reverts_on_invalid_amount_atto_ge_1e18() public {
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidAmount.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 0, uint128(1e18), defaultCrHashes, new uint256[](0));
+    }
+
+        function test_submit_reverts_on_empty_cr_hashes() public {
+            uint256 [] memory crHashes = new uint256[](0);
+
+            vm.prank(craActive);
+            vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
+        }
+
+        function test_submit_reverts_on_unknown_cr_hash() public {
+            uint256[] memory crHashes = new uint256[](1);
+            crHashes[0] = uint256(keccak256("cr-unknown"));
+
+            vm.prank(craActive);
+            vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
+        }
+
+        function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
+            uint256  h = uint256 (keccak256("cr-dupe"));
+            _seedCR(h);
+            uint256[] memory crHashes = new uint256[](2);
+            crHashes[0] = h;
+            crHashes[1] = h;
+
+            vm.prank(craActive);
+            vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
+        }
+
+        function test_submit_reverts_on_cr_hash_used_globally_before() public {
+            uint256  h = uint256 (keccak256("cr-used"));
+            _seedCR(h);
+
+            uint256[] memory arr = new uint256[](1);
+            arr[0] = h;
+
+            vm.startPrank(craActive);
+            cu.submit(uint256(keccak256("cu-first")), recordOwner, 978, 20250101, 1, 0, arr, new uint256 [](0));
+            vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+            cu.submit(uint256(keccak256("cu-second")), recordOwner, 978, 20250101, 2, 0, arr, new uint256[](0));
+            vm.stopPrank();
+        }
+
+        function test_submit_reverts_on_duplicate_cu_hash() public {
+            uint256 h = uint256(keccak256("cr-other"));
+            _seedCR(h);
+
+            uint256[] memory arr = new uint256[](1);
+            arr[0] = h;
+
+        vm.startPrank(craActive);
+            uint256 cuHash = uint256(keccak256("cu-dup"));
+            cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256 [](0));
+            vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
+            cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new uint256[](0));
+            vm.stopPrank();
+        }
+
+        function test_submit_reverts_for_inactive_or_unknown_CRA() public {
+            vm.prank(craInactive);
+            vm.expectRevert(ICRAAware.CRANotActive.selector);
+            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+
+            address craUnknown = address(0xEefe);
+            vm.prank(craUnknown);
+            vm.expectRevert(ICRAAware.CRANotActive.selector);
+            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+        }
+
     //    // Amendment hashes tests
     //    function test_submit_reverts_on_unknown_amendment_hash() public {
     //        // seed base CR only

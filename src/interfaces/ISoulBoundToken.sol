@@ -13,6 +13,8 @@ interface ISoulBoundToken is IERC165Upgradeable {
 
     /// @notice Thrown when trying to submit a token that already exists
     error AlreadyExists();
+    /// @notice Thrown when trying to submit a token id that is not a hash
+    error InvalidTokenId();
 
     function exists(uint256 tokenId) external view returns (bool);
 

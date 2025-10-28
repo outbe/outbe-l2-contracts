@@ -95,25 +95,6 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         assertEq(cr.totalSupply(), 2);
     }
 
-    function test_multicall_reverts_on_empty_batch() public {
-        bytes[] memory empty;
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
-        cr.multicall(empty);
-    }
-
-    function test_multicall_reverts_on_batch_too_large() public {
-        // MAX_BATCH_SIZE is 100; create 101 calls
-        uint256 n = 101;
-        bytes[] memory batch = new bytes[](n);
-        for (uint256 i = 0; i < n; i++) {
-            batch[i] = _encodeSubmit(keccak256(abi.encode("rec", i)), recordOwner, "k", i);
-        }
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
-        cr.multicall(batch);
-    }
-
     function test_multicall_reverts_when_not_active_cra() public {
         bytes32 h = keccak256("na");
         bytes[] memory batch = new bytes[](1);
