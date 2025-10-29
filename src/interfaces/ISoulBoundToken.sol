@@ -1,8 +1,6 @@
 pragma solidity ^0.8.27;
 
-import {
-    IERC165Upgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/IERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 
 /**
  * @notice Base interface for SoulBound NFT tokens which fully supports IERC721Enumerable and
