@@ -2,13 +2,11 @@ pragma solidity ^0.8.27;
 
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
     using Strings for uint256;
-    using Address for address;
 
     // @dev max value of 31 bytes length
     uint256 private _max31bytes = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
