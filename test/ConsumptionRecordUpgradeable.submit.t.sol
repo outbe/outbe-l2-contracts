@@ -106,7 +106,6 @@ contract ConsumptionRecordUpgradeableSubmitTest is Test {
         values[0] = bytes32(uint256(1));
 
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
         vm.expectRevert(abi.encodeWithSelector(IConsumptionRecord.InvalidMetadata.selector, "empty key"));
         cr.submit(uint256(keccak256("h3")), recordOwner, keys, values);
     }

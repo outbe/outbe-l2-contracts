@@ -186,76 +186,76 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         td.submit(arr);
     }
 
-    //    function test_submit_reverts_when_different_owner_in_list() public {
-    //        // CU1 owned by recordOwner
-    //        bytes32 cu1 = keccak256("cu-owner-1");
-    //        _submitCU(cu1, keccak256("cr-owner-1"), 1, 0);
-    //
-    //        // Create CU2 owned by a different owner by submitting CR and CU with different owner
-    //        // We need to submit CR with other as owner and CU with other as owner, so adjust helper inline here
-    //        // submit CR for other
-    //        string[] memory keys = new string[](1);
-    //        keys[0] = "k";
-    //        bytes32[] memory values = new bytes32[](1);
-    //        values[0] = bytes32(uint256(1));
-    //        vm.prank(craActive);
-    //        cr.submit(keccak256("cr-owner-2"), other, keys, values);
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = keccak256("cr-owner-2");
-    //        bytes32 cu2 = keccak256("cu-owner-2");
-    //        vm.prank(craActive);
-    //        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes, new bytes32[](0));
-    //
-    //        bytes32[] memory arr = new bytes32[](2);
-    //        arr[0] = cu1;
-    //        arr[1] = cu2;
-    //
-    //        vm.prank(recordOwner);
-    //        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu2));
-    //        td.submit(arr);
-    //    }
-    //
-    //    function test_submit_reverts_on_currency_mismatch() public {
-    //        bytes32 cu1 = keccak256("cu-cur-1");
-    //        _submitCU(cu1, keccak256("cr-cur-1"), 1, 0);
-    //
-    //        // Make a CU with different currency for same owner/day
-    //        bytes32 cr2 = keccak256("cr-cur-2");
-    //        _submitCR(cr2);
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = cr2;
-    //        bytes32 cu2 = keccak256("cu-cur-2");
-    //        vm.prank(craActive);
-    //        cu.submit(cu2, recordOwner, 840, worldwideDay, 1, 0, crHashes, new bytes32[](0));
-    //
-    //        bytes32[] memory arr = new bytes32[](2);
-    //        arr[0] = cu1;
-    //        arr[1] = cu2;
-    //
-    //        vm.prank(recordOwner);
-    //        vm.expectRevert(ITributeDraft.NotSettlementCurrencyCurrency.selector);
-    //        td.submit(arr);
-    //    }
-    //
-    //    function test_submit_reverts_on_worldwideDay_mismatch() public {
-    //        bytes32 cu1 = keccak256("cu-day-1");
-    //        _submitCU(cu1, keccak256("cr-day-1"), 1, 0);
-    //
-    //        // CU with different day
-    //        bytes32 cr2 = keccak256("cr-day-2");
-    //        _submitCR(cr2);
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = cr2;
-    //        bytes32 cu2 = keccak256("cu-day-2");
-    //        vm.prank(craActive);
-    //        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes, new bytes32[](0));
-    //
-    //        bytes32[] memory arr = new bytes32[](2);
-    //        arr[0] = cu1;
-    //        arr[1] = cu2;
-    //
-    //        vm.prank(recordOwner);
-    //        vm.expectRevert(ITributeDraft.NotSameWorldwideDay.selector);
-    //        td.submit(arr);
-    //    }
+    function test_submit_reverts_when_different_owner_in_list() public {
+        // CU1 owned by recordOwner
+        uint256 cu1 = uint256(keccak256("cu-owner-1"));
+        _submitCU(cu1, uint256(keccak256("cr-owner-1")), 1, 0);
+
+        // Create CU2 owned by a different owner by submitting CR and CU with different owner
+        // We need to submit CR with other as owner and CU with other as owner, so adjust helper inline here
+        // submit CR for other
+        string[] memory keys = new string[](1);
+        keys[0] = "k";
+        bytes32[] memory values = new bytes32[](1);
+        values[0] = bytes32(uint256(1));
+        vm.prank(craActive);
+        cr.submit(uint256(keccak256("cr-owner-2")), other, keys, values);
+        uint256[] memory crHashes = new uint256[](1);
+        crHashes[0] = uint256(keccak256("cr-owner-2"));
+        uint256 cu2 = uint256(keccak256("cu-owner-2"));
+        vm.prank(craActive);
+        cu.submit(cu2, other, currency, worldwideDay, 2, 0, crHashes, new uint256[](0));
+
+        uint256[] memory arr = new uint256[](2);
+        arr[0] = cu1;
+        arr[1] = cu2;
+
+        vm.prank(recordOwner);
+        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu2));
+        td.submit(arr);
+    }
+
+    function test_submit_reverts_on_currency_mismatch() public {
+        uint256 cu1 = uint256(keccak256("cu-cur-1"));
+        _submitCU(cu1, uint256(keccak256("cr-cur-1")), 1, 0);
+
+        // Make a CU with different currency for same owner/day
+        uint256 cr2 = uint256(keccak256("cr-cur-2"));
+        _submitCR(cr2);
+        uint256[] memory crHashes = new uint256[](1);
+        crHashes[0] = cr2;
+        uint256 cu2 = uint256(keccak256("cu-cur-2"));
+        vm.prank(craActive);
+        cu.submit(cu2, recordOwner, 840, worldwideDay, 1, 0, crHashes, new uint256[](0));
+
+        uint256[] memory arr = new uint256[](2);
+        arr[0] = cu1;
+        arr[1] = cu2;
+
+        vm.prank(recordOwner);
+        vm.expectRevert(ITributeDraft.NotSettlementCurrencyCurrency.selector);
+        td.submit(arr);
+    }
+
+    function test_submit_reverts_on_worldwideDay_mismatch() public {
+        uint256 cu1 = uint256(keccak256("cu-day-1"));
+        _submitCU(cu1, uint256(keccak256("cr-day-1")), 1, 0);
+
+        // CU with different day
+        uint256 cr2 = uint256(keccak256("cr-day-2"));
+        _submitCR(cr2);
+        uint256[] memory crHashes = new uint256[](1);
+        crHashes[0] = cr2;
+        uint256 cu2 = uint256(keccak256("cu-day-2"));
+        vm.prank(craActive);
+        cu.submit(cu2, recordOwner, currency, worldwideDay + 1, 1, 0, crHashes, new uint256[](0));
+
+        uint256[] memory arr = new uint256[](2);
+        arr[0] = cu1;
+        arr[1] = cu2;
+
+        vm.prank(recordOwner);
+        vm.expectRevert(ITributeDraft.NotSameWorldwideDay.selector);
+        td.submit(arr);
+    }
 }
