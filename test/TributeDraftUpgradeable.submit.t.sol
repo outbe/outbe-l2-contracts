@@ -129,63 +129,63 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         vm.expectRevert(ITributeDraft.EmptyArray.selector);
         td.submit(empty);
     }
-    //
-    //    function test_submit_reverts_on_duplicate_cu_in_input() public {
-    //        bytes32 cu1 = keccak256("cu-dup");
-    //        _submitCU(cu1, keccak256("cr-dup"), 1, 1);
-    //
-    //        bytes32[] memory cuHashes = new bytes32[](2);
-    //        cuHashes[0] = cu1;
-    //        cuHashes[1] = cu1; // duplicate
-    //
-    //        vm.prank(recordOwner);
-    //        vm.expectRevert(ITributeDraft.AlreadyExists.selector);
-    //        td.submit(cuHashes);
-    //    }
-    //
-    //    function test_submit_reverts_when_cu_already_used_before() public {
-    //        bytes32 cu1 = keccak256("cu-used-1");
-    //        bytes32 cu2 = keccak256("cu-used-2");
-    //        bytes32 cu3 = keccak256("cu-used-3");
-    //        _submitCU(cu1, keccak256("cr-used-1"), 2, 0);
-    //        _submitCU(cu2, keccak256("cr-used-2"), 3, 0);
-    //        _submitCU(cu3, keccak256("cr-used-3"), 4, 0);
-    //
-    //        // First submission consumes CU1 and CU2
-    //        bytes32[] memory first = new bytes32[](2);
-    //        first[0] = cu1;
-    //        first[1] = cu2;
-    //        vm.prank(recordOwner);
-    //        td.submit(first);
-    //
-    //        // Second submission tries to reuse CU1
-    //        bytes32[] memory second = new bytes32[](2);
-    //        second[0] = cu1;
-    //        second[1] = cu3;
-    //        vm.prank(recordOwner);
-    //        vm.expectRevert(ITributeDraft.AlreadyExists.selector);
-    //        td.submit(second);
-    //    }
-    //
-    //    function test_submit_reverts_when_cu_not_found() public {
-    //        bytes32 missing = keccak256("cu-missing");
-    //        bytes32[] memory arr = new bytes32[](1);
-    //        arr[0] = missing;
-    //        vm.prank(recordOwner);
-    //        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotFound.selector, missing));
-    //        td.submit(arr);
-    //    }
-    //
-    //    function test_submit_reverts_when_caller_not_owner_of_first_cu() public {
-    //        bytes32 cu1 = keccak256("cu-not-owner");
-    //        _submitCU(cu1, keccak256("cr-not-owner"), 1, 0);
-    //        bytes32[] memory arr = new bytes32[](1);
-    //        arr[0] = cu1;
-    //        vm.prank(other);
-    //        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu1));
-    //        td.submit(arr);
-    //    }
-    //
+
+    function test_submit_reverts_on_duplicate_cu_in_input() public {
+        uint256 cu1 = uint256(keccak256("cu-dup"));
+        _submitCU(cu1, uint256(keccak256("cr-dup")), 1, 1);
+
+        uint256[] memory cuHashes = new uint256[](2);
+        cuHashes[0] = cu1;
+        cuHashes[1] = cu1; // duplicate
+
+        vm.prank(recordOwner);
+        vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
+        td.submit(cuHashes);
+    }
+
+    function test_submit_reverts_when_cu_already_used_before() public {
+        uint256 cu1 = uint256(keccak256("cu-used-1"));
+        uint256 cu2 = uint256(keccak256("cu-used-2"));
+        uint256 cu3 = uint256(keccak256("cu-used-3"));
+        _submitCU(cu1, uint256(keccak256("cr-used-1")), 2, 0);
+        _submitCU(cu2, uint256(keccak256("cr-used-2")), 3, 0);
+        _submitCU(cu3, uint256(keccak256("cr-used-3")), 4, 0);
+
+        // First submission consumes CU1 and CU2
+        uint256[] memory first = new uint256[](2);
+        first[0] = cu1;
+        first[1] = cu2;
+        vm.prank(recordOwner);
+        td.submit(first);
+
+        // Second submission tries to reuse CU1
+        uint256[] memory second = new uint256[](2);
+        second[0] = cu1;
+        second[1] = cu3;
+        vm.prank(recordOwner);
+        vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
+        td.submit(second);
+    }
+
+    function test_submit_reverts_when_cu_not_found() public {
+        uint256 missing = uint256(keccak256("cu-missing"));
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = missing;
+        vm.prank(recordOwner);
+        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotFound.selector, missing));
+        td.submit(arr);
+    }
+
+    function test_submit_reverts_when_caller_not_owner_of_first_cu() public {
+        uint256 cu1 = uint256(keccak256("cu-not-owner"));
+        _submitCU(cu1, uint256(keccak256("cr-not-owner")), 1, 0);
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = cu1;
+        vm.prank(other);
+        vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu1));
+        td.submit(arr);
+    }
+
     //    function test_submit_reverts_when_different_owner_in_list() public {
     //        // CU1 owned by recordOwner
     //        bytes32 cu1 = keccak256("cu-owner-1");

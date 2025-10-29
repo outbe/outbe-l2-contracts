@@ -23,9 +23,8 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
     address craInactive = address(0xDEAD);
     address recordOwner = address(0xBEEF);
 
-    uint256[] private  defaultCrHashes;
-    uint256 private  defaultCuId = uint256(keccak256("cu-seed"));
-
+    uint256[] private defaultCrHashes;
+    uint256 private defaultCuId = uint256(keccak256("cu-seed"));
 
     function setUp() public {
         registry = new MockCRARegistry();
@@ -34,7 +33,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         {
             ConsumptionRecordUpgradeable implCR = new ConsumptionRecordUpgradeable();
             bytes memory initCR =
-                                abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
+                abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), owner);
             ERC1967Proxy proxyCR = new ERC1967Proxy(address(implCR), initCR);
             cr = ConsumptionRecordUpgradeable(address(proxyCR));
         }
@@ -186,146 +185,137 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         cu.submit(defaultCuId, recordOwner, 978, 20250101, 0, uint128(1e18), defaultCrHashes, new uint256[](0));
     }
 
-        function test_submit_reverts_on_empty_cr_hashes() public {
-            uint256 [] memory crHashes = new uint256[](0);
+    function test_submit_reverts_on_empty_cr_hashes() public {
+        uint256[] memory crHashes = new uint256[](0);
 
-            vm.prank(craActive);
-            vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
-        }
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
+    }
 
-        function test_submit_reverts_on_unknown_cr_hash() public {
-            uint256[] memory crHashes = new uint256[](1);
-            crHashes[0] = uint256(keccak256("cr-unknown"));
+    function test_submit_reverts_on_unknown_cr_hash() public {
+        uint256[] memory crHashes = new uint256[](1);
+        crHashes[0] = uint256(keccak256("cr-unknown"));
 
-            vm.prank(craActive);
-            vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
-        }
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
+    }
 
-        function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
-            uint256  h = uint256 (keccak256("cr-dupe"));
-            _seedCR(h);
-            uint256[] memory crHashes = new uint256[](2);
-            crHashes[0] = h;
-            crHashes[1] = h;
+    function test_submit_reverts_on_duplicate_cr_hash_in_input_array() public {
+        uint256 h = uint256(keccak256("cr-dupe"));
+        _seedCR(h);
+        uint256[] memory crHashes = new uint256[](2);
+        crHashes[0] = h;
+        crHashes[1] = h;
 
-            vm.prank(craActive);
-            vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
-        }
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes, new uint256[](0));
+    }
 
-        function test_submit_reverts_on_cr_hash_used_globally_before() public {
-            uint256  h = uint256 (keccak256("cr-used"));
-            _seedCR(h);
+    function test_submit_reverts_on_cr_hash_used_globally_before() public {
+        uint256 h = uint256(keccak256("cr-used"));
+        _seedCR(h);
 
-            uint256[] memory arr = new uint256[](1);
-            arr[0] = h;
-
-            vm.startPrank(craActive);
-            cu.submit(uint256(keccak256("cu-first")), recordOwner, 978, 20250101, 1, 0, arr, new uint256 [](0));
-            vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-            cu.submit(uint256(keccak256("cu-second")), recordOwner, 978, 20250101, 2, 0, arr, new uint256[](0));
-            vm.stopPrank();
-        }
-
-        function test_submit_reverts_on_duplicate_cu_hash() public {
-            uint256 h = uint256(keccak256("cr-other"));
-            _seedCR(h);
-
-            uint256[] memory arr = new uint256[](1);
-            arr[0] = h;
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = h;
 
         vm.startPrank(craActive);
-            uint256 cuHash = uint256(keccak256("cu-dup"));
-            cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256 [](0));
-            vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
-            cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new uint256[](0));
-            vm.stopPrank();
-        }
+        cu.submit(uint256(keccak256("cu-first")), recordOwner, 978, 20250101, 1, 0, arr, new uint256[](0));
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(uint256(keccak256("cu-second")), recordOwner, 978, 20250101, 2, 0, arr, new uint256[](0));
+        vm.stopPrank();
+    }
 
-        function test_submit_reverts_for_inactive_or_unknown_CRA() public {
-            vm.prank(craInactive);
-            vm.expectRevert(ICRAAware.CRANotActive.selector);
-            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+    function test_submit_reverts_on_duplicate_cu_hash() public {
+        uint256 h = uint256(keccak256("cr-other"));
+        _seedCR(h);
 
-            address craUnknown = address(0xEefe);
-            vm.prank(craUnknown);
-            vm.expectRevert(ICRAAware.CRANotActive.selector);
-            cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
-        }
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = h;
 
-    //    // Amendment hashes tests
-    //    function test_submit_reverts_on_unknown_amendment_hash() public {
-    //        // seed base CR only
-    //        bytes32 base = keccak256("cr-amend-unknown-base");
-    //        _seedCR(base);
-    //        bytes32 unknown = keccak256("cr-amend-unknown"); // not seeded
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = base;
-    //        bytes32[] memory amendmentHashes = new bytes32[](1);
-    //        amendmentHashes[0] = unknown;
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-    //        cu.submit(keccak256("cu-amend-unknown"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
-    //    }
-    //
-    //    function test_submit_reverts_on_duplicate_amendment_hash_in_input_array() public {
-    //        bytes32 base = keccak256("cr-amend-dupe-base");
-    //        _seedCR(base);
-    //        bytes32 amend = keccak256("cr-amend-dupe");
-    //        _seedCRA(amend);
-    //        bytes32[] memory crHashes = new bytes32[](1);
-    //        crHashes[0] = base;
-    //        bytes32[] memory amendmentHashes = new bytes32[](2);
-    //        amendmentHashes[0] = amend;
-    //        amendmentHashes[1] = amend;
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-    //        cu.submit(keccak256("cu-amend-dupe"), recordOwner, 978, 20250101, 1, 0, crHashes, amendmentHashes);
-    //    }
-    //
-    //    function test_submit_reverts_on_amendment_hash_used_globally_before() public {
-    //        bytes32 base1 = keccak256("cr-amend-used-base1");
-    //        _seedCR(base1);
-    //        bytes32 amend = keccak256("cr-amend-used");
-    //        _seedCRA(amend);
-    //
-    //        bytes32[] memory crHashes1 = new bytes32[](1);
-    //        crHashes1[0] = base1;
-    //        bytes32[] memory amendment1 = new bytes32[](1);
-    //        amendment1[0] = amend;
-    //
-    //        vm.startPrank(craActive);
-    //        cu.submit(keccak256("cu-amend-first"), recordOwner, 978, 20250101, 1, 0, crHashes1, amendment1);
-    //        vm.stopPrank();
-    //
-    //        // now try to reuse the same amendment hash in another CU
-    //        bytes32 base2 = keccak256("cr-amend-used-base2");
-    //        _seedCR(base2);
-    //        bytes32[] memory crHashes2 = new bytes32[](1);
-    //        crHashes2[0] = base2;
-    //        bytes32[] memory amendment2 = new bytes32[](1);
-    //        amendment2[0] = amend;
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
-    //        cu.submit(keccak256("cu-amend-second"), recordOwner, 978, 20250101, 2, 0, crHashes2, amendment2);
-    //    }
-    //
-    //    function test_submit_reverts_when_amendment_and_base_overlap_in_same_submission() public {
-    //        // same CR hash appears in both arrays
-    //        bytes32 h = keccak256("cr-amend-overlap");
-    //        _seedCR(h);
-    //        bytes32[] memory baseArr = new bytes32[](1);
-    //        baseArr[0] = h;
-    //        bytes32[] memory amendArr = new bytes32[](1);
-    //        amendArr[0] = h;
-    //
-    //        vm.prank(craActive);
-    //        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
-    //        cu.submit(keccak256("cu-amend-overlap"), recordOwner, 978, 20250101, 1, 0, baseArr, amendArr);
-    //    }
+        vm.startPrank(craActive);
+        uint256 cuHash = uint256(keccak256("cu-dup"));
+        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+        vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
+        cu.submit(cuHash, recordOwner, 978, 20250101, 1, 0, arr, new uint256[](0));
+        vm.stopPrank();
+    }
+
+    function test_submit_reverts_for_inactive_or_unknown_CRA() public {
+        vm.prank(craInactive);
+        vm.expectRevert(ICRAAware.CRANotActive.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+
+        address craUnknown = address(0xEefe);
+        vm.prank(craUnknown);
+        vm.expectRevert(ICRAAware.CRANotActive.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, new uint256[](0));
+    }
+
+    // Amendment hashes tests
+    function test_submit_reverts_on_unknown_amendment_hash() public {
+        uint256 unknown = uint256(keccak256("cr-amend-unknown")); // not seeded
+        uint256[] memory amendmentHashes = new uint256[](1);
+        amendmentHashes[0] = unknown;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, amendmentHashes);
+    }
+
+    function test_submit_reverts_on_duplicate_amendment_hash_in_input_array() public {
+        uint256 amend = uint256(keccak256("cr-amend-dupe"));
+        _seedCRA(amend);
+        uint256[] memory amendmentHashes = new uint256[](2);
+        amendmentHashes[0] = amend;
+        amendmentHashes[1] = amend;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, defaultCrHashes, amendmentHashes);
+    }
+
+    function test_submit_reverts_on_amendment_hash_used_globally_before() public {
+        uint256 base1 = uint256(keccak256("cr-amend-used-base1"));
+        _seedCR(base1);
+        uint256 amend = uint256(keccak256("cr-amend-used"));
+        _seedCRA(amend);
+
+        uint256[] memory crHashes1 = new uint256[](1);
+        crHashes1[0] = base1;
+        uint256[] memory amendment1 = new uint256[](1);
+        amendment1[0] = amend;
+
+        vm.startPrank(craActive);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, crHashes1, amendment1);
+        vm.stopPrank();
+
+        // now try to reuse the same amendment hash in another CU
+        uint256 base2 = uint256(keccak256("cr-amend-used-base2"));
+        _seedCR(base2);
+        uint256[] memory crHashes2 = new uint256[](1);
+        crHashes2[0] = base2;
+        uint256[] memory amendment2 = new uint256[](1);
+        amendment2[0] = amend;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.ConsumptionRecordAlreadyExists.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 2, 0, crHashes2, amendment2);
+    }
+
+    function test_submit_reverts_when_amendment_and_base_overlap_in_same_submission() public {
+        // same CR hash appears in both arrays
+        uint256 h = uint256(keccak256("cr-amend-overlap"));
+        _seedCR(h);
+        uint256[] memory baseArr = new uint256[](1);
+        baseArr[0] = h;
+        uint256[] memory amendArr = new uint256[](1);
+        amendArr[0] = h;
+
+        vm.prank(craActive);
+        vm.expectRevert(IConsumptionUnit.InvalidConsumptionRecords.selector);
+        cu.submit(defaultCuId, recordOwner, 978, 20250101, 1, 0, baseArr, amendArr);
+    }
 }

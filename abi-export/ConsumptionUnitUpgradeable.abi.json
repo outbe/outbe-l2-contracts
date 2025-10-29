@@ -32,6 +32,32 @@
   },
   {
     "type": "function",
+    "name": "__Base_initialize",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "consumptionRecord",
     "inputs": [],
     "outputs": [
@@ -58,60 +84,6 @@
   },
   {
     "type": "function",
-    "name": "consumptionUnits",
-    "inputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "consumptionUnitId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "owner",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "submittedBy",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "submittedAt",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "worldwideDay",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "settlementAmountBase",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "settlementAmountAtto",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "settlementCurrency",
-        "type": "uint16",
-        "internalType": "uint16"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "craRegistry",
     "inputs": [],
     "outputs": [
@@ -119,6 +91,25 @@
         "name": "",
         "type": "address",
         "internalType": "contract ICRARegistry"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "exists",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -164,12 +155,12 @@
   },
   {
     "type": "function",
-    "name": "getConsumptionUnit",
+    "name": "getTokenData",
     "inputs": [
       {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -178,11 +169,6 @@
         "type": "tuple",
         "internalType": "struct IConsumptionUnit.ConsumptionUnitEntity",
         "components": [
-          {
-            "name": "consumptionUnitId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
           {
             "name": "owner",
             "type": "address",
@@ -219,48 +205,16 @@
             "internalType": "uint16"
           },
           {
-            "name": "crHashes",
-            "type": "bytes32[]",
-            "internalType": "bytes32[]"
+            "name": "crIds",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
           },
           {
-            "name": "amendmentCrHashes",
-            "type": "bytes32[]",
-            "internalType": "bytes32[]"
+            "name": "amendmentCrIds",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
           }
         ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getConsumptionUnitsByOwner",
-    "inputs": [
-      {
-        "name": "_owner",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getOwner",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -292,25 +246,6 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "isExists",
-    "inputs": [
-      {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -346,15 +281,10 @@
   },
   {
     "type": "function",
-    "name": "ownerRecords",
+    "name": "ownerOf",
     "inputs": [
       {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "",
+        "name": "tokenId",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -362,8 +292,8 @@
     "outputs": [
       {
         "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "stateMutability": "view"
@@ -452,12 +382,12 @@
     "name": "submit",
     "inputs": [
       {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "name": "recordOwner",
+        "name": "tokenOwner",
         "type": "address",
         "internalType": "address"
       },
@@ -482,14 +412,14 @@
         "internalType": "uint128"
       },
       {
-        "name": "hashes",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
+        "name": "crIds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       },
       {
-        "name": "amendmentHashes",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
+        "name": "amendmentCrIds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       }
     ],
     "outputs": [],
@@ -510,6 +440,49 @@
         "name": "",
         "type": "bool",
         "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenByIndex",
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenOfOwnerByIndex",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -580,12 +553,12 @@
   },
   {
     "type": "function",
-    "name": "usedConsumptionRecordAmendmentHashes",
+    "name": "usedConsumptionRecordAmendmentIds",
     "inputs": [
       {
         "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -599,12 +572,12 @@
   },
   {
     "type": "function",
-    "name": "usedConsumptionRecordHashes",
+    "name": "usedConsumptionRecordIds",
     "inputs": [
       {
         "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -663,6 +636,31 @@
   },
   {
     "type": "event",
+    "name": "Minted",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OwnershipTransferred",
     "inputs": [
       {
@@ -708,31 +706,6 @@
   },
   {
     "type": "event",
-    "name": "Submitted",
-    "inputs": [
-      {
-        "name": "cuHash",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "cra",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "timestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "Unpaused",
     "inputs": [
       {
@@ -764,11 +737,6 @@
   },
   {
     "type": "error",
-    "name": "BatchSizeTooLarge",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "CRANotActive",
     "inputs": []
   },
@@ -779,32 +747,12 @@
   },
   {
     "type": "error",
-    "name": "EmptyBatch",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "EmptyMetadataKey",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidAmount",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InvalidCall",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidConsumptionRecords",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidHash",
     "inputs": []
   },
   {
@@ -819,7 +767,7 @@
   },
   {
     "type": "error",
-    "name": "MetadataKeyValueMismatch",
+    "name": "InvalidTokenId",
     "inputs": []
   }
 ]

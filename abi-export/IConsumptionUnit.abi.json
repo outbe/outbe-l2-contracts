@@ -1,12 +1,12 @@
 [
   {
     "type": "function",
-    "name": "getConsumptionUnit",
+    "name": "getTokenData",
     "inputs": [
       {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -15,11 +15,6 @@
         "type": "tuple",
         "internalType": "struct IConsumptionUnit.ConsumptionUnitEntity",
         "components": [
-          {
-            "name": "consumptionUnitId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
           {
             "name": "owner",
             "type": "address",
@@ -56,54 +51,16 @@
             "internalType": "uint16"
           },
           {
-            "name": "crHashes",
-            "type": "bytes32[]",
-            "internalType": "bytes32[]"
+            "name": "crIds",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
           },
           {
-            "name": "amendmentCrHashes",
-            "type": "bytes32[]",
-            "internalType": "bytes32[]"
+            "name": "amendmentCrIds",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
           }
         ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getConsumptionUnitsByOwner",
-    "inputs": [
-      {
-        "name": "owner",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "isExists",
-    "inputs": [
-      {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -132,12 +89,12 @@
     "name": "submit",
     "inputs": [
       {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       },
       {
-        "name": "owner",
+        "name": "tokenOwner",
         "type": "address",
         "internalType": "address"
       },
@@ -162,67 +119,22 @@
         "internalType": "uint128"
       },
       {
-        "name": "hashes",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
+        "name": "crIds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       },
       {
-        "name": "amendmentHashes",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
+        "name": "amendmentCrIds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       }
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
-    "type": "event",
-    "name": "Submitted",
-    "inputs": [
-      {
-        "name": "cuHash",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "cra",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "timestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "error",
-    "name": "AlreadyExists",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "BatchSizeTooLarge",
-    "inputs": []
-  },
-  {
     "type": "error",
     "name": "ConsumptionRecordAlreadyExists",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "EmptyBatch",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "EmptyMetadataKey",
     "inputs": []
   },
   {
@@ -232,17 +144,7 @@
   },
   {
     "type": "error",
-    "name": "InvalidCall",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidConsumptionRecords",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidHash",
     "inputs": []
   },
   {
@@ -253,11 +155,6 @@
   {
     "type": "error",
     "name": "InvalidSettlementCurrency",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "MetadataKeyValueMismatch",
     "inputs": []
   }
 ]

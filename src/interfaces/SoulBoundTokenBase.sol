@@ -140,11 +140,10 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
         _afterTokenMint(minter, to, tokenId);
     }
 
-
     /**
      * @dev Validates a submitted tokenId by checking that it should fully consume 32 bytes length
      */
-    function _validateTokenId(uint256 tokenId) internal {
+    function _validateTokenId(uint256 tokenId) internal view {
         require(tokenId > _max31bytes, InvalidTokenId());
     }
 

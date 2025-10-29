@@ -108,7 +108,7 @@ contract ConsumptionRecordUpgradeableSubmitTest is Test {
         vm.prank(craActive);
         vm.expectRevert(IConsumptionRecord.InvalidMetadata.selector);
         vm.expectRevert(abi.encodeWithSelector(IConsumptionRecord.InvalidMetadata.selector, "empty key"));
-    cr.submit(uint256(keccak256("h3")), recordOwner, keys, values);
+        cr.submit(uint256(keccak256("h3")), recordOwner, keys, values);
     }
 
     function test_submit_reverts_on_duplicate_hash() public {

@@ -19,6 +19,32 @@
   },
   {
     "type": "function",
+    "name": "__Base_initialize",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "consumptionUnit",
     "inputs": [],
     "outputs": [
@@ -32,12 +58,12 @@
   },
   {
     "type": "function",
-    "name": "consumptionUnitHashes",
+    "name": "exists",
     "inputs": [
       {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -64,12 +90,12 @@
   },
   {
     "type": "function",
-    "name": "getTributeDraft",
+    "name": "getTokenData",
     "inputs": [
       {
-        "name": "tdId",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -78,11 +104,6 @@
         "type": "tuple",
         "internalType": "struct ITributeDraft.TributeDraftEntity",
         "components": [
-          {
-            "name": "tributeDraftId",
-            "type": "bytes32",
-            "internalType": "bytes32"
-          },
           {
             "name": "owner",
             "type": "address",
@@ -110,8 +131,8 @@
           },
           {
             "name": "cuHashes",
-            "type": "bytes32[]",
-            "internalType": "bytes32[]"
+            "type": "uint256[]",
+            "internalType": "uint256[]"
           },
           {
             "name": "submittedAt",
@@ -145,6 +166,25 @@
     "type": "function",
     "name": "owner",
     "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "ownerOf",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
     "outputs": [
       {
         "name": "",
@@ -212,16 +252,16 @@
     "name": "submit",
     "inputs": [
       {
-        "name": "cuHashes",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
+        "name": "consumptionUnitIds",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       }
     ],
     "outputs": [
       {
-        "name": "tdId",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -241,6 +281,49 @@
         "name": "",
         "type": "bool",
         "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenByIndex",
+    "inputs": [
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenOfOwnerByIndex",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "index",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -270,55 +353,6 @@
     ],
     "outputs": [],
     "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "tributeDrafts",
-    "inputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "tributeDraftId",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      },
-      {
-        "name": "owner",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "settlementCurrency",
-        "type": "uint16",
-        "internalType": "uint16"
-      },
-      {
-        "name": "worldwideDay",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "settlementAmountBase",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "settlementAmountAtto",
-        "type": "uint128",
-        "internalType": "uint128"
-      },
-      {
-        "name": "submittedAt",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -357,6 +391,25 @@
     ],
     "outputs": [],
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "usedConsumptionUnitIds",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "event",
@@ -405,6 +458,31 @@
   },
   {
     "type": "event",
+    "name": "Minted",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "OwnershipTransferred",
     "inputs": [
       {
@@ -431,43 +509,6 @@
         "type": "address",
         "indexed": false,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Submitted",
-    "inputs": [
-      {
-        "name": "tdId",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "owner",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "submittedBy",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "cuCount",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      },
-      {
-        "name": "timestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -510,12 +551,17 @@
   },
   {
     "type": "error",
+    "name": "InvalidTokenId",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NotFound",
     "inputs": [
       {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "consumptionUnitIds",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ]
   },
@@ -524,9 +570,9 @@
     "name": "NotSameOwner",
     "inputs": [
       {
-        "name": "cuHash",
-        "type": "bytes32",
-        "internalType": "bytes32"
+        "name": "consumptionUnitIds",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ]
   },
