@@ -34,6 +34,7 @@ aggregate in storage. Each referenced CU hash is globally marked as used to prev
 
 Key design choices:
 
+- Compatibility with `ERC721Enumerable` standard
 - Open minting by users, with on-chain checks to ensure all referenced CUs exist and belong to the caller.
 - Identity is derived as keccak256(owner, worldwideDay, cuHashes), keeping the identifier deterministic for a given
   aggregation input.
@@ -65,14 +66,20 @@ TributeDraftEntity:
 
 ```solidity
 struct TributeDraftEntity {
-    bytes32 tributeDraftId;      // Deterministic ID of this draft (derived on submit)
-    address owner;               // Owner of all aggregated CUs
-    uint16 settlementCurrency;   // ISO-4217 numeric code (non-zero)
-    uint32 worldwideDay;         // ISO-8601 compact form, e.g., 20250923
-    uint256 settlementAmountBase;// Aggregated base amount (>= 0)
-    uint256 settlementAmountAtto;// Aggregated fractional amount (0 <= x < 1e18)
-    bytes32[] cuHashes;          // Linked CU hashes
-    uint256 submittedAt;         // Block timestamp when minted
+    /// @notice Owner of the tribute draft
+    address owner;
+    /// @notice Numeric currency code using ISO 4217
+    uint16 settlementCurrency;
+    /// @notice Worldwide day in a compact format YYYYMMDD (e.g., 20250923)
+    uint32 worldwideDay;
+    /// @notice Aggregated amount expressed in natural units (base currency units).
+    uint64 settlementAmountBase;
+    /// @notice Aggregated amount expressed in fractional units (atto, 1e-18). Must satisfy 0 <= amount < 1e18.
+    uint128 settlementAmountAtto;
+    /// @notice Hashes identifying linked consumption units
+    uint256[] cuHashes;
+    /// @notice Timestamp when the tribute draft was submitted
+    uint256 submittedAt;
 }
 ```
 
@@ -80,55 +87,59 @@ struct TributeDraftEntity {
 
 All functions are available on the proxy.
 
-- initialize(address consumptionUnit)
+- initialize(address consumptionUnit, address owner)
     - One-time initializer. Sets the ConsumptionUnit contract address and initializes OZ components.
     - Requirements: consumptionUnit != address(0)
 
-- submit(bytes32[] cuHashes) -> bytes32 tdId
+- submit(uint256[] calldata consumptionUnitIds) -> uint256 tokenId
     - Anyone can call. Mints a Tribute Draft from the provided CU hashes.
     - Validations:
-        - cuHashes is non-empty and contains no duplicates
-        - Each cuHash was not used previously in any Tribute Draft
-        - For each cuHash: CU exists in ConsumptionUnit
+        - consumptionUnitIds are valid hash-based IDs and contains no duplicates
+        - Each consumptionUnitId was not used previously in any Tribute Draft
+        - For each consumptionUnitId: CU exists in ConsumptionUnit
         - All CUs share the same owner, currency, and worldwide day
     - Effects:
         - Aggregates amounts: base + atto with carry (attoSum >= 1e18 increases base)
-        - Computes tdId = keccak256(abi.encode(owner, worldwideDay, cuHashes))
+        - Computes tdId = keccak256(abi.encode(owner, worldwideDay, consumptionUnitIds))
         - Persists TributeDraftEntity under tdId
-        - Marks each cuHash as used
+        - Marks each consumptionUnitId as used
         - Increments total counter
-    - Emits: Submitted(tdId, owner, submittedBy, cuCount, timestamp)
+    - Emits: Minted(owner, tdId)
 
-- getTributeDraft(bytes32 tdId) -> TributeDraftEntity
-    - Returns the full Tribute Draft record by id.
+- exists(bytes32 tokenId) -> bool
+    - Returns whether a CU exists.
 
-- getConsumptionUnitAddress() -> address
-    - Returns the address of the linked ConsumptionUnit contract.
+- getTokenData(uint256 tokenId) -> ConsumptionUnitEntity
+    - Returns the full CU structure.
 
-- setConsumptionUnitAddress(address)
-    - onlyOwner. Updates the linked ConsumptionUnit address.
+- balanceOf(address owner) -> uint256
+    - Returns a number of tokens owned by the given address.
+-
+- tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
+    - Returns the tokenId at the given index for the owner.
 
 - totalSupply() -> uint256
-    - Returns total number of Tribute Drafts minted.
+    - Returns total number of stored tokens (monotonic increment on submission).
+
+- owner() -> address
+    - Returns contract owner.
 
 - supportsInterface(bytes4 interfaceId) -> bool
-    - ERC165-compatible; currently delegates to super and can be extended.
+    - ERC165Compatible; currently delegates to super and can be extended.
 
 # Events and Errors
 
 Events (from ITributeDraft):
 
-- Submitted(bytes32 indexed tdId, address indexed owner, address indexed submittedBy, uint256 cuCount, uint256
-  timestamp)
+- Minted(address indexed minter, address indexed to, uint256 indexed tokenId)
 
 Errors (from ITributeDraft):
 
-- EmptyArray()
-- AlreadyExists()                  // duplicate CU in input or CU already used by any TD
-- NotFound(bytes32 cuHash)         // referenced CU not found
-- NotSameOwner(bytes32 cuHash)     // CU owner differs from the first CU owner/caller
-- NotSettlementCurrencyCurrency()  // settlement currency mismatch
-- NotSameWorldwideDay()            // worldwide day mismatch
+- EmptyArray();
+- NotFound(uint256 consumptionUnitIds);
+- NotSameOwner(uint256 consumptionUnitIds);
+- NotSettlementCurrencyCurrency();
+- NotSameWorldwideDay();
 
 # Aggregation, Identity, and Hashing
 
@@ -152,7 +163,7 @@ Errors (from ITributeDraft):
 # Storage and Gas Considerations
 
 - Used CU set: consumptionUnitHashes enforces one-time CU usage; O(n) marking per submit.
-- TD index: mapping(bytes32 => TributeDraftEntity) stores complete entries for direct retrieval by id.
+- TD index: mapping(uint256 => TributeDraftEntity) stores complete entries for direct retrieval by id.
 - Aggregation uses a single pass across inputs; a nested pass checks for duplicates within the provided array.
 - No batch function is required since submit accepts an arbitrary number of CUs in one call.
 
@@ -160,9 +171,9 @@ Errors (from ITributeDraft):
 
 On submit:
 
-- cuHashes.length > 0 (EmptyArray)
-- Input contains no duplicate cuHashes (AlreadyExists)
-- Each cuHash has not been used previously in any TD (AlreadyExists)
+- consumptionUnitIds.length > 0 (EmptyArray)
+- Input contains no duplicate consumptionUnitIds (AlreadyExists)
+- Each consumptionUnitId has not been used previously in any TD (AlreadyExists)
 - First CU must exist (NotFound) and caller must equal first.owner (NotSameOwner)
 - For every subsequent CU:
     - CU exists (NotFound)

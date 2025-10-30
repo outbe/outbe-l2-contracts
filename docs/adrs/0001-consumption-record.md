@@ -111,9 +111,9 @@ All functions are available on the proxy.
         - No empty keys
     - Effects:
         - Persists ConsumptionRecordEntity
-        - Appends crHash to ownerRecords[owner]
+        - Appends tokenId to ownerRecords[owner]
         - Increments total counter
-    - Emits: Submitted(crHash, cra, timestamp)
+    - Emits: Minted(cra, tokenOwner, tokenId)
 
 - multicall(bytes[] data) -> bytes[] results
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
@@ -122,7 +122,7 @@ All functions are available on the proxy.
           event.
     - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
-- exists(bytes32 crHash) -> bool
+- exists(uint256 tokenId) -> bool
     - Returns whether a record exists.
 
 - getTokenData(uint256 tokenId) -> ConsumptionRecordEntity
@@ -157,7 +157,7 @@ Errors (from IConsumptionRecord):
 
 # Record Identity and Hashing
 
-- tokenId is a 32-byte identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
+- tokenId is a 32-byte identifier supplied by the caller (CRA) in `uint256`. The contract treats it as an opaque identifier.
 
 # Access Control
 

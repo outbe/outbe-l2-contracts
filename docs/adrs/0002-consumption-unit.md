@@ -123,8 +123,8 @@ All functions are available on the proxy.
     - Creates a single CU at current block.timestamp.
     - Validations (see Validation Rules): tokenId non-zero and unique, owner non-zero, currency non-zero, amounts shape
       valid; CR hashes and Amendment hashes must be unique globally and must not overlap within the same submission.
-    - Effects: persists entity, indexes by owner, increments total counter.
-    - Emits: Minted(tokenId, cra, tokenOwner)
+    - Effects: persists entity, indexes by owner, increments total counter. 
+    - Emits: Minted(cra, tokenOwner, tokenId)
 
 - multicall(bytes[] data) -> bytes[] results
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
@@ -132,7 +132,7 @@ All functions are available on the proxy.
         - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted
           event.
 
-- exists(bytes32 cuHash) -> bool
+- exists(uint256 tokenId) -> bool
     - Returns whether a CU exists.
 
 - getTokenData(uint256 tokenId) -> ConsumptionUnitEntity
