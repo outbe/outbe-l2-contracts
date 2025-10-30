@@ -9,7 +9,7 @@
 
 import { ethers, Wallet } from 'ethers';
 import { CONFIG, loadUsers } from "./utils";
-import { TributeDraftUpgradeableAbi__factory } from "../contracts";
+import { TributeDraftUpgradeable__factory } from "../contracts";
 
 /**
  * Load CU hashes from the previous script
@@ -69,7 +69,7 @@ async function main() {
   console.log('\n📋 Starting Tribute Draft submission...');
   for (let user of cuData.users) {
     const pk = users.find(u => u.address.toLowerCase() === user.owner.toLowerCase())?.privateKey!;
-    let tributeDraftClient = TributeDraftUpgradeableAbi__factory.connect(CONFIG.TRIBUTE_DRAFT_ADDRESS, new Wallet(pk, provider))
+    let tributeDraftClient = TributeDraftUpgradeable__factory.connect(CONFIG.TRIBUTE_DRAFT_ADDRESS, new Wallet(pk, provider))
     await tributeDraftClient.submit(user.consumptionUnits.map(cu => cu.cuHash))
   }
 

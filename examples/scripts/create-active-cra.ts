@@ -7,7 +7,7 @@
 
 import { CONFIG } from "./utils";
 import { ethers, Wallet } from "ethers";
-import { ICRARegistryAbi__factory } from "../contracts";
+import { ICRARegistry__factory } from "../contracts";
 
 async function main() {
   console.log('Configuration:');
@@ -21,7 +21,7 @@ async function main() {
   const ownerWallet = new Wallet(CONFIG.PRIVATE_KEY, provider);
   const craWallet = new Wallet(CONFIG.CRA_PRIVATE_KEY, provider);
 
-  const registry = ICRARegistryAbi__factory.connect(CONFIG.CRA_REGISTRY_ADDRESS, ownerWallet);
+  const registry = ICRARegistry__factory.connect(CONFIG.CRA_REGISTRY_ADDRESS, ownerWallet);
 
   console.log(`CRA Address: ${craWallet.address}`);
 
