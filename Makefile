@@ -18,6 +18,7 @@ export-abi: build ## Export contracts ABI
 		IConsumptionRecordAmendment ConsumptionRecordAmendmentUpgradeable \
 		IConsumptionUnit ConsumptionUnitUpgradeable \
 		ITributeDraft TributeDraftUpgradeable \
+		ISoulBoundToken SoulBoundTokenBase \
 		ICRARegistry CRARegistryUpgradeable ICRAAware; \
 	do \
 		cat ./out/$${contract}.sol/$${contract}.json | jq -r '.abi' > ./abi-export/$${contract}.abi.json; \
