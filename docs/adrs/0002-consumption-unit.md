@@ -45,6 +45,9 @@ hashes, each enforced to be globally unique across all CU submissions to prevent
 
 Key design choices:
 
+- Compatibility with `ERC721Enumerable` standard
+- Units are stored as a mapping from tokenId to ConsumptionUnitEntity.
+- Units are indexed by owner to allow efficient lookups by owner.
 - Access control delegated to the CRA Registry via CRAAware and enforced by onlyActiveCRA.
 - Identity is externalized to a bytes32 cuHash supplied by submitters; the registry enforces uniqueness and
   well-formedness.
@@ -77,16 +80,24 @@ ConsumptionUnitEntity:
 
 ```solidity
 struct ConsumptionUnitEntity {
-    bytes32 consumptionUnitId;   // ID equals the submitted cuHash
-    address owner;               // Logical owner/principal of the CU
-    address submittedBy;         // CRA address that submitted
-    uint256 submittedAt;         // Block timestamp of submission
-    uint32 worldwideDay;         // ISO-8601 compact form, e.g., 20250923
-    uint64 settlementAmountBase; // Amount in base (natural) units, >= 0
-    uint128 settlementAmountAtto;// Amount in fractional 1e-18 units, 0 <= x < 1e18
-    uint16 settlementCurrency;   // ISO-4217 numeric code, non-zero
-    bytes32[] crHashes;          // Linked CR hashes; each must be unique globally
-    bytes32[] amendmentCrHashes; // Linked CR amendment hashes; each must be unique globally
+    /// @notice Owner of the consumption unit
+    address owner;
+    /// @notice Address of the CRA agent who submitted this consumption unit
+    address submittedBy;
+    /// @notice Timestamp when the consumption unit was submitted
+    uint256 submittedAt;
+    /// @notice Worldwide day in a compact format YYYYMMDD (e.g., 20250923)
+    uint32 worldwideDay;
+    /// @notice Amount expressed in natural units (base currency units).
+    uint64 settlementAmountBase;
+    /// @notice Amount expressed in fractional units (atto, 1e-18). Must satisfy 0 <= amount < 1e18.
+    uint128 settlementAmountAtto;
+    /// @notice Numeric currency code using ISO 4217
+    uint16 settlementCurrency;
+    /// @notice Hashes identifying linked consumption records (unique per record)
+    uint256[] crIds;
+    /// @notice Hashes identifying linked consumption records amendments (unique per record)
+    uint256[] amendmentCrIds;
 }
 ```
 
@@ -94,80 +105,76 @@ struct ConsumptionUnitEntity {
 
 All functions are available on the proxy.
 
-- initialize(address _craRegistry, address _owner)
+- initialize(address _craRegistry, address _owner, address _consumptionRecord, address _consumptionRecordAmendment)
     - One-time initializer. Sets CRA Registry and owner; initializes OZ components.
     - Requirements: non-zero addresses.
 
 - submit(
-  bytes32 cuHash,
-  address owner,
+  uint256 tokenId,
+  address tokenOwner,
   uint16 settlementCurrency,
   uint32 worldwideDay,
-  uint64 settlementBaseAmount,
-  uint128 settlementAttoAmount,
-  bytes32[] crHashes,
-  bytes32[] amendmentHashes
+  uint64 settlementAmountBase,
+  uint128 settlementAmountAtto,
+  uint256[] memory crIds,
+  uint256[] memory amendmentIds,
+  uint256 timestamp
   ) external onlyActiveCRA
     - Creates a single CU at current block.timestamp.
-    - Validations (see Validation Rules): cuHash non-zero and unique, owner non-zero, currency non-zero, amounts shape
+    - Validations (see Validation Rules): tokenId non-zero and unique, owner non-zero, currency non-zero, amounts shape
       valid; CR hashes and Amendment hashes must be unique globally and must not overlap within the same submission.
     - Effects: persists entity, indexes by owner, increments total counter.
-    - Emits: Submitted(cuHash, cra, timestamp)
+    - Emits: Minted(tokenId, cra, tokenOwner)
 
 - multicall(bytes[] data) -> bytes[] results
-    - Only callable by an active CRA.
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
-    - Validations:
-        - 0 < data.length <= MAX_BATCH_SIZE (100)
-        - Each entry must be a call to submit(...) (otherwise reverts InvalidCall)
     - Effects:
         - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted
           event.
-    - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
-- isExists(bytes32 cuHash) -> bool
+- exists(bytes32 cuHash) -> bool
     - Returns whether a CU exists.
 
-- getConsumptionUnit(bytes32 cuHash) -> ConsumptionUnitEntity
+- getTokenData(uint256 tokenId) -> ConsumptionUnitEntity
     - Returns the full CU structure.
 
-- getConsumptionUnitsByOwner(address owner) -> bytes32[]
-    - Returns all CU hashes associated with the owner.
+- balanceOf(address owner) -> uint256
+    - Returns a number of tokens owned by the given address.
+-
+- tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
+    - Returns the tokenId at the given index for the owner.
 
 - totalSupply() -> uint256
-    - Returns total number of CU records stored.
+    - Returns total number of stored tokens (monotonic increment on submission).
 
-- getOwner() -> address
+- owner() -> address
     - Returns contract owner.
 
 - supportsInterface(bytes4 interfaceId) -> bool
-    - ERC165-compatible; currently delegates to super and can be extended later.
+    - ERC165Compatible; currently delegates to super and can be extended.
 
 # Events and Errors
 
 Events (from IConsumptionUnit):
 
-- Submitted(bytes32 indexed cuHash, address indexed cra, uint256 timestamp)
+- Minted(address indexed minter, address indexed to, uint256 indexed tokenId)
 
 Errors (from IConsumptionUnit):
 
 - AlreadyExists()
-- ConsumptionRecordAlreadyExists()  // a linked CR hash was already used elsewhere
-- InvalidHash()
-- InvalidOwner()
-- EmptyBatch()
-- BatchSizeTooLarge()
-- InvalidSettlementCurrency()
-- InvalidAmount()                   // either both amounts are zero or atto >= 1e18
-- InvalidConsumptionRecords()       // overlap between CR and amendment hashes, or invalid arrays
-- InvalidCall()
+- InvalidTokenId()
+- InvalidOwner();
+- ConsumptionRecordAlreadyExists();
+- InvalidSettlementCurrency();
+- InvalidAmount();
+- InvalidConsumptionRecords();
 
 # Record Identity and Referencing
 
-- cuHash is a 32-byte identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
-- Uniqueness is enforced per CU: the same cuHash cannot be reused.
-- Each referenced CR hash (crHashes[i]) must be unique globally across all CUs. Likewise, each referenced amendment
-  hash (amendmentCrHashes[i]) must be unique globally across all CUs. The contract tracks both sets to prevent
+- tokenId is a 32-byte hash identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
+- Uniqueness is enforced per CU: the same tokenId cannot be reused.
+- Each referenced CR hash (crIds[i]) must be unique globally across all CUs. Likewise, each referenced amendment
+  hash (amendmentCrIds[i]) must be unique globally across all CUs. The contract tracks both sets to prevent
   double-linking.
 - No overlap is allowed within a single submission between crHashes and amendmentCrHashes.
 - The registry does not compute or verify cuHash or the linked hashes on-chain; upstream systems define their hashing
@@ -190,26 +197,19 @@ Errors (from IConsumptionUnit):
 - Settlement and amounts are stored in fixed-width integers (uint16 currency, uint32 day, uint256 amounts) for clarity
   and extensibility.
 - Amount validation ensures at least one of base/atto is non-zero and atto < 1e18.
-- Batch submission shares a single timestamp to reduce per-item gas and ensure consistent ordering.
-- MAX_BATCH_SIZE is capped at 100 to bound gas/storage per tx.
 
 # Validation Rules Summary
 
 On submit and per-item in multicall:
 
-- cuHash != 0x0 (InvalidHash)
+- tokenId validated to have a non-zero hash (InvalidTokenId)
 - owner != address(0) (InvalidOwner)
 - CU must not pre-exist (AlreadyExists)
 - settlementCurrency != 0 (InvalidSettlementCurrency)
 - Amounts: not both zero AND atto < 1e18 (InvalidAmount)
-- Each crHash must not have been used before (ConsumptionRecordAlreadyExists)
-- Each amendmentHash must not have been used before
-- No overlap between crHashes and amendmentHashes (InvalidConsumptionRecords)
-
-Batch-level (multicall):
-
-- 0 < batchSize <= 100 (EmptyBatch, BatchSizeTooLarge)
-- Each entry must target submit(...) (InvalidCall)
+- Each crId must not have been used before (ConsumptionRecordAlreadyExists)
+- Each amendmentCrId must not have been used before
+- No overlap between crIds and amendmentCrIds (InvalidConsumptionRecords)
 
 # Integration Notes
 

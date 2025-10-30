@@ -129,13 +129,13 @@ All functions are available on the proxy.
     - Returns the full record structure.
 
 - balanceOf(address owner) -> uint256
-    - Returns a number of records owned by the given address.
+    - Returns a number of tokens owned by the given address.
 - 
 - tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
-    - Returns the crHash at the given index for the owner.
+    - Returns the tokenId at the given index for the owner.
 
 - totalSupply() -> uint256
-    - Returns total number of stored records (monotonic increment on submission).
+    - Returns total number of stored tokens (monotonic increment on submission).
 
 - owner() -> address
     - Returns contract owner.
