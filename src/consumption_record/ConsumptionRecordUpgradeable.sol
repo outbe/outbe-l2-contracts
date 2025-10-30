@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {
-    ERC165Upgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/introspection/ERC165Upgradeable.sol";
-import {
-    MulticallUpgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/MulticallUpgradeable.sol";
-import {
-    PausableUpgradeable
-} from "../../lib/openzeppelin-contracts-upgradeable/contracts/security/PausableUpgradeable.sol";
-import {AddressUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/utils/AddressUpgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import {AddressUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import {CRAAware} from "../utils/CRAAware.sol";
 import {IConsumptionRecord} from "../interfaces/IConsumptionRecord.sol";
-import {ISoulBoundNFT} from "../interfaces/ISoulBoundNFT.sol";
-import {UUPSUpgradeable} from "../../lib/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {SoulBoundTokenBase} from "../interfaces/SoulBoundTokenBase.sol";
 
 /// @title ConsumptionRecordUpgradeable
 /// @notice Upgradeable contract for storing consumption record hashes with metadata
@@ -24,9 +18,8 @@ contract ConsumptionRecordUpgradeable is
     PausableUpgradeable,
     UUPSUpgradeable,
     CRAAware,
+    SoulBoundTokenBase,
     IConsumptionRecord,
-    ISoulBoundNFT,
-    ERC165Upgradeable,
     MulticallUpgradeable
 {
     /// @notice Contract version
@@ -36,13 +29,7 @@ contract ConsumptionRecordUpgradeable is
     uint256 public constant MAX_BATCH_SIZE = 100;
 
     /// @dev Mapping from record hash to record details
-    mapping(bytes32 => ConsumptionRecordEntity) public consumptionRecords;
-
-    /// @dev Mapping from owner address to array of record hashes they own
-    mapping(address => bytes32[]) public ownerRecords;
-
-    /// @dev Total number of records tracked by this contract
-    uint256 private _totalRecords;
+    mapping(uint256 => ConsumptionRecordEntity) private _data;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -59,118 +46,73 @@ contract ConsumptionRecordUpgradeable is
         __Ownable_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
-        __ERC165_init();
+        __Base_initialize();
         __CRAAware_init(_craRegistry);
         __Multicall_init();
         _transferOwnership(_owner);
-        _totalRecords = 0;
     }
 
-    /// @notice Internal function to add a single consumption record
-    /// @param crHash The hash of the consumption record
-    /// @param recordOwner The owner of the record
-    /// @param keys Array of metadata keys
-    /// @param values Array of metadata values
-    /// @param timestamp The timestamp to use for submission
-    function _addEntity(
-        bytes32 crHash,
-        address recordOwner,
-        string[] memory keys,
-        bytes32[] memory values,
-        uint256 timestamp
-    ) internal {
-        // Validate record parameters
-        if (crHash == bytes32(0)) revert InvalidHash();
-        if (recordOwner == address(0)) revert InvalidOwner();
-        if (isExists(crHash)) revert AlreadyExists();
-        if (keys.length != values.length) revert MetadataKeyValueMismatch();
-
-        // Validate metadata keys
-        for (uint256 i = 0; i < keys.length; i++) {
-            if (bytes(keys[i]).length == 0) revert EmptyMetadataKey();
-        }
-
-        // Store the record
-        consumptionRecords[crHash] = ConsumptionRecordEntity({
-            consumptionRecordId: crHash,
-            submittedBy: msg.sender,
-            submittedAt: timestamp,
-            owner: recordOwner,
-            metadataKeys: keys,
-            metadataValues: values
-        });
-
-        // Add record hash to owner's list
-        ownerRecords[recordOwner].push(crHash);
-
-        // Increment total supply
-        _totalRecords += 1;
-
-        // Emit submission event
-        emit Submitted(crHash, msg.sender, timestamp);
-    }
-
-    /// @inheritdoc IConsumptionRecord
-    function submit(bytes32 crHash, address recordOwner, string[] memory keys, bytes32[] memory values)
-        external
-        onlyActiveCRA
-        whenNotPaused
+    /// @inheritdoc SoulBoundTokenBase
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(SoulBoundTokenBase, IERC165Upgradeable)
+        returns (bool)
     {
-        _addEntity(crHash, recordOwner, keys, values, block.timestamp);
+        return interfaceId == type(IConsumptionRecord).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @inheritdoc IConsumptionRecord
+    /// @inheritdoc MulticallUpgradeable
     function multicall(bytes[] calldata data)
         external
         override(IConsumptionRecord, MulticallUpgradeable)
-        onlyActiveCRA
-        whenNotPaused
         returns (bytes[] memory results)
     {
-        uint256 n = data.length;
-        if (n == 0) revert EmptyBatch();
-        if (n > MAX_BATCH_SIZE) revert BatchSizeTooLarge();
-        // Inline implementation of OZ Multicall to allow access control modifiers
-        results = new bytes[](n);
-        for (uint256 i = 0; i < n; i++) {
-            if (bytes4(data[i]) != this.submit.selector) revert InvalidCall();
+        results = new bytes[](data.length);
+        for (uint256 i = 0; i < data.length; i++) {
             results[i] = AddressUpgradeable.functionDelegateCall(address(this), data[i]);
         }
+        return results;
     }
 
     /// @inheritdoc IConsumptionRecord
-    function isExists(bytes32 crHash) public view returns (bool) {
-        return consumptionRecords[crHash].submittedBy != address(0);
+    function submit(uint256 tokenId, address recordOwner, string[] memory keys, bytes32[] memory values)
+        external
+        onlyActiveCRA
+        whenNotPaused
+    {
+        _submit(tokenId, recordOwner, keys, values, block.timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getConsumptionRecord(bytes32 crHash) external view returns (ConsumptionRecordEntity memory) {
-        return consumptionRecords[crHash];
+    function getTokenData(uint256 tokenId) external view override returns (ConsumptionRecordEntity memory) {
+        return _data[tokenId];
     }
 
-    /// @inheritdoc IConsumptionRecord
-    function getConsumptionRecordsByOwner(address _owner) external view returns (bytes32[] memory) {
-        return ownerRecords[_owner];
-    }
+    function _submit(
+        uint256 tokenId,
+        address tokenOwner,
+        string[] memory keys,
+        bytes32[] memory values,
+        uint256 timestamp
+    ) private {
+        if (keys.length != values.length) revert InvalidMetadata("keys-values mismatch");
+        for (uint256 i = 0; i < keys.length; i++) {
+            if (bytes(keys[i]).length == 0) revert InvalidMetadata("empty key");
+        }
 
-    /// @notice Count NFTs tracked by this contract
-    /// @return A count of valid NFTs tracked by this contract
-    function totalSupply() external view returns (uint256) {
-        return _totalRecords;
-    }
+        // mint the token
+        _mint(_msgSender(), tokenOwner, tokenId);
 
-    /// @notice Get the current owner of the contract
-    /// @return The address of the contract owner
-    function getOwner() external view returns (address) {
-        return owner();
-    }
-
-    /// @inheritdoc ERC165Upgradeable
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        // TODO add supported interfaces
-        //      interfaceId == 0x780e9d63 // ERC721Enumerable
-        return interfaceId == type(IConsumptionRecord).interfaceId || interfaceId == type(ISoulBoundNFT).interfaceId
-            || super.supportsInterface(interfaceId);
+        // Store the data
+        _data[tokenId] = ConsumptionRecordEntity({
+            submittedBy: _msgSender(),
+            submittedAt: timestamp,
+            owner: tokenOwner,
+            metadataKeys: keys,
+            metadataValues: values
+        });
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

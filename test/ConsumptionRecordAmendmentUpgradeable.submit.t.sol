@@ -8,6 +8,7 @@ import {
 } from "../src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol";
 import {IConsumptionRecordAmendment} from "../src/interfaces/IConsumptionRecordAmendment.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
+import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 
 contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
     ConsumptionRecordAmendmentUpgradeable cra;
@@ -40,7 +41,7 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
     }
 
     function test_submit_persists_full_entity_and_indexes_and_emits_event() public {
-        bytes32 crAHash = keccak256("amend-1");
+        uint256 crAHash = uint256(keccak256("amend-1"));
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 111);
 
         uint256 ts = 1_696_000_000;
@@ -48,18 +49,16 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
 
         // expect Submitted event
         vm.expectEmit(true, true, false, true);
-        emit IConsumptionRecordAmendment.Submitted(crAHash, craActive, ts);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, crAHash);
 
         vm.prank(craActive);
         cra.submit(crAHash, recordOwner, keys, values);
 
         // isExists
-        assertTrue(cra.isExists(crAHash));
+        assertTrue(cra.exists(crAHash));
 
         // entity fields
-        IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity memory e =
-            cra.getConsumptionRecordAmendment(crAHash);
-        assertEq(e.consumptionRecordAmendmentId, crAHash);
+        IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity memory e = cra.getTokenData(crAHash);
         assertEq(e.submittedBy, craActive);
         assertEq(e.submittedAt, ts);
         assertEq(e.owner, recordOwner);
@@ -69,26 +68,18 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         assertEq(e.metadataValues[0], bytes32(uint256(111)));
 
         // owner index
-        bytes32[] memory owned = cra.getConsumptionRecordAmendmentsByOwner(recordOwner);
-        assertEq(owned.length, 1);
-        assertEq(owned[0], crAHash);
+        uint256 owned = cra.balanceOf(recordOwner);
+        assertEq(owned, 1);
 
         // totalSupply tracks count
         assertEq(cra.totalSupply(), 1);
     }
 
-    function test_submit_reverts_on_zero_hash() public {
-        (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 1);
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.InvalidHash.selector);
-        cra.submit(bytes32(0), recordOwner, keys, values);
-    }
-
     function test_submit_reverts_on_zero_owner() public {
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 1);
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.InvalidOwner.selector);
-        cra.submit(keccak256("h"), address(0), keys, values);
+        vm.expectRevert("ERC721: mint to the zero address");
+        cra.submit(uint256(keccak256("h")), address(0), keys, values);
     }
 
     function test_submit_reverts_on_mismatched_metadata_lengths() public {
@@ -99,8 +90,10 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         values[0] = bytes32(uint256(1));
 
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.MetadataKeyValueMismatch.selector);
-        cra.submit(keccak256("h2"), recordOwner, keys, values);
+        vm.expectRevert(
+            abi.encodeWithSelector(IConsumptionRecordAmendment.InvalidMetadata.selector, "keys-values mismatch")
+        );
+        cra.submit(uint256(keccak256("h2")), recordOwner, keys, values);
     }
 
     function test_submit_reverts_on_empty_metadata_key() public {
@@ -110,17 +103,17 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         values[0] = bytes32(uint256(1));
 
         vm.prank(craActive);
-        vm.expectRevert(IConsumptionRecordAmendment.EmptyMetadataKey.selector);
-        cra.submit(keccak256("h3"), recordOwner, keys, values);
+        vm.expectRevert(abi.encodeWithSelector(IConsumptionRecordAmendment.InvalidMetadata.selector, "empty key"));
+        cra.submit(uint256(keccak256("h3")), recordOwner, keys, values);
     }
 
     function test_submit_reverts_on_duplicate_hash() public {
-        bytes32 crAHash = keccak256("dup");
+        uint256 crAHash = uint256(keccak256("dup"));
         (string[] memory keys, bytes32[] memory values) = _singleKV("k1", 5);
 
         vm.startPrank(craActive);
         cra.submit(crAHash, recordOwner, keys, values);
-        vm.expectRevert(IConsumptionRecordAmendment.AlreadyExists.selector);
+        vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
         cra.submit(crAHash, recordOwner, keys, values);
         vm.stopPrank();
     }

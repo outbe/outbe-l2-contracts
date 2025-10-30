@@ -10,6 +10,7 @@ import {ConsumptionRecordAmendmentUpgradeable} from "src/consumption_record/Cons
 import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
+import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 
 contract ConsumptionUnitUpgradeableMulticallTest is Test {
     ConsumptionRecordUpgradeable cr;
@@ -38,8 +39,8 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         registry.setActive(craInactive, false);
 
         // Seed CRs that CU records will reference (must exist and be unique globally)
-        _seedCR(keccak256("cr-A"));
-        _seedCR(keccak256("cr-B"));
+        _seedCR(uint256(keccak256("cr-A")));
+        _seedCR(uint256(keccak256("cr-B")));
 
         // Deploy CRA (Consumption Record Amendment) and initialize via ERC1967Proxy
         ConsumptionRecordAmendmentUpgradeable cra;
@@ -63,7 +64,7 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         }
     }
 
-    function _seedCR(bytes32 crHash) internal {
+    function _seedCR(uint256 crHash) internal {
         string[] memory keys = new string[](1);
         bytes32[] memory vals = new bytes32[](1);
         keys[0] = "k";
@@ -73,13 +74,13 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
     }
 
     function _encodeSubmit(
-        bytes32 cuHash,
+        uint256 cuHash,
         address _owner,
         uint16 currency,
         uint32 wday,
         uint64 baseAmt,
         uint128 attoAmt,
-        bytes32[] memory crHashes
+        uint256[] memory crHashes
     ) internal pure returns (bytes memory) {
         return abi.encodeWithSelector(
             ConsumptionUnitUpgradeable.submit.selector,
@@ -90,24 +91,24 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
             baseAmt,
             attoAmt,
             crHashes,
-            new bytes32[](0)
+            new uint256[](0)
         );
     }
 
     function test_multicall_two_submits_persist_and_emit_and_count() public {
         // Prepare two CU submits with distinct CR references
-        bytes32 cuHash1 = keccak256("cu-1");
-        bytes32 cuHash2 = keccak256("cu-2");
+        uint256 cuHash1 = uint256(keccak256("cu-1"));
+        uint256 cuHash2 = uint256(keccak256("cu-2"));
 
         uint16 currency = 978; // EUR
         uint32 wday = 20251231;
         uint64 baseAmt = 42;
         uint128 attoAmt = 17;
 
-        bytes32[] memory crHashes1 = new bytes32[](1);
-        crHashes1[0] = keccak256("cr-A");
-        bytes32[] memory crHashes2 = new bytes32[](1);
-        crHashes2[0] = keccak256("cr-B");
+        uint256[] memory crHashes1 = new uint256[](1);
+        crHashes1[0] = uint256(keccak256("cr-A"));
+        uint256[] memory crHashes2 = new uint256[](1);
+        crHashes2[0] = uint256(keccak256("cr-B"));
 
         bytes[] memory calls = new bytes[](2);
         calls[0] = _encodeSubmit(cuHash1, recordOwner, currency, wday, baseAmt, attoAmt, crHashes1);
@@ -118,19 +119,19 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
 
         // Expect two Submitted events in order
         vm.expectEmit(true, true, false, true);
-        emit IConsumptionUnit.Submitted(cuHash1, craActive, ts);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash1);
         vm.expectEmit(true, true, false, true);
-        emit IConsumptionUnit.Submitted(cuHash2, craActive, ts);
+        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash2);
 
         vm.prank(craActive);
         cu.multicall(calls);
 
         // Verify persistence for both
-        assertTrue(cu.isExists(cuHash1));
-        assertTrue(cu.isExists(cuHash2));
+        assertTrue(cu.exists(cuHash1));
+        assertTrue(cu.exists(cuHash2));
 
-        IConsumptionUnit.ConsumptionUnitEntity memory e1 = cu.getConsumptionUnit(cuHash1);
-        IConsumptionUnit.ConsumptionUnitEntity memory e2 = cu.getConsumptionUnit(cuHash2);
+        IConsumptionUnit.ConsumptionUnitEntity memory e1 = cu.getTokenData(cuHash1);
+        IConsumptionUnit.ConsumptionUnitEntity memory e2 = cu.getTokenData(cuHash2);
 
         assertEq(e1.submittedBy, craActive);
         assertEq(e2.submittedBy, craActive);
@@ -138,54 +139,25 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         assertEq(e2.submittedAt, ts);
         assertEq(e1.owner, recordOwner);
         assertEq(e2.owner, recordOwner);
-        assertEq(e1.crHashes.length, 1);
-        assertEq(e2.crHashes.length, 1);
-        assertEq(e1.crHashes[0], crHashes1[0]);
-        assertEq(e2.crHashes[0], crHashes2[0]);
+        assertEq(e1.crIds.length, 1);
+        assertEq(e2.crIds.length, 1);
+        assertEq(e1.crIds[0], crHashes1[0]);
+        assertEq(e2.crIds[0], crHashes2[0]);
 
         // Owner index contains both
-        bytes32[] memory owned = cu.getConsumptionUnitsByOwner(recordOwner);
-        assertEq(owned.length, 2);
-        assertEq(owned[0], cuHash1);
-        assertEq(owned[1], cuHash2);
+        uint256 owned = cu.balanceOf(recordOwner);
+        assertEq(owned, 2);
 
         // totalSupply increments by 2
         assertEq(cu.totalSupply(), 2);
     }
 
-    function test_multicall_reverts_on_empty_batch() public {
-        bytes[] memory calls = new bytes[](0);
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionUnit.EmptyBatch.selector);
-        cu.multicall(calls);
-    }
-
-    function test_multicall_reverts_on_batch_too_large() public {
-        // Prepare MAX_BATCH_SIZE + 1 calls (101)
-        uint256 n = 101;
-        bytes[] memory calls = new bytes[](n);
-        bytes32[] memory crHashes = new bytes32[](1);
-        crHashes[0] = keccak256("cr-A");
-        for (uint256 i = 0; i < n; i++) {
-            // Use different cu hashes and fresh CRs for uniqueness; seed on the fly
-            bytes32 cuHash = keccak256(abi.encodePacked("cu-", i));
-            bytes32 crh = keccak256(abi.encodePacked("cr-X-", i));
-            _seedCR(crh);
-            bytes32[] memory arr = new bytes32[](1);
-            arr[0] = crh;
-            calls[i] = _encodeSubmit(cuHash, recordOwner, 978, 20251231, 1, 0, arr);
-        }
-        vm.prank(craActive);
-        vm.expectRevert(IConsumptionUnit.BatchSizeTooLarge.selector);
-        cu.multicall(calls);
-    }
-
     function test_multicall_reverts_when_not_active_cra() public {
         // one valid call
-        bytes32[] memory arr = new bytes32[](1);
-        arr[0] = keccak256("cr-A");
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = uint256(keccak256("cr-A"));
         bytes[] memory calls = new bytes[](1);
-        calls[0] = _encodeSubmit(keccak256("cu-x"), recordOwner, 840, 20250101, 1, 0, arr);
+        calls[0] = _encodeSubmit(uint256(keccak256("cu-x")), recordOwner, 840, 20250101, 1, 0, arr);
 
         vm.prank(craInactive);
         vm.expectRevert(ICRAAware.CRANotActive.selector);
@@ -193,10 +165,10 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
     }
 
     function test_multicall_reverts_when_paused() public {
-        bytes32[] memory arr = new bytes32[](1);
-        arr[0] = keccak256("cr-A");
+        uint256[] memory arr = new uint256[](1);
+        arr[0] = uint256(keccak256("cr-A"));
         bytes[] memory calls = new bytes[](1);
-        calls[0] = _encodeSubmit(keccak256("cu-y"), recordOwner, 840, 20250101, 1, 0, arr);
+        calls[0] = _encodeSubmit(uint256(keccak256("cu-y")), recordOwner, 840, 20250101, 1, 0, arr);
 
         vm.prank(owner);
         cu.pause();

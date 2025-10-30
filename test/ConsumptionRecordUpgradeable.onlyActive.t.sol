@@ -33,7 +33,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
     }
 
     function test_submit_succeeds_for_activeCRA() public {
-        bytes32 crHash = keccak256("cr1");
+        uint256 crHash = uint256(keccak256("cr1"));
         string[] memory keys = new string[](1);
         bytes32[] memory values = new bytes32[](1);
         keys[0] = "k1";
@@ -43,14 +43,14 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
         cr.submit(crHash, recordOwner, keys, values);
 
         // check persisted
-        assertTrue(cr.isExists(crHash));
-        IConsumptionRecord.ConsumptionRecordEntity memory e = cr.getConsumptionRecord(crHash);
+        assertTrue(cr.exists(crHash));
+        IConsumptionRecord.ConsumptionRecordEntity memory e = cr.getTokenData(crHash);
         assertEq(e.submittedBy, craActive);
         assertEq(e.owner, recordOwner);
     }
 
     function test_submit_reverts_for_inactiveCRA() public {
-        bytes32 crHash = keccak256("cr2");
+        uint256 crHash = uint256(keccak256("cr2"));
         string[] memory keys = new string[](1);
         bytes32[] memory values = new bytes32[](1);
         keys[0] = "k1";
@@ -62,7 +62,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
     }
 
     function test_submit_reverts_for_unknownCRA() public {
-        bytes32 crHash = keccak256("cr3");
+        uint256 crHash = uint256(keccak256("cr3"));
         string[] memory keys = new string[](1);
         bytes32[] memory values = new bytes32[](1);
         keys[0] = "k1";

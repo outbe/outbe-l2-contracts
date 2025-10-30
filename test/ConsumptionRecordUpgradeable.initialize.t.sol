@@ -32,7 +32,7 @@ contract ConsumptionRecordUpgradeableInitializeTest is Test {
         cr = _deployInitializedProxy(address(registry), owner);
 
         // owner() is exposed via getOwner() helper
-        assertEq(cr.getOwner(), owner);
+        assertEq(cr.owner(), owner);
         // CRA registry address is exposed by ICRAAware.getCRARegistry
         assertEq(ICRAAware(address(cr)).getCRARegistry(), address(registry));
     }

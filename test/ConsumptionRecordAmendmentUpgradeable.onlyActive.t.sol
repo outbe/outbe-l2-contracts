@@ -35,7 +35,7 @@ contract ConsumptionRecordAmendmentUpgradeableOnlyActiveTest is Test {
     }
 
     function test_submit_succeeds_for_activeCRA() public {
-        bytes32 crAHash = keccak256("cra1");
+        uint256 crAHash = uint256(keccak256("cra1"));
         string[] memory keys = new string[](1);
         bytes32[] memory values = new bytes32[](1);
         keys[0] = "k1";
@@ -45,15 +45,14 @@ contract ConsumptionRecordAmendmentUpgradeableOnlyActiveTest is Test {
         cra.submit(crAHash, recordOwner, keys, values);
 
         // check persisted
-        assertTrue(cra.isExists(crAHash));
-        IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity memory e =
-            cra.getConsumptionRecordAmendment(crAHash);
+        assertTrue(cra.exists(crAHash));
+        IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity memory e = cra.getTokenData(crAHash);
         assertEq(e.submittedBy, craActive);
         assertEq(e.owner, recordOwner);
     }
 
     function test_submit_reverts_for_inactiveCRA() public {
-        bytes32 crAHash = keccak256("cra2");
+        uint256 crAHash = uint256(keccak256("cra2"));
         string[] memory keys = new string[](1);
         bytes32[] memory values = new bytes32[](1);
         keys[0] = "k1";
@@ -65,7 +64,7 @@ contract ConsumptionRecordAmendmentUpgradeableOnlyActiveTest is Test {
     }
 
     function test_submit_reverts_for_unknownCRA() public {
-        bytes32 crAHash = keccak256("cra3");
+        uint256 crAHash = uint256(keccak256("cra3"));
         string[] memory keys = new string[](1);
         bytes32[] memory values = new bytes32[](1);
         keys[0] = "k1";

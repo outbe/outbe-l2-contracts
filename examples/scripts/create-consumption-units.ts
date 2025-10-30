@@ -9,7 +9,7 @@
 
 import { type BigNumberish, ethers, Wallet } from 'ethers';
 import { CONFIG } from "./utils";
-import { ConsumptionUnitUpgradeableAbi__factory } from "../contracts";
+import { ConsumptionUnitUpgradeableAbi__factory, IConsumptionUnitAbi__factory } from "../contracts";
 
 /**
  * Load CR hashes from the previous script
@@ -174,7 +174,7 @@ async function main() {
   console.log(`  - 📝 Contract Address: ${CONFIG.CONSUMPTION_UNIT_ADDRESS}`);
 
   // Initialize client
-  const cuClient = ConsumptionUnitUpgradeableAbi__factory.connect(CONFIG.CONSUMPTION_UNIT_ADDRESS, craWallet);
+  const cuClient = IConsumptionUnitAbi__factory.connect(CONFIG.CONSUMPTION_UNIT_ADDRESS, craWallet);
 
   // Generate all CUs
   console.log('\n📋 Generating consumption units...');
