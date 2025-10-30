@@ -72,7 +72,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         cr.multicall(batch);
 
         // First entity
-        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getTokenData(uint256(h1));
+        IConsumptionRecord.ConsumptionRecordEntity memory e1 = cr.getData(uint256(h1));
         assertEq(e1.submittedBy, craActive);
         assertEq(e1.submittedAt, ts);
         assertEq(e1.owner, recordOwner);
@@ -82,7 +82,7 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         assertEq(e1.metadataValues[0], bytes32(uint256(111)));
 
         // Second entity
-        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getTokenData(uint256(h2));
+        IConsumptionRecord.ConsumptionRecordEntity memory e2 = cr.getData(uint256(h2));
         assertEq(e2.submittedBy, craActive);
         assertEq(e2.submittedAt, ts);
         assertEq(e2.owner, recordOwner);

@@ -9,6 +9,8 @@ pragma solidity ^0.8.27;
 interface IConsumptionUnit {
     /// @notice Record information for a consumption unit
     struct ConsumptionUnitEntity {
+        /// @notice consumption unit hash id
+        uint256 cuId;
         /// @notice Owner of the consumption unit
         address owner;
         /// @notice Address of the CRA agent who submitted this consumption unit
@@ -39,7 +41,7 @@ interface IConsumptionUnit {
 
     /// @notice Submit a single consumption unit record
     /// @dev Only active CRAs can submit. Hash must be non-zero and unique.
-    /// @param tokenId Unique hash/ID of the consumption unit
+    /// @param cuId Unique hash/ID of the consumption unit
     /// @param tokenOwner Owner of the consumption unit (must be non-zero)
     /// @param settlementCurrency ISO-4217 numeric currency code (must be non-zero)
     /// @param worldwideDay Worldwide day in ISO-8601 compact format (e.g., 20250923)
@@ -48,7 +50,7 @@ interface IConsumptionUnit {
     /// @param crIds Linked consumption record hashes (each must be unique globally)
     /// @param amendmentCrIds Linked consumption record amendment hashes (each must be unique globally)
     function submit(
-        uint256 tokenId,
+        uint256 cuId,
         address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
@@ -63,7 +65,17 @@ interface IConsumptionUnit {
     function multicall(bytes[] calldata data) external returns (bytes[] memory results);
 
     /// @notice Get a consumption unit by hash
-    /// @param tokenId The CU hash to retrieve
+    /// @param cuId The CU hash to retrieve
     /// @return ConsumptionUnitEntity struct with complete record data
-    function getTokenData(uint256 tokenId) external view returns (ConsumptionUnitEntity memory);
+    function getData(uint256 cuId) external view returns (ConsumptionUnitEntity memory);
+
+    /// @notice Returns a list of consumption units owned by the given address
+    /// @param owner owner of the consumption units
+    /// @param indexFrom inclusive index from
+    /// @param indexTo inclusive index to
+    /// @return array with complete records data
+    function getConsumptionUnitsByOwner(address owner, uint256 indexFrom, uint256 indexTo)
+        external
+        view
+        returns (ConsumptionUnitEntity[] memory);
 }

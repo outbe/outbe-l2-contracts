@@ -136,7 +136,7 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         assertTrue(cu.exists(cuHash));
 
         // entity fields
-        IConsumptionUnit.ConsumptionUnitEntity memory e = cu.getTokenData(cuHash);
+        IConsumptionUnit.ConsumptionUnitEntity memory e = cu.getData(cuHash);
         assertEq(e.owner, recordOwner);
         assertEq(e.submittedBy, craActive);
         assertEq(e.submittedAt, ts);

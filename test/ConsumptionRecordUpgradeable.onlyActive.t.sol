@@ -44,7 +44,7 @@ contract ConsumptionRecordUpgradeableOnlyActiveTest is Test {
 
         // check persisted
         assertTrue(cr.exists(crHash));
-        IConsumptionRecord.ConsumptionRecordEntity memory e = cr.getTokenData(crHash);
+        IConsumptionRecord.ConsumptionRecordEntity memory e = cr.getData(crHash);
         assertEq(e.submittedBy, craActive);
         assertEq(e.owner, recordOwner);
     }

@@ -111,7 +111,7 @@ All functions are available on the proxy.
 - exists(uint256 tokenId) -> bool
     - Returns whether an amendment record exists.
 
-- getTokenData(uint256 tokenId) -> ConsumptionRecordAmendmentEntity
+- getData(uint256 tokenId) -> ConsumptionRecordAmendmentEntity
     - Returns the full amendment record structure.
 
 - balanceOf(address owner) -> uint256

@@ -135,7 +135,7 @@ All functions are available on the proxy.
 - exists(uint256 tokenId) -> bool
     - Returns whether a CU exists.
 
-- getTokenData(uint256 tokenId) -> ConsumptionUnitEntity
+- getData(uint256 tokenId) -> ConsumptionUnitEntity
     - Returns the full CU structure.
 
 - balanceOf(address owner) -> uint256

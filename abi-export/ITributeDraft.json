@@ -52,10 +52,10 @@
   },
   {
     "type": "function",
-    "name": "getTokenData",
+    "name": "getData",
     "inputs": [
       {
-        "name": "tokenId",
+        "name": "tdId",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -66,6 +66,82 @@
         "type": "tuple",
         "internalType": "struct ITributeDraft.TributeDraftEntity",
         "components": [
+          {
+            "name": "tdId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "settlementCurrency",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "worldwideDay",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "settlementAmountBase",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "settlementAmountAtto",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "cuHashes",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
+          },
+          {
+            "name": "submittedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getTributeDraftsByOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "indexFrom",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "indexTo",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct ITributeDraft.TributeDraftEntity[]",
+        "components": [
+          {
+            "name": "tdId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
           {
             "name": "owner",
             "type": "address",
@@ -143,14 +219,14 @@
     "name": "submit",
     "inputs": [
       {
-        "name": "consumptionUnitIds",
+        "name": "cuIds",
         "type": "uint256[]",
         "internalType": "uint256[]"
       }
     ],
     "outputs": [
       {
-        "name": "tokenId",
+        "name": "tdId",
         "type": "uint256",
         "internalType": "uint256"
       }

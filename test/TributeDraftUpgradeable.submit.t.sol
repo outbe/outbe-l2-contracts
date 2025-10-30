@@ -108,7 +108,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         assertEq(tdId, expectedId);
 
         // Verify persisted entity
-        ITributeDraft.TributeDraftEntity memory e = td.getTokenData(tdId);
+        ITributeDraft.TributeDraftEntity memory e = td.getData(tdId);
         assertEq(e.owner, recordOwner);
         assertEq(e.settlementCurrency, currency);
         assertEq(e.worldwideDay, worldwideDay);

@@ -125,7 +125,7 @@ All functions are available on the proxy.
 - exists(uint256 tokenId) -> bool
     - Returns whether a record exists.
 
-- getTokenData(uint256 tokenId) -> ConsumptionRecordEntity
+- getData(uint256 tokenId) -> ConsumptionRecordEntity
     - Returns the full record structure.
 
 - balanceOf(address owner) -> uint256

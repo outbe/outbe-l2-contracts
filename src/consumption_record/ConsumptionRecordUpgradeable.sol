@@ -77,21 +77,39 @@ contract ConsumptionRecordUpgradeable is
     }
 
     /// @inheritdoc IConsumptionRecord
-    function submit(uint256 tokenId, address recordOwner, string[] memory keys, bytes32[] memory values)
+    function submit(uint256 crId, address recordOwner, string[] memory keys, bytes32[] memory values)
         external
         onlyActiveCRA
         whenNotPaused
     {
-        _submit(tokenId, recordOwner, keys, values, block.timestamp);
+        _submit(crId, recordOwner, keys, values, block.timestamp);
     }
 
     /// @inheritdoc IConsumptionRecord
-    function getTokenData(uint256 tokenId) external view override returns (ConsumptionRecordEntity memory) {
-        return _data[tokenId];
+    function getData(uint256 crId) public view override returns (ConsumptionRecordEntity memory) {
+        return _data[crId];
+    }
+
+    /// @inheritdoc IConsumptionRecord
+    function getConsumptionRecordsByOwner(address _owner, uint256 indexFrom, uint256 indexTo)
+        public
+        view
+        returns (ConsumptionRecordEntity[] memory)
+    {
+        require(indexFrom <= indexTo, "Invalid request");
+        uint256 n = indexTo - indexFrom + 1;
+        require(n <= 50, "Request too big");
+
+        ConsumptionRecordEntity[] memory result = new ConsumptionRecordEntity[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(_owner, i + indexFrom);
+            result[i] = getData(tokenId);
+        }
+        return result;
     }
 
     function _submit(
-        uint256 tokenId,
+        uint256 crId,
         address tokenOwner,
         string[] memory keys,
         bytes32[] memory values,
@@ -103,10 +121,11 @@ contract ConsumptionRecordUpgradeable is
         }
 
         // mint the token
-        _mint(_msgSender(), tokenOwner, tokenId);
+        _mint(_msgSender(), tokenOwner, crId);
 
         // Store the data
-        _data[tokenId] = ConsumptionRecordEntity({
+        _data[crId] = ConsumptionRecordEntity({
+            crId: crId,
             submittedBy: _msgSender(),
             submittedAt: timestamp,
             owner: tokenOwner,

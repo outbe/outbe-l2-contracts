@@ -96,7 +96,7 @@ contract ConsumptionUnitUpgradeable is
     }
 
     function _submit(
-        uint256 tokenId,
+        uint256 cuId,
         address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
@@ -112,9 +112,10 @@ contract ConsumptionUnitUpgradeable is
         _validateHashes(crIds);
         _validateAmendmentHashes(amendmentIds);
 
-        _mint(_msgSender(), tokenOwner, tokenId);
+        _mint(_msgSender(), tokenOwner, cuId);
 
-        _data[tokenId] = ConsumptionUnitEntity({
+        _data[cuId] = ConsumptionUnitEntity({
+            cuId: cuId,
             owner: tokenOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
@@ -162,7 +163,7 @@ contract ConsumptionUnitUpgradeable is
 
     /// @inheritdoc IConsumptionUnit
     function submit(
-        uint256 tokenId,
+        uint256 cuId,
         address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
@@ -172,7 +173,7 @@ contract ConsumptionUnitUpgradeable is
         uint256[] memory amendmentCrIds
     ) external onlyActiveCRA whenNotPaused {
         _submit(
-            tokenId,
+            cuId,
             tokenOwner,
             settlementCurrency,
             worldwideDay,
@@ -184,8 +185,27 @@ contract ConsumptionUnitUpgradeable is
         );
     }
 
-    function getTokenData(uint256 tokenId) external view returns (ConsumptionUnitEntity memory) {
-        return _data[tokenId];
+    /// @inheritdoc IConsumptionUnit
+    function getData(uint256 cuId) public view returns (ConsumptionUnitEntity memory) {
+        return _data[cuId];
+    }
+
+    /// @inheritdoc IConsumptionUnit
+    function getConsumptionUnitsByOwner(address _owner, uint256 indexFrom, uint256 indexTo)
+        public
+        view
+        returns (ConsumptionUnitEntity[] memory)
+    {
+        require(indexFrom <= indexTo, "Invalid request");
+        uint256 n = indexTo - indexFrom + 1;
+        require(n <= 50, "Request too big");
+
+        ConsumptionUnitEntity[] memory result = new ConsumptionUnitEntity[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(_owner, i + indexFrom);
+            result[i] = getData(tokenId);
+        }
+        return result;
     }
 
     function getConsumptionRecordAddress() external view returns (address) {

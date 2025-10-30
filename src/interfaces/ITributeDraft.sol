@@ -7,6 +7,8 @@ import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 /// @notice Aggregates multiple Consumption Units into a single Tribute Draft
 interface ITributeDraft is ISoulBoundToken {
     struct TributeDraftEntity {
+        /// @notice tribute draft hash id
+        uint256 tdId;
         /// @notice Owner of the tribute draft
         address owner;
         /// @notice Numeric currency code using ISO 4217
@@ -34,7 +36,17 @@ interface ITributeDraft is ISoulBoundToken {
 
     function getConsumptionUnitAddress() external view returns (address);
 
-    function submit(uint256[] calldata consumptionUnitIds) external returns (uint256 tokenId);
+    function submit(uint256[] calldata cuIds) external returns (uint256 tdId);
 
-    function getTokenData(uint256 tokenId) external view returns (TributeDraftEntity memory);
+    function getData(uint256 tdId) external view returns (TributeDraftEntity memory);
+
+    /// @notice Returns a list of tribute drafts owned by the given address
+    /// @param owner owner of the tribute drafts
+    /// @param indexFrom inclusive index from
+    /// @param indexTo inclusive index to
+    /// @return array with complete tribute draft data
+    function getTributeDraftsByOwner(address owner, uint256 indexFrom, uint256 indexTo)
+        external
+        view
+        returns (TributeDraftEntity[] memory);
 }

@@ -130,8 +130,8 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         assertTrue(cu.exists(cuHash1));
         assertTrue(cu.exists(cuHash2));
 
-        IConsumptionUnit.ConsumptionUnitEntity memory e1 = cu.getTokenData(cuHash1);
-        IConsumptionUnit.ConsumptionUnitEntity memory e2 = cu.getTokenData(cuHash2);
+        IConsumptionUnit.ConsumptionUnitEntity memory e1 = cu.getData(cuHash1);
+        IConsumptionUnit.ConsumptionUnitEntity memory e2 = cu.getData(cuHash2);
 
         assertEq(e1.submittedBy, craActive);
         assertEq(e2.submittedBy, craActive);
