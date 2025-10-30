@@ -9,7 +9,7 @@
 
 import { BigNumberish, BytesLike, ethers, Wallet } from 'ethers';
 import { CONFIG, loadUsers } from "./utils";
-import { ConsumptionRecordUpgradeableAbi__factory, IConsumptionRecordAbi__factory } from "../contracts";
+import { ConsumptionRecordUpgradeable__factory, IConsumptionRecord__factory } from "../contracts";
 import { IConsumptionRecord } from "../contracts/IConsumptionRecordAbi";
 
 type SubmitRequest = {
@@ -110,7 +110,7 @@ async function main() {
   console.log(`  - 🔑 CRA Address: ${craWallet.address}`);
 
   // Initialize client
-  let crClient = IConsumptionRecordAbi__factory.connect(CONFIG.CONSUMPTION_RECORD_ADDRESS, craWallet);
+  let crClient = IConsumptionRecord__factory.connect(CONFIG.CONSUMPTION_RECORD_ADDRESS, craWallet);
 
   crClient.totalSupply().then(supply => console.log(`Total CR Supply before: ${supply}`));
 

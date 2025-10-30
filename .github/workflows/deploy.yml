@@ -24,9 +24,6 @@ jobs:
           version: 'v1.4.1'
 
       - name: Run Forge build
-        run: echo ${{ vars.RPC_URL }}
-
-      - name: Run Forge build
         run: |
           forge build --sizes
 
