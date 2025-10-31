@@ -144,10 +144,10 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         assertEq(e.worldwideDay, wday);
         assertEq(e.settlementAmountBase, baseAmt);
         assertEq(e.settlementAmountAtto, attoAmt);
-        assertEq(e.crIds.length, 1);
-        assertEq(e.crIds[0], crHash);
-        assertEq(e.amendmentCrIds.length, 1);
-        assertEq(e.amendmentCrIds[0], amendHash);
+        assertEq(e.crHashes.length, 1);
+        assertEq(e.crHashes[0], crHash);
+        assertEq(e.amendmentCrHashes.length, 1);
+        assertEq(e.amendmentCrHashes[0], amendHash);
 
         assertEq(cu.balanceOf(recordOwner), 1);
 

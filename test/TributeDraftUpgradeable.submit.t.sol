@@ -118,7 +118,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         assertEq(e.cuHashes.length, 2);
         assertEq(e.cuHashes[0], cu1);
         assertEq(e.cuHashes[1], cu2);
-        assertEq(e.submittedAt, ts);
+        assertEq(e.createdAt, ts);
 
         // totalSupply increments
         assertEq(td.totalSupply(), 1);

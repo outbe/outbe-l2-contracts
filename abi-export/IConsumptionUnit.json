@@ -66,12 +66,12 @@
             "internalType": "uint16"
           },
           {
-            "name": "crIds",
+            "name": "crHashes",
             "type": "uint256[]",
             "internalType": "uint256[]"
           },
           {
-            "name": "amendmentCrIds",
+            "name": "amendmentCrHashes",
             "type": "uint256[]",
             "internalType": "uint256[]"
           }
@@ -137,12 +137,12 @@
             "internalType": "uint16"
           },
           {
-            "name": "crIds",
+            "name": "crHashes",
             "type": "uint256[]",
             "internalType": "uint256[]"
           },
           {
-            "name": "amendmentCrIds",
+            "name": "amendmentCrHashes",
             "type": "uint256[]",
             "internalType": "uint256[]"
           }

@@ -22,7 +22,7 @@ interface ITributeDraft is ISoulBoundToken {
         /// @notice Hashes identifying linked consumption units
         uint256[] cuHashes;
         /// @notice Timestamp when the tribute draft was submitted
-        uint256 submittedAt;
+        uint256 createdAt;
     }
 
     error EmptyArray();

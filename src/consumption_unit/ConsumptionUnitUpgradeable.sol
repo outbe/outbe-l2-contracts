@@ -102,15 +102,15 @@ contract ConsumptionUnitUpgradeable is
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        uint256[] memory crIds,
-        uint256[] memory amendmentIds,
+        uint256[] memory crHashes,
+        uint256[] memory amendmentCrHashes,
         uint256 timestamp
     ) private {
         _validateCurrency(settlementCurrency);
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
-        _validateHashes(crIds);
-        _validateAmendmentHashes(amendmentIds);
+        _validateHashes(crHashes);
+        _validateAmendmentHashes(amendmentCrHashes);
 
         _mint(_msgSender(), tokenOwner, cuId);
 
@@ -122,8 +122,8 @@ contract ConsumptionUnitUpgradeable is
             worldwideDay: worldwideDay,
             settlementAmountBase: settlementAmountBase,
             settlementAmountAtto: settlementAmountAtto,
-            crIds: crIds,
-            amendmentCrIds: amendmentIds,
+            crHashes: crHashes,
+            amendmentCrHashes: amendmentCrHashes,
             submittedAt: timestamp
         });
     }
@@ -169,8 +169,8 @@ contract ConsumptionUnitUpgradeable is
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        uint256[] memory crIds,
-        uint256[] memory amendmentCrIds
+        uint256[] memory crHashes,
+        uint256[] memory amendmentCrHashes
     ) external onlyActiveCRA whenNotPaused {
         _submit(
             cuId,
@@ -179,8 +179,8 @@ contract ConsumptionUnitUpgradeable is
             worldwideDay,
             settlementAmountBase,
             settlementAmountAtto,
-            crIds,
-            amendmentCrIds,
+            crHashes,
+            amendmentCrHashes,
             block.timestamp
         );
     }

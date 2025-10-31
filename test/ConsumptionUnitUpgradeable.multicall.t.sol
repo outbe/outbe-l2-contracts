@@ -139,10 +139,10 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         assertEq(e2.submittedAt, ts);
         assertEq(e1.owner, recordOwner);
         assertEq(e2.owner, recordOwner);
-        assertEq(e1.crIds.length, 1);
-        assertEq(e2.crIds.length, 1);
-        assertEq(e1.crIds[0], crHashes1[0]);
-        assertEq(e2.crIds[0], crHashes2[0]);
+        assertEq(e1.crHashes.length, 1);
+        assertEq(e2.crHashes.length, 1);
+        assertEq(e1.crHashes[0], crHashes1[0]);
+        assertEq(e2.crHashes[0], crHashes2[0]);
 
         // Owner index contains both
         uint256 owned = cu.balanceOf(recordOwner);

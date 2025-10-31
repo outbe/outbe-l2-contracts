@@ -26,9 +26,9 @@ interface IConsumptionUnit {
         /// @notice Numeric currency code using ISO 4217
         uint16 settlementCurrency;
         /// @notice Hashes identifying linked consumption records (unique per record)
-        uint256[] crIds;
+        uint256[] crHashes;
         /// @notice Hashes identifying linked consumption records amendments (unique per record)
-        uint256[] amendmentCrIds;
+        uint256[] amendmentCrHashes;
     }
 
     /// @notice Thrown when an invalid owner address (zero address) is provided

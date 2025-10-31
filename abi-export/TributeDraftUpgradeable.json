@@ -140,7 +140,7 @@
             "internalType": "uint256[]"
           },
           {
-            "name": "submittedAt",
+            "name": "createdAt",
             "type": "uint256",
             "internalType": "uint256"
           }
@@ -211,7 +211,7 @@
             "internalType": "uint256[]"
           },
           {
-            "name": "submittedAt",
+            "name": "createdAt",
             "type": "uint256",
             "internalType": "uint256"
           }

@@ -118,7 +118,7 @@ contract TributeDraftUpgradeable is
             settlementAmountBase: baseAmt,
             settlementAmountAtto: attoAmt,
             cuHashes: cuIds,
-            submittedAt: block.timestamp
+            createdAt: block.timestamp
         });
     }
 
