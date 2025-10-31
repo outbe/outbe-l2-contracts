@@ -46,7 +46,7 @@ hashes, each enforced to be globally unique across all CU submissions to prevent
 Key design choices:
 
 - Compatibility with `ERC721Enumerable` standard
-- Units are stored as a mapping from tokenId to ConsumptionUnitEntity.
+- Units are stored as a mapping from cuId to ConsumptionUnitEntity.
 - Units are indexed by owner to allow efficient lookups by owner.
 - Access control delegated to the CRA Registry via CRAAware and enforced by onlyActiveCRA.
 - Identity is externalized to a bytes32 cuHash supplied by submitters; the registry enforces uniqueness and
@@ -71,6 +71,19 @@ Dependencies:
 - ERC165Upgradeable (introspection)
 - MulticallUpgradeable (batched submissions)
 
+# Record Identity and Referencing
+
+Consumption Units are identified by an Id which is a 32-byte hash.
+The hash is derived from the following attributes and submitted by CRA in hashed form to L2:
+
+- `bank_account_hash` - User's Account details hash `hash(bic + iban or bban)`.
+- `worldwide_day` - Worldwide Day.
+- `cr_hashes` - list of CR hashes included in the Consumption Unit.
+- `amendment_cr_hashes` - list of Amendment CR hashes included in the Consumption Unit.
+
+Such hash is computed by the CRA and stored in the `uint256 cuId` field. It is used to identify the record and to ensure uniqueness.
+The contract treats it as an opaque identifier.
+
 # Core Data Structures
 
 Contract: src/consumption_unit/ConsumptionUnitUpgradeable.sol
@@ -80,6 +93,8 @@ ConsumptionUnitEntity:
 
 ```solidity
 struct ConsumptionUnitEntity {
+    /// @notice consumption unit hash id
+    uint256 cuId;
     /// @notice Owner of the consumption unit
     address owner;
     /// @notice Address of the CRA agent who submitted this consumption unit
@@ -95,9 +110,9 @@ struct ConsumptionUnitEntity {
     /// @notice Numeric currency code using ISO 4217
     uint16 settlementCurrency;
     /// @notice Hashes identifying linked consumption records (unique per record)
-    uint256[] crIds;
+    uint256[] crHashes;
     /// @notice Hashes identifying linked consumption records amendments (unique per record)
-    uint256[] amendmentCrIds;
+    uint256[] amendmentCrHashes;
 }
 ```
 
@@ -110,7 +125,7 @@ All functions are available on the proxy.
     - Requirements: non-zero addresses.
 
 - submit(
-  uint256 tokenId,
+  uint256 cuId,
   address tokenOwner,
   uint16 settlementCurrency,
   uint32 worldwideDay,
@@ -121,10 +136,10 @@ All functions are available on the proxy.
   uint256 timestamp
   ) external onlyActiveCRA
     - Creates a single CU at current block.timestamp.
-    - Validations (see Validation Rules): tokenId non-zero and unique, owner non-zero, currency non-zero, amounts shape
+    - Validations (see Validation Rules): cuId non-zero and unique, owner non-zero, currency non-zero, amounts shape
       valid; CR hashes and Amendment hashes must be unique globally and must not overlap within the same submission.
     - Effects: persists entity, indexes by owner, increments total counter. 
-    - Emits: Minted(cra, tokenOwner, tokenId)
+    - Emits: Minted(cra, tokenOwner, cuId)
 
 - multicall(bytes[] data) -> bytes[] results
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
@@ -132,17 +147,17 @@ All functions are available on the proxy.
         - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted
           event.
 
-- exists(uint256 tokenId) -> bool
+- exists(uint256 cuId) -> bool
     - Returns whether a CU exists.
 
-- getData(uint256 tokenId) -> ConsumptionUnitEntity
+- getData(uint256 cuId) -> ConsumptionUnitEntity
     - Returns the full CU structure.
 
 - balanceOf(address owner) -> uint256
     - Returns a number of tokens owned by the given address.
 -
 - tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
-    - Returns the tokenId at the given index for the owner.
+    - Returns the cuId at the given index for the owner.
 
 - totalSupply() -> uint256
     - Returns total number of stored tokens (monotonic increment on submission).
@@ -157,7 +172,7 @@ All functions are available on the proxy.
 
 Events (from IConsumptionUnit):
 
-- Minted(address indexed minter, address indexed to, uint256 indexed tokenId)
+- Minted(address indexed minter, address indexed to, uint256 indexed cuId)
 
 Errors (from IConsumptionUnit):
 
@@ -168,17 +183,6 @@ Errors (from IConsumptionUnit):
 - InvalidSettlementCurrency();
 - InvalidAmount();
 - InvalidConsumptionRecords();
-
-# Record Identity and Referencing
-
-- tokenId is a 32-byte hash identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
-- Uniqueness is enforced per CU: the same tokenId cannot be reused.
-- Each referenced CR hash (crIds[i]) must be unique globally across all CUs. Likewise, each referenced amendment
-  hash (amendmentCrIds[i]) must be unique globally across all CUs. The contract tracks both sets to prevent
-  double-linking.
-- No overlap is allowed within a single submission between crHashes and amendmentCrHashes.
-- The registry does not compute or verify cuHash or the linked hashes on-chain; upstream systems define their hashing
-  schemes.
 
 # Access Control
 
@@ -202,7 +206,7 @@ Errors (from IConsumptionUnit):
 
 On submit and per-item in multicall:
 
-- tokenId validated to have a non-zero hash (InvalidTokenId)
+- cuId validated to have a non-zero hash (InvalidTokenId)
 - owner != address(0) (InvalidOwner)
 - CU must not pre-exist (AlreadyExists)
 - settlementCurrency != 0 (InvalidSettlementCurrency)

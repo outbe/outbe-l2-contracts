@@ -58,6 +58,17 @@ Dependencies:
 - ERC165Upgradeable (introspection)
 - MulticallUpgradeable (batched submissions)
 
+# Record Identity and Hashing
+
+Consumption Amendment Records are identified by an Id which is a 32-byte hash.
+The hash is derived from the following attributes and submitted by CRA in hashed form to L2:
+
+- `bank_account_hash` - User's Account details hash `hash(bic + iban or bban)`.
+- `registered_at` - Time when the financial institution registered the transaction, time precision seconds, timezone strictly UTC, ISO 8601.
+
+Such hash is computed by the CRA and stored in the `uint256 crId` field. It is used to identify the record and to ensure uniqueness.
+The contract treats it as an opaque identifier.
+
 # Core Data Structures
 
 Contract: src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol
@@ -67,6 +78,8 @@ ConsumptionRecordAmendmentEntity:
 
 ```solidity
 struct ConsumptionRecordAmendmentEntity {
+    /// @notice consumption record hash id
+    uint256 crId;
     /// @notice Address of the CRA that submitted this record
     address submittedBy;
     /// @notice Timestamp when the record was submitted
@@ -88,37 +101,37 @@ All functions are available on the proxy.
     - One-time initializer. Sets CRA Registry and owner; initializes OZ base contracts.
     - Requirements: non-zero addresses.
 
-- submit(uint256 tokenId, address tokenOwner, string[] memory keys, bytes32[] memory values)
+- submit(uint256 crId, address tokenOwner, string[] memory keys, bytes32[] memory values)
     - Only callable by an active CRA (onlyActiveCRA).
     - Creates a single amendment at current block.timestamp.
     - Validations:
-        - tokenId should be a valid hash
+        - crId should be a valid hash
         - owner != address(0)
         - Record must not already exist
         - keys.length == values.length
         - No empty keys
     - Effects:
         - Persists ConsumptionRecordAmendmentEntity
-        - Appends tokenId to owner index
+        - Appends crId to owner index
         - Increments total counter
-    - Emits: Minted(cra, tokenOwner, tokenId)
+    - Emits: Minted(cra, tokenOwner, crId)
 
 - multicall(bytes[] data) -> bytes[] results
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
     - Effects:
         - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted event.
 
-- exists(uint256 tokenId) -> bool
+- exists(uint256 crId) -> bool
     - Returns whether an amendment record exists.
 
-- getData(uint256 tokenId) -> ConsumptionRecordAmendmentEntity
+- getData(uint256 crId) -> ConsumptionRecordAmendmentEntity
     - Returns the full amendment record structure.
 
 - balanceOf(address owner) -> uint256
     - Returns a number of tokens owned by the given address.
 -
 - tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
-    - Returns the tokenId at the given index for the owner.
+    - Returns the crId at the given index for the owner.
 
 - totalSupply() -> uint256
     - Returns total number of stored tokens (monotonic increment on submission).
@@ -133,17 +146,13 @@ All functions are available on the proxy.
 
 Events (from IConsumptionRecordAmendment):
 
-- Minted(address indexed minter, address indexed to, uint256 indexed tokenId)
+- Minted(address indexed minter, address indexed to, uint256 indexed crId)
 
 Errors (from IConsumptionRecordAmendment):
 
 - AlreadyExists()
 - InvalidTokenId()
 - InvalidMetadata(string reason)
-
-# Record Identity and Hashing
-
-- tokenId is a 32-byte identifier supplied by the caller (CRA) in `uint256`. The contract treats it as an opaque identifier.
 
 # Access Control
 
@@ -168,7 +177,7 @@ Errors (from IConsumptionRecordAmendment):
 
 On submit:
 
-- tokenId validated to have a non-zero hash (InvalidTokenId)
+- crId validated to have a non-zero hash (InvalidTokenId)
 - owner != address(0) (InvalidOwner)
 - Record must not pre-exist (AlreadyExists)
 - keys.length == values.length (InvalidMetadata)

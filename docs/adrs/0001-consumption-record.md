@@ -44,7 +44,7 @@ querying by crHash and by owner. Batch submissions are supported by a mutlicall 
 Key design choices:
 
 - Compatibility with `ERC721Enumerable` standard
-- Records are stored as a mapping from tokenId to ConsumptionRecordEntity.
+- Records are stored as a mapping from crId to ConsumptionRecordEntity.
 - Records are indexed by owner to allow efficient lookups by owner.
 - Access control is delegated to a CRA Registry and enforced by a CRAAware mixin via onlyActiveCRA.
 - Record identity is externalized to a bytes32 hash supplied by submitters; the registry only enforces uniqueness and
@@ -68,6 +68,17 @@ Dependencies:
 - ERC165Upgradeable (introspection)
 - MulticallUpgradeable (batched submissions)
 
+# Record Identity and Hashing
+
+Consumption Records are identified by an Id which is a 32-byte hash.
+The hash is derived from the following attributes and submitted by CRA in hashed form to L2:
+
+- `bank_account_hash` - User's Account details hash `hash(bic + iban or bban)`.
+- `registered_at` - Time when the financial institution registered the transaction, time precision seconds, timezone strictly UTC, ISO 8601.
+
+Such hash is computed by the CRA and stored in the `uint256 crId` field. It is used to identify the record and to ensure uniqueness.
+The contract treats it as an opaque identifier.
+
 # Core Data Structures
 
 Contract: src/consumption_record/ConsumptionRecordUpgradeable.sol
@@ -79,6 +90,8 @@ ConsumptionRecordEntity:
 /// @notice Record information for a consumption record
 /// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
 struct ConsumptionRecordEntity {
+    /// @notice consumption record hash id
+    uint256 crId;
     /// @notice Address of the CRA that submitted this record
     address submittedBy;
     /// @notice Timestamp when the record was submitted
@@ -100,20 +113,20 @@ All functions are available on the proxy.
     - One-time initializer. Sets CRA Registry and owner, initializes OZ upgradeable base contracts.
     - Requirements: non-zero addresses.
 
-- function submit(uint256 tokenId, address recordOwner, string[] memory keys, bytes32[] memory values)
+- function submit(uint256 crId, address recordOwner, string[] memory keys, bytes32[] memory values)
     - Only callable by an active CRA (onlyActiveCRA).
     - Creates a single record at current block.timestamp.
     - Validations:
-        - tokenId should be a valid hash 
+        - crId should be a valid hash
         - owner != address(0)
         - Record must not already exist
         - keys.length == values.length
         - No empty keys
     - Effects:
         - Persists ConsumptionRecordEntity
-        - Appends tokenId to ownerRecords[owner]
+        - Appends crId to ownerRecords[owner]
         - Increments total counter
-    - Emits: Minted(cra, tokenOwner, tokenId)
+    - Emits: Minted(cra, tokenOwner, crId)
 
 - multicall(bytes[] data) -> bytes[] results
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
@@ -122,17 +135,17 @@ All functions are available on the proxy.
           event.
     - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
-- exists(uint256 tokenId) -> bool
+- exists(uint256 crId) -> bool
     - Returns whether a record exists.
 
-- getData(uint256 tokenId) -> ConsumptionRecordEntity
+- getData(uint256 crId) -> ConsumptionRecordEntity
     - Returns the full record structure.
 
 - balanceOf(address owner) -> uint256
     - Returns a number of tokens owned by the given address.
-- 
+-
 - tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
-    - Returns the tokenId at the given index for the owner.
+    - Returns the crId at the given index for the owner.
 
 - totalSupply() -> uint256
     - Returns total number of stored tokens (monotonic increment on submission).
@@ -147,17 +160,13 @@ All functions are available on the proxy.
 
 Events (from IConsumptionRecord):
 
-- Minted(address indexed minter, address indexed to, uint256 indexed tokenId)
+- Minted(address indexed minter, address indexed to, uint256 indexed crId)
 
 Errors (from IConsumptionRecord):
 
 - AlreadyExists()
 - InvalidTokenId()
 - InvalidMetadata(string reason)
-
-# Record Identity and Hashing
-
-- tokenId is a 32-byte identifier supplied by the caller (CRA) in `uint256`. The contract treats it as an opaque identifier.
 
 # Access Control
 
@@ -181,7 +190,7 @@ Errors (from IConsumptionRecord):
 
 On submit:
 
-- tokenId validated to have a non-zero hash (InvalidTokenId)
+- crId validated to have a non-zero hash (InvalidTokenId)
 - owner != address(0) (InvalidOwner)
 - Record must not pre-exist (AlreadyExists)
 - keys.length == values.length (InvalidMetadata)

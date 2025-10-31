@@ -47,7 +47,7 @@ interface IConsumptionRecord is ISoulBoundToken {
     function getData(uint256 crId) external view returns (ConsumptionRecordEntity memory);
 
     /// @notice Returns a list of consumption records owned by the given address
-    /// @param owner owner of the consumption records
+    /// @param owner of the consumption records
     /// @param indexFrom inclusive index from
     /// @param indexTo inclusive index to
     /// @return array with complete records data

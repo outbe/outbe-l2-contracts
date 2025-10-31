@@ -57,6 +57,22 @@ Dependencies:
 - UUPSUpgradeable (upgrade mechanism)
 - ERC165Upgradeable (introspection)
 
+# Aggregation, Identity, and Hashing
+
+Tribute Drafts are identified by an Id which is a 32-byte hash.
+The hash is derived from the following attributes in hashed form to L2:
+
+- `owner` - User's Account address.
+- `worldwide_day` - Worldwide Day.
+- `cu_hashes` - list of CU hashes included in the Tribute Draft.
+
+Such hash is computed by the CRA and stored in the `uint256 tdId` field. It is used to identify the record and to ensure uniqueness.
+The contract treats it as an opaque identifier.
+
+- The contract treats `cuHashes` as opaque identifiers; it verifies existence via ConsumptionUnit smart contract state.
+- Each `cuHash` is placed into a global set `consumptionUnitHashes` to ensure it is used at most once across all TDs.
+- Amounts are aggregated via `base+atto` with carry such that atto stays in `[0, 1e18)` bounds.
+
 # Core Data Structures
 
 Contract: src/tribute_draft/TributeDraftUpgradeable.sol
@@ -66,6 +82,8 @@ TributeDraftEntity:
 
 ```solidity
 struct TributeDraftEntity {
+    /// @notice tribute draft hash id
+    uint256 tdId;
     /// @notice Owner of the tribute draft
     address owner;
     /// @notice Numeric currency code using ISO 4217
@@ -140,13 +158,6 @@ Errors (from ITributeDraft):
 - NotSameOwner(uint256 consumptionUnitIds);
 - NotSettlementCurrencyCurrency();
 - NotSameWorldwideDay();
-
-# Aggregation, Identity, and Hashing
-
-- Identity: tdId is computed as keccak256(abi.encode(owner, worldwideDay, cuHashes)).
-- The contract treats cuHashes as opaque identifiers; it verifies existence via IConsumptionUnit.getConsumptionUnit.
-- Each cuHash is placed into a global set consumptionUnitHashes to ensure it is used at most once across all TDs.
-- Amounts are aggregated via base+atto with carry such that atto stays in [0, 1e18).
 
 # Access Control
 
