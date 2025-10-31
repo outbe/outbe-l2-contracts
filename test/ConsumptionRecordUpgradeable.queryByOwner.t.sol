@@ -21,11 +21,8 @@ contract ConsumptionRecordUpgradeableGetByOwnerTest is Test {
 
         // Deploy implementation and proxy, initialize via proxy constructor
         ConsumptionRecordUpgradeable impl = new ConsumptionRecordUpgradeable();
-        bytes memory initData = abi.encodeWithSelector(
-            ConsumptionRecordUpgradeable.initialize.selector,
-            address(registry),
-            address(this)
-        );
+        bytes memory initData =
+            abi.encodeWithSelector(ConsumptionRecordUpgradeable.initialize.selector, address(registry), address(this));
         ERC1967Proxy proxy = new ERC1967Proxy(address(impl), initData);
         cr = ConsumptionRecordUpgradeable(address(proxy));
 
@@ -58,7 +55,8 @@ contract ConsumptionRecordUpgradeableGetByOwnerTest is Test {
         // Request the full range for ownerA
         uint256 indexFrom = 0;
         uint256 indexTo = balanceA - 1;
-        IConsumptionRecord.ConsumptionRecordEntity[] memory list = cr.getConsumptionRecordsByOwner(ownerA, indexFrom, indexTo);
+        IConsumptionRecord.ConsumptionRecordEntity[] memory list =
+            cr.getConsumptionRecordsByOwner(ownerA, indexFrom, indexTo);
 
         assertEq(list.length, balanceA, "length mismatch");
         // Verify entity fields are populated and owner matches
@@ -99,7 +97,7 @@ contract ConsumptionRecordUpgradeableGetByOwnerTest is Test {
     function test_getConsumptionRecordsByOwner_outOfBounds_reverts() public {
         // Submit only 2 tokens to ownerB
         _submit(uint256(keccak256(abi.encode("consumption-record", 1000))), ownerB, new string[](0), new bytes32[](0));
-        _submit(uint256(keccak256(abi.encode("consumption-record", 1001))) , ownerB, new string[](0), new bytes32[](0));
+        _submit(uint256(keccak256(abi.encode("consumption-record", 1001))), ownerB, new string[](0), new bytes32[](0));
 
         // Request within max n<=50, but beyond owner's balance
         // balanceB is 2; index 2 is out of bounds (0-based)
@@ -115,7 +113,7 @@ contract ConsumptionRecordUpgradeableGetByOwnerTest is Test {
         values[0] = bytes32(uint256(123));
         values[1] = keccak256(abi.encodePacked("M-42"));
 
-        uint256 id = uint256(keccak256(abi.encode("consumption-record", 7777))) ;
+        uint256 id = uint256(keccak256(abi.encode("consumption-record", 7777)));
         _submit(id, ownerA, keys, values);
 
         IConsumptionRecord.ConsumptionRecordEntity[] memory list = cr.getConsumptionRecordsByOwner(ownerA, 0, 0);
