@@ -1,10 +1,20 @@
 [
   {
     "type": "function",
-    "name": "getTokenData",
+    "name": "getConsumptionUnitsByOwner",
     "inputs": [
       {
-        "name": "tokenId",
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "indexFrom",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "indexTo",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -12,9 +22,14 @@
     "outputs": [
       {
         "name": "",
-        "type": "tuple",
-        "internalType": "struct IConsumptionUnit.ConsumptionUnitEntity",
+        "type": "tuple[]",
+        "internalType": "struct IConsumptionUnit.ConsumptionUnitEntity[]",
         "components": [
+          {
+            "name": "cuId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
           {
             "name": "owner",
             "type": "address",
@@ -51,12 +66,83 @@
             "internalType": "uint16"
           },
           {
-            "name": "crIds",
+            "name": "crHashes",
             "type": "uint256[]",
             "internalType": "uint256[]"
           },
           {
-            "name": "amendmentCrIds",
+            "name": "amendmentCrHashes",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getData",
+    "inputs": [
+      {
+        "name": "cuId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple",
+        "internalType": "struct IConsumptionUnit.ConsumptionUnitEntity",
+        "components": [
+          {
+            "name": "cuId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "submittedBy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "submittedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "worldwideDay",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "settlementAmountBase",
+            "type": "uint64",
+            "internalType": "uint64"
+          },
+          {
+            "name": "settlementAmountAtto",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "settlementCurrency",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "crHashes",
+            "type": "uint256[]",
+            "internalType": "uint256[]"
+          },
+          {
+            "name": "amendmentCrHashes",
             "type": "uint256[]",
             "internalType": "uint256[]"
           }
@@ -89,7 +175,7 @@
     "name": "submit",
     "inputs": [
       {
-        "name": "tokenId",
+        "name": "cuId",
         "type": "uint256",
         "internalType": "uint256"
       },

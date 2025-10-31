@@ -36,8 +36,10 @@ amendments identified by a bytes32 hash and accompanied by optional metadata. Th
 crAmendmentHash and by owner. Batched submissions are performed using a controlled multicall entrypoint.
 
 Key design choices:
+
+- Compatibility with `ERC721Enumerable` standard
 - Access control via CRAAware against the CRA Registry (onlyActiveCRA)
-- Identity externalized to a bytes32 hash supplied by submitters; the registry enforces uniqueness and well-formedness
+- Identity externalized to a uint256 hash supplied by submitters; the registry enforces uniqueness and well-formedness
 - Upgradeability via OpenZeppelin UUPSUpgradeable with owner-restricted upgrades
 
 # Architecture
@@ -56,6 +58,17 @@ Dependencies:
 - ERC165Upgradeable (introspection)
 - MulticallUpgradeable (batched submissions)
 
+# Record Identity and Hashing
+
+Consumption Amendment Records are identified by an Id which is a 32-byte hash.
+The hash is derived from the following attributes and submitted by CRA in hashed form to L2:
+
+- `bank_account_hash` - User's Account details hash `hash(bic + iban or bban)`.
+- `registered_at` - Time when the financial institution registered the transaction, time precision seconds, timezone strictly UTC, ISO 8601.
+
+Such hash is computed by the CRA and stored in the `uint256 crId` field. It is used to identify the record and to ensure uniqueness.
+The contract treats it as an opaque identifier.
+
 # Core Data Structures
 
 Contract: src/consumption_record/ConsumptionRecordAmendmentUpgradeable.sol
@@ -65,12 +78,18 @@ ConsumptionRecordAmendmentEntity:
 
 ```solidity
 struct ConsumptionRecordAmendmentEntity {
-    bytes32 consumptionRecordAmendmentId; // equals submitted crAmendmentHash
-    address submittedBy;                  // CRA address
-    uint256 submittedAt;                  // block.timestamp of submission
-    address owner;                        // logical owner/principal
-    string[] metadataKeys;                // non-empty keys
-    bytes32[] metadataValues;             // 1:1 with keys
+    /// @notice consumption record hash id
+    uint256 crId;
+    /// @notice Address of the CRA that submitted this record
+    address submittedBy;
+    /// @notice Timestamp when the record was submitted
+    uint256 submittedAt;
+    /// @notice Address of the owner of this consumption record
+    address owner;
+    /// @notice Array of metadata keys
+    string[] metadataKeys;
+    /// @notice Array of metadata values (matches keys array)
+    bytes32[] metadataValues;
 }
 ```
 
@@ -82,64 +101,63 @@ All functions are available on the proxy.
     - One-time initializer. Sets CRA Registry and owner; initializes OZ base contracts.
     - Requirements: non-zero addresses.
 
-- submit(bytes32 crAmendmentHash, address owner, string[] keys, bytes32[] values)
+- submit(uint256 crId, address tokenOwner, string[] memory keys, bytes32[] memory values)
     - Only callable by an active CRA (onlyActiveCRA).
     - Creates a single amendment at current block.timestamp.
     - Validations:
-        - crAmendmentHash != 0x0
+        - crId should be a valid hash
         - owner != address(0)
         - Record must not already exist
         - keys.length == values.length
         - No empty keys
     - Effects:
         - Persists ConsumptionRecordAmendmentEntity
-        - Appends crAmendmentHash to owner index
+        - Appends crId to owner index
         - Increments total counter
-    - Emits: Submitted(crAmendmentHash, cra, timestamp)
+    - Emits: Minted(cra, tokenOwner, crId)
 
 - multicall(bytes[] data) -> bytes[] results
-    - Only callable by an active CRA.
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
-    - Validations:
-        - 0 < data.length <= MAX_BATCH_SIZE (100)
-        - Each entry must be a call to submit(...) (otherwise reverts InvalidCall)
     - Effects:
         - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted event.
-    - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
-- isExists(bytes32 crAmendmentHash) -> bool
-    - Returns whether an amendment exists.
+- exists(uint256 crId) -> bool
+    - Returns whether an amendment record exists.
 
-- getConsumptionRecordAmendment(bytes32 crAmendmentHash) -> ConsumptionRecordAmendmentEntity
-    - Returns the full amendment structure.
+- getData(uint256 crId) -> ConsumptionRecordAmendmentEntity
+    - Returns the full amendment record structure.
 
-- getConsumptionRecordAmendmentsByOwner(address owner) -> bytes32[]
-    - Returns all amendment hashes associated with the owner.
+- balanceOf(address owner) -> uint256
+    - Returns a number of tokens owned by the given address.
+-
+- tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
+    - Returns the crId at the given index for the owner.
+
+- totalSupply() -> uint256
+    - Returns total number of stored tokens (monotonic increment on submission).
+
+- owner() -> address
+    - Returns contract owner.
+
+- supportsInterface(bytes4 interfaceId) -> bool
+    - ERC165Compatible; currently delegates to super and can be extended.
 
 # Events and Errors
 
 Events (from IConsumptionRecordAmendment):
-- Submitted(bytes32 indexed crAmendmentHash, address indexed cra, uint256 timestamp)
+
+- Minted(address indexed minter, address indexed to, uint256 indexed crId)
 
 Errors (from IConsumptionRecordAmendment):
+
 - AlreadyExists()
-- InvalidHash()
-- MetadataKeyValueMismatch()
-- EmptyMetadataKey()
-- InvalidOwner()
-- BatchSizeTooLarge()
-- EmptyBatch()
-- InvalidCall()
-
-# Record Identity and Hashing
-
-- crAmendmentHash is a 32-byte identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
-- Uniqueness is enforced at the storage layer: an amendment may not be resubmitted under the same hash.
-- The registry does not compute or verify the hash preimage on-chain; upstream systems define deterministic hashing schemes.
+- InvalidTokenId()
+- InvalidMetadata(string reason)
 
 # Access Control
 
-- Only active CRAs may submit or multicall. Enforced by CRAAware against the CRA Registry.
+- Only active CRAs may submit or batch submit records.
+- Active status is queried via CRAAware against the CRA Registry.
 - Admin/upgrade authority is the contract owner (OwnableUpgradeable).
 
 # Upgradeability
@@ -157,13 +175,10 @@ Errors (from IConsumptionRecordAmendment):
 
 # Validation Rules Summary
 
-On submit and per-item in multicall:
-- crAmendmentHash != 0x0 (InvalidHash)
-- owner != address(0) (InvalidOwner)
-- Amendment must not pre-exist (AlreadyExists)
-- keys.length == values.length (MetadataKeyValueMismatch)
-- All keys are non-empty strings (EmptyMetadataKey)
+On submit:
 
-Batch-level (multicall):
-- 0 < batchSize <= 100 (EmptyBatch, BatchSizeTooLarge)
-- Each entry must target submit(...) (InvalidCall)
+- crId validated to have a non-zero hash (InvalidTokenId)
+- owner != address(0) (InvalidOwner)
+- Record must not pre-exist (AlreadyExists)
+- keys.length == values.length (InvalidMetadata)
+- All keys are non-empty strings (InvalidMetadata)

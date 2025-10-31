@@ -103,10 +103,71 @@
   },
   {
     "type": "function",
-    "name": "getTokenData",
+    "name": "getConsumptionAmendmentRecordsByOwner",
     "inputs": [
       {
-        "name": "tokenId",
+        "name": "_owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "indexFrom",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "indexTo",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "tuple[]",
+        "internalType": "struct IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity[]",
+        "components": [
+          {
+            "name": "crId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "submittedBy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "submittedAt",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "owner",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "metadataKeys",
+            "type": "string[]",
+            "internalType": "string[]"
+          },
+          {
+            "name": "metadataValues",
+            "type": "bytes32[]",
+            "internalType": "bytes32[]"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getData",
+    "inputs": [
+      {
+        "name": "crId",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -117,6 +178,11 @@
         "type": "tuple",
         "internalType": "struct IConsumptionRecordAmendment.ConsumptionRecordAmendmentEntity",
         "components": [
+          {
+            "name": "crId",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
           {
             "name": "submittedBy",
             "type": "address",
@@ -274,7 +340,7 @@
     "name": "submit",
     "inputs": [
       {
-        "name": "tokenId",
+        "name": "crId",
         "type": "uint256",
         "internalType": "uint256"
       },

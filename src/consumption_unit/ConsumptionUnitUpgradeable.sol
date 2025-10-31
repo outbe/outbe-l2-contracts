@@ -96,33 +96,34 @@ contract ConsumptionUnitUpgradeable is
     }
 
     function _submit(
-        uint256 tokenId,
+        uint256 cuId,
         address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        uint256[] memory crIds,
-        uint256[] memory amendmentIds,
+        uint256[] memory crHashes,
+        uint256[] memory amendmentCrHashes,
         uint256 timestamp
     ) private {
         _validateCurrency(settlementCurrency);
         _validateAmounts(settlementAmountBase, settlementAmountAtto);
 
-        _validateHashes(crIds);
-        _validateAmendmentHashes(amendmentIds);
+        _validateHashes(crHashes);
+        _validateAmendmentHashes(amendmentCrHashes);
 
-        _mint(_msgSender(), tokenOwner, tokenId);
+        _mint(_msgSender(), tokenOwner, cuId);
 
-        _data[tokenId] = ConsumptionUnitEntity({
+        _data[cuId] = ConsumptionUnitEntity({
+            cuId: cuId,
             owner: tokenOwner,
             submittedBy: msg.sender,
             settlementCurrency: settlementCurrency,
             worldwideDay: worldwideDay,
             settlementAmountBase: settlementAmountBase,
             settlementAmountAtto: settlementAmountAtto,
-            crIds: crIds,
-            amendmentCrIds: amendmentIds,
+            crHashes: crHashes,
+            amendmentCrHashes: amendmentCrHashes,
             submittedAt: timestamp
         });
     }
@@ -162,30 +163,49 @@ contract ConsumptionUnitUpgradeable is
 
     /// @inheritdoc IConsumptionUnit
     function submit(
-        uint256 tokenId,
+        uint256 cuId,
         address tokenOwner,
         uint16 settlementCurrency,
         uint32 worldwideDay,
         uint64 settlementAmountBase,
         uint128 settlementAmountAtto,
-        uint256[] memory crIds,
-        uint256[] memory amendmentCrIds
+        uint256[] memory crHashes,
+        uint256[] memory amendmentCrHashes
     ) external onlyActiveCRA whenNotPaused {
         _submit(
-            tokenId,
+            cuId,
             tokenOwner,
             settlementCurrency,
             worldwideDay,
             settlementAmountBase,
             settlementAmountAtto,
-            crIds,
-            amendmentCrIds,
+            crHashes,
+            amendmentCrHashes,
             block.timestamp
         );
     }
 
-    function getTokenData(uint256 tokenId) external view returns (ConsumptionUnitEntity memory) {
-        return _data[tokenId];
+    /// @inheritdoc IConsumptionUnit
+    function getData(uint256 cuId) public view returns (ConsumptionUnitEntity memory) {
+        return _data[cuId];
+    }
+
+    /// @inheritdoc IConsumptionUnit
+    function getConsumptionUnitsByOwner(address _owner, uint256 indexFrom, uint256 indexTo)
+        public
+        view
+        returns (ConsumptionUnitEntity[] memory)
+    {
+        require(indexFrom <= indexTo, "Invalid request");
+        uint256 n = indexTo - indexFrom + 1;
+        require(n <= 50, "Request too big");
+
+        ConsumptionUnitEntity[] memory result = new ConsumptionUnitEntity[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(_owner, i + indexFrom);
+            result[i] = getData(tokenId);
+        }
+        return result;
     }
 
     function getConsumptionRecordAddress() external view returns (address) {

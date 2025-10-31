@@ -56,7 +56,7 @@ contract ConsumptionRecordUpgradeableSubmitTest is Test {
         assertTrue(cr.exists(crHash));
 
         // entity fields
-        IConsumptionRecord.ConsumptionRecordEntity memory e = cr.getTokenData(crHash);
+        IConsumptionRecord.ConsumptionRecordEntity memory e = cr.getData(crHash);
         assertEq(e.submittedBy, craActive);
         assertEq(e.submittedAt, ts);
         assertEq(e.owner, recordOwner);

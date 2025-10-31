@@ -43,6 +43,9 @@ querying by crHash and by owner. Batch submissions are supported by a mutlicall 
 
 Key design choices:
 
+- Compatibility with `ERC721Enumerable` standard
+- Records are stored as a mapping from crId to ConsumptionRecordEntity.
+- Records are indexed by owner to allow efficient lookups by owner.
 - Access control is delegated to a CRA Registry and enforced by a CRAAware mixin via onlyActiveCRA.
 - Record identity is externalized to a bytes32 hash supplied by submitters; the registry only enforces uniqueness and
   basic well-formedness.
@@ -65,6 +68,17 @@ Dependencies:
 - ERC165Upgradeable (introspection)
 - MulticallUpgradeable (batched submissions)
 
+# Record Identity and Hashing
+
+Consumption Records are identified by an Id which is a 32-byte hash.
+The hash is derived from the following attributes and submitted by CRA in hashed form to L2:
+
+- `bank_account_hash` - User's Account details hash `hash(bic + iban or bban)`.
+- `registered_at` - Time when the financial institution registered the transaction, time precision seconds, timezone strictly UTC, ISO 8601.
+
+Such hash is computed by the CRA and stored in the `uint256 crId` field. It is used to identify the record and to ensure uniqueness.
+The contract treats it as an opaque identifier.
+
 # Core Data Structures
 
 Contract: src/consumption_record/ConsumptionRecordUpgradeable.sol
@@ -73,13 +87,21 @@ Interface: src/interfaces/IConsumptionRecord.sol
 ConsumptionRecordEntity:
 
 ```solidity
+/// @notice Record information for a consumption record
+/// @dev Stores basic metadata about who submitted the record, when, who owns it, and includes metadata
 struct ConsumptionRecordEntity {
-    bytes32 consumptionRecordId; // ID equals the submitted crHash
-    address submittedBy;         // CRA address that submitted
-    uint256 submittedAt;         // Block timestamp of submission
-    address owner;               // Logical owner/principal of the record
-    string[] metadataKeys;       // Keys for metadata entries (no empty strings)
-    bytes32[] metadataValues;    // Values matched 1:1 with keys
+    /// @notice consumption record hash id
+    uint256 crId;
+    /// @notice Address of the CRA that submitted this record
+    address submittedBy;
+    /// @notice Timestamp when the record was submitted
+    uint256 submittedAt;
+    /// @notice Address of the owner of this consumption record
+    address owner;
+    /// @notice Array of metadata keys
+    string[] metadataKeys;
+    /// @notice Array of metadata values (matches keys array)
+    bytes32[] metadataValues;
 }
 ```
 
@@ -91,45 +113,44 @@ All functions are available on the proxy.
     - One-time initializer. Sets CRA Registry and owner, initializes OZ upgradeable base contracts.
     - Requirements: non-zero addresses.
 
-- submit(bytes32 crHash, address owner, string[] keys, bytes32[] values)
+- function submit(uint256 crId, address recordOwner, string[] memory keys, bytes32[] memory values)
     - Only callable by an active CRA (onlyActiveCRA).
     - Creates a single record at current block.timestamp.
     - Validations:
-        - crHash != 0x0
+        - crId should be a valid hash
         - owner != address(0)
         - Record must not already exist
         - keys.length == values.length
         - No empty keys
     - Effects:
         - Persists ConsumptionRecordEntity
-        - Appends crHash to ownerRecords[owner]
+        - Appends crId to ownerRecords[owner]
         - Increments total counter
-    - Emits: Submitted(crHash, cra, timestamp)
+    - Emits: Minted(cra, tokenOwner, crId)
 
 - multicall(bytes[] data) -> bytes[] results
-    - Only callable by an active CRA.
     - Allows multiple submit(...) calls in a single transaction, each encoded as calldata and delegated internally.
-    - Validations:
-        - 0 < data.length <= MAX_BATCH_SIZE (100)
-        - Each entry must be a call to submit(...) (otherwise reverts InvalidCall)
     - Effects:
         - Executes each submit with shared access control and pause checks; each inner call emits its own Submitted
           event.
     - Reverts: EmptyBatch, BatchSizeTooLarge, InvalidCall
 
-- isExists(bytes32 crHash) -> bool
+- exists(uint256 crId) -> bool
     - Returns whether a record exists.
 
-- getConsumptionRecord(bytes32 crHash) -> ConsumptionRecordEntity
+- getData(uint256 crId) -> ConsumptionRecordEntity
     - Returns the full record structure.
 
-- getConsumptionRecordsByOwner(address owner) -> bytes32[]
-    - Returns all record hashes associated with the owner.
+- balanceOf(address owner) -> uint256
+    - Returns a number of tokens owned by the given address.
+-
+- tokenOfOwnerByIndex(address owner, uint256 index) -> uint256
+    - Returns the crId at the given index for the owner.
 
 - totalSupply() -> uint256
-    - Returns total number of stored records (monotonic increment on submission).
+    - Returns total number of stored tokens (monotonic increment on submission).
 
-- getOwner() -> address
+- owner() -> address
     - Returns contract owner.
 
 - supportsInterface(bytes4 interfaceId) -> bool
@@ -139,25 +160,13 @@ All functions are available on the proxy.
 
 Events (from IConsumptionRecord):
 
-- Submitted(bytes32 indexed crHash, address indexed cra, uint256 timestamp)
+- Minted(address indexed minter, address indexed to, uint256 indexed crId)
 
 Errors (from IConsumptionRecord):
 
 - AlreadyExists()
-- InvalidHash()
-- MetadataKeyValueMismatch()
-- EmptyMetadataKey()
-- InvalidOwner()
-- BatchSizeTooLarge()
-- EmptyBatch()
-- InvalidCall()
-
-# Record Identity and Hashing
-
-- crHash is a 32-byte identifier supplied by the caller (CRA). The contract treats it as an opaque identifier.
-- Uniqueness is enforced at the storage layer: a record may not be resubmitted under the same crHash.
-- The registry does not compute or verify crHash on-chain; upstream systems (e.g., aggregators, L1 bridges, or TEEs) can
-  define deterministic hashing schemes.
+- InvalidTokenId()
+- InvalidMetadata(string reason)
 
 # Access Control
 
@@ -176,29 +185,21 @@ Errors (from IConsumptionRecord):
 - Owner index: ownerRecords[owner] stores crHash list for direct lookups by owner.
 - Metadata: stored as parallel arrays of keys and values to keep calldata ABI simple and fixed-width for values.
 - Batch submission shares a single timestamp to reduce per-item gas and provide consistent ordering.
-- MAX_BATCH_SIZE is capped at 100 to bound gas and storage operations per tx.
 
 # Validation Rules Summary
 
-On submit and per-item in submitBatch:
+On submit:
 
-- crHash != 0x0 (InvalidHash)
+- crId validated to have a non-zero hash (InvalidTokenId)
 - owner != address(0) (InvalidOwner)
 - Record must not pre-exist (AlreadyExists)
-- keys.length == values.length (MetadataKeyValueMismatch)
-- All keys are non-empty strings (EmptyMetadataKey)
-
-Batch-level:
-
-- 0 < batchSize <= 100 (EmptyBatch, BatchSizeTooLarge)
-- owners/keysArray/valuesArray lengths equal batchSize (MetadataKeyValueMismatch)
+- keys.length == values.length (InvalidMetadata)
+- All keys are non-empty strings (InvalidMetadata)
 
 # Integration Notes
 
 - CRA Registry: The contract relies on CRA Registry to authorize CRAs. Deployments must ensure CRA registry is set and
   CRAs are onboarded/activated appropriately.
-- Off-chain Indexing: Indexers can watch Submitted and BatchSubmitted to maintain rich views (e.g., owner -> record list
-  with metadata unpacking).
 - Tooling: The project ships Foundry scripts for deterministic deployments and upgrades.
 
 # Security Considerations
@@ -207,5 +208,3 @@ Batch-level:
 - Metadata is unvalidated beyond shape; avoid storing sensitive information in plaintext. Use hashing or encryption
   off-chain if needed.
 - Upgrade power is centralized to the owner; secure the owner key or use a timelock/multisig.
-- Batch operations should consider reentrancy only if future hooks are added; current implementation is internal storage
-  only.

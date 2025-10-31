@@ -77,16 +77,16 @@ contract ConsumptionRecordAmendmentUpgradeable is
     }
 
     /// @inheritdoc IConsumptionRecordAmendment
-    function submit(uint256 tokenId, address tokenOwner, string[] memory keys, bytes32[] memory values)
+    function submit(uint256 crId, address tokenOwner, string[] memory keys, bytes32[] memory values)
         external
         onlyActiveCRA
         whenNotPaused
     {
-        _submit(tokenId, tokenOwner, keys, values, block.timestamp);
+        _submit(crId, tokenOwner, keys, values, block.timestamp);
     }
 
     function _submit(
-        uint256 tokenId,
+        uint256 crId,
         address tokenOwner,
         string[] memory keys,
         bytes32[] memory values,
@@ -98,10 +98,11 @@ contract ConsumptionRecordAmendmentUpgradeable is
         }
 
         // mint the token
-        _mint(_msgSender(), tokenOwner, tokenId);
+        _mint(_msgSender(), tokenOwner, crId);
 
         // Store the data
-        _data[tokenId] = ConsumptionRecordAmendmentEntity({
+        _data[crId] = ConsumptionRecordAmendmentEntity({
+            crId: crId,
             submittedBy: _msgSender(),
             submittedAt: timestamp,
             owner: tokenOwner,
@@ -111,8 +112,26 @@ contract ConsumptionRecordAmendmentUpgradeable is
     }
 
     /// @inheritdoc IConsumptionRecordAmendment
-    function getTokenData(uint256 tokenId) external view override returns (ConsumptionRecordAmendmentEntity memory) {
-        return _data[tokenId];
+    function getData(uint256 crId) public view override returns (ConsumptionRecordAmendmentEntity memory) {
+        return _data[crId];
+    }
+
+    /// @inheritdoc IConsumptionRecordAmendment
+    function getConsumptionAmendmentRecordsByOwner(address _owner, uint256 indexFrom, uint256 indexTo)
+        public
+        view
+        returns (ConsumptionRecordAmendmentEntity[] memory)
+    {
+        require(indexFrom <= indexTo, "Invalid request");
+        uint256 n = indexTo - indexFrom + 1;
+        require(n <= 50, "Request too big");
+
+        ConsumptionRecordAmendmentEntity[] memory result = new ConsumptionRecordAmendmentEntity[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(_owner, i + indexFrom);
+            result[i] = getData(tokenId);
+        }
+        return result;
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

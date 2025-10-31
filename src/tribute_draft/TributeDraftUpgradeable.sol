@@ -54,22 +54,22 @@ contract TributeDraftUpgradeable is
         return interfaceId == type(ITributeDraft).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function submit(uint256[] calldata consumptionUnitIds) external returns (uint256 tokenId) {
-        uint32 n = uint32(consumptionUnitIds.length);
+    function submit(uint256[] calldata cuIds) external returns (uint256 tdId) {
+        uint32 n = uint32(cuIds.length);
         if (n == 0) revert EmptyArray();
 
         for (uint256 i = 0; i < n; i++) {
             // check it wasn't previously submitted
-            if (usedConsumptionUnitIds[consumptionUnitIds[i]]) {
+            if (usedConsumptionUnitIds[cuIds[i]]) {
                 revert AlreadyExists();
             }
-            usedConsumptionUnitIds[consumptionUnitIds[i]] = true;
+            usedConsumptionUnitIds[cuIds[i]] = true;
         }
 
         // fetch and validate
-        IConsumptionUnit.ConsumptionUnitEntity memory first = consumptionUnit.getTokenData(consumptionUnitIds[0]);
-        if (first.submittedBy == address(0)) revert NotFound(consumptionUnitIds[0]);
-        if (msg.sender != first.owner) revert NotSameOwner(consumptionUnitIds[0]);
+        IConsumptionUnit.ConsumptionUnitEntity memory first = consumptionUnit.getData(cuIds[0]);
+        if (first.submittedBy == address(0)) revert NotFound(cuIds[0]);
+        if (msg.sender != first.owner) revert NotSameOwner(cuIds[0]);
 
         address owner_ = first.owner;
         uint16 currency_ = first.settlementCurrency;
@@ -78,9 +78,9 @@ contract TributeDraftUpgradeable is
         uint128 attoAmt = first.settlementAmountAtto;
 
         for (uint32 i = 1; i < n; i++) {
-            IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getTokenData(consumptionUnitIds[i]);
-            if (rec.submittedBy == address(0)) revert NotFound(consumptionUnitIds[i]);
-            if (rec.owner != owner_) revert NotSameOwner(consumptionUnitIds[i]);
+            IConsumptionUnit.ConsumptionUnitEntity memory rec = consumptionUnit.getData(cuIds[i]);
+            if (rec.submittedBy == address(0)) revert NotFound(cuIds[i]);
+            if (rec.owner != owner_) revert NotSameOwner(cuIds[i]);
             // compare currency codes by keccak hash of the encoded values
             if (keccak256(abi.encode(rec.settlementCurrency)) != keccak256(abi.encode(currency_))) {
                 revert NotSettlementCurrencyCurrency();
@@ -106,23 +106,41 @@ contract TributeDraftUpgradeable is
         }
 
         // generate tribute draft id as hash of provided CU hashes
-        tokenId = uint256(keccak256(abi.encode(owner_, worldwideDay_, consumptionUnitIds)));
+        tdId = uint256(keccak256(abi.encode(owner_, worldwideDay_, cuIds)));
 
-        _mint(address(0), owner_, tokenId);
+        _mint(address(0), owner_, tdId);
 
-        _data[tokenId] = TributeDraftEntity({
+        _data[tdId] = TributeDraftEntity({
+            tdId: tdId,
             owner: owner_,
             settlementCurrency: currency_,
             worldwideDay: worldwideDay_,
             settlementAmountBase: baseAmt,
             settlementAmountAtto: attoAmt,
-            cuHashes: consumptionUnitIds,
-            submittedAt: block.timestamp
+            cuHashes: cuIds,
+            createdAt: block.timestamp
         });
     }
 
-    function getTokenData(uint256 tokenId) external view returns (TributeDraftEntity memory) {
-        return _data[tokenId];
+    function getData(uint256 tdId) public view returns (TributeDraftEntity memory) {
+        return _data[tdId];
+    }
+
+    function getTributeDraftsByOwner(address _owner, uint256 indexFrom, uint256 indexTo)
+        public
+        view
+        returns (TributeDraftEntity[] memory)
+    {
+        require(indexFrom <= indexTo, "Invalid request");
+        uint256 n = indexTo - indexFrom + 1;
+        require(n <= 50, "Request too big");
+
+        TributeDraftEntity[] memory result = new TributeDraftEntity[](n);
+        for (uint256 i = 0; i < n; i++) {
+            uint256 tokenId = tokenOfOwnerByIndex(_owner, i + indexFrom);
+            result[i] = getData(tokenId);
+        }
+        return result;
     }
 
     function getConsumptionUnitAddress() external view returns (address) {
