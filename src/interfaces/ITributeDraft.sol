@@ -38,6 +38,9 @@ interface ITributeDraft is ISoulBoundToken {
 
     function submit(uint256[] calldata cuIds) external returns (uint256 tdId);
 
+    /// @notice Returns full entity data by the given ID
+    /// @param tdId The tribute draft hash to retrieve
+    /// @return TributeDraftEntity struct with complete data
     function getData(uint256 tdId) external view returns (TributeDraftEntity memory);
 
     /// @notice Returns a list of tribute drafts owned by the given address
