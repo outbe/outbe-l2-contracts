@@ -353,6 +353,12 @@
         "type": "uint16",
         "indexed": false,
         "internalType": "uint16"
+      },
+      {
+        "name": "cuHashes",
+        "type": "uint256[]",
+        "indexed": false,
+        "internalType": "uint256[]"
       }
     ],
     "anonymous": false
