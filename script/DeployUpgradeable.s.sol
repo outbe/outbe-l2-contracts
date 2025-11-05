@@ -289,26 +289,18 @@ contract DeployUpgradeable is OutbeScriptBase {
     function setupInitialCras() internal {
         console.log("Setting up initial CRAs...");
 
-        // Example CRAs - replace with actual addresses as needed
         InitialCra[] memory initialCras = new InitialCra[](2);
-        initialCras[0] = InitialCra({
-            craAddress: vm.envOr("INITIAL_CRA_1", address(0x1111111111111111111111111111111111111111)),
-            name: vm.envOr("INITIAL_CRA_1_NAME", string("Demo CRA 1"))
-        });
-        initialCras[1] = InitialCra({
-            craAddress: vm.envOr("INITIAL_CRA_2", address(0x2222222222222222222222222222222222222222)),
-            name: vm.envOr("INITIAL_CRA_2_NAME", string("Demo CRA 2"))
-        });
+        initialCras[0] =
+            InitialCra({craAddress: address(0xc83521B1140fcb456C620Bd80F63A5bD5D6Ef34a), name: string("wallet-test")});
+        initialCras[1] =
+            InitialCra({craAddress: address(0x1388dD10cF7848482195Ca850b811A67f9336971), name: string("wallet-dev")});
 
         for (uint256 i = 0; i < initialCras.length; i++) {
-            if (initialCras[i].craAddress != address(0)) {
-                craRegistry.registerCRA(initialCras[i].craAddress, initialCras[i].name);
-                console.log("Registered CRA:", initialCras[i].craAddress, "as", initialCras[i].name);
-
-                // Verify registration
-                bool isActive = craRegistry.isCRAActive(initialCras[i].craAddress);
-                console.log("CRA active status:", isActive);
+            if (craRegistry.isCRAActive(initialCras[i].craAddress)) {
+                continue;
             }
+            craRegistry.registerCRA(initialCras[i].craAddress, initialCras[i].name);
+            console.log("Registered CRA:", initialCras[i].craAddress, "as", initialCras[i].name);
         }
         console.log("");
     }
