@@ -132,31 +132,6 @@
     "stateMutability": "view"
   },
   {
-    "type": "event",
-    "name": "Minted",
-    "inputs": [
-      {
-        "name": "minter",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "to",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "indexed": true,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
     "type": "error",
     "name": "AlreadyExists",
     "inputs": []

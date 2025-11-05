@@ -6,6 +6,16 @@ import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 /// @title ITributeDraft Interface
 /// @notice Aggregates multiple Consumption Units into a single Tribute Draft
 interface ITributeDraft is ISoulBoundToken {
+    event Submitted(
+        address indexed minter,
+        address indexed to,
+        uint256 indexed id,
+        uint32 worldwideDay,
+        uint64 settlementAmountBase,
+        uint128 settlementAmountAtto,
+        uint16 settlementCurrency
+    );
+
     struct TributeDraftEntity {
         /// @notice tribute draft hash id
         uint256 tdId;

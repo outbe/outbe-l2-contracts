@@ -48,8 +48,8 @@ contract ConsumptionRecordAmendmentUpgradeableSubmitTest is Test {
         vm.warp(ts);
 
         // expect Submitted event
-        vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, crAHash);
+        vm.expectEmit(true, true, true, true);
+        emit IConsumptionRecordAmendment.Submitted(craActive, recordOwner, crAHash);
 
         vm.prank(craActive);
         cra.submit(crAHash, recordOwner, keys, values);

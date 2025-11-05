@@ -126,8 +126,8 @@ contract ConsumptionUnitUpgradeableSubmitTest is Test {
         uint256 ts = 1_800_000_000;
         vm.warp(ts);
 
-        vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash);
+        vm.expectEmit(true, true, true, true);
+        emit IConsumptionUnit.Submitted(craActive, recordOwner, cuHash, wday, baseAmt, attoAmt, currency);
 
         vm.prank(craActive);
         cu.submit(cuHash, recordOwner, currency, wday, baseAmt, attoAmt, crHashes, amendmentHashes);

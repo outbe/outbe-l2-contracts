@@ -132,6 +132,7 @@ contract ConsumptionRecordUpgradeable is
             metadataKeys: keys,
             metadataValues: values
         });
+        emit Submitted(_msgSender(), tokenOwner, crId);
     }
 
     /// @dev Function that should revert when `msg.sender` is not authorized to upgrade the contract

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 import {ConsumptionRecordUpgradeable} from "../src/consumption_record/ConsumptionRecordUpgradeable.sol";
 import {ERC1967Proxy} from "../lib/openzeppelin-contracts/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ICRAAware} from "../src/interfaces/ICRAAware.sol";
@@ -60,10 +59,10 @@ contract ConsumptionRecordUpgradeableMulticallTest is Test {
         vm.warp(ts);
 
         // Expect two Submitted events
-        vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256(h1));
-        vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, uint256(h2));
+        vm.expectEmit(true, true, true, true);
+        emit IConsumptionRecord.Submitted(craActive, recordOwner, uint256(h1));
+        vm.expectEmit(true, true, true, true);
+        emit IConsumptionRecord.Submitted(craActive, recordOwner, uint256(h2));
 
         vm.prank(craActive);
         bytes[] memory batch = new bytes[](2);

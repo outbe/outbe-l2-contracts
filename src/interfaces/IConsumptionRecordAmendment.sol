@@ -9,6 +9,8 @@ import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 /// @author Outbe Team
 /// @custom:version 0.0.1
 interface IConsumptionRecordAmendment is ISoulBoundToken {
+    event Submitted(address indexed minter, address indexed to, uint256 indexed id);
+
     /// @notice Record information for a consumption record amendment
     /// @dev Stores basic metadata about who submitted the amendment, when, who owns it, and includes metadata
     struct ConsumptionRecordAmendmentEntity {

@@ -126,6 +126,9 @@ contract ConsumptionUnitUpgradeable is
             amendmentCrHashes: amendmentCrHashes,
             submittedAt: timestamp
         });
+        emit Submitted(
+            _msgSender(), tokenOwner, cuId, worldwideDay, settlementAmountBase, settlementAmountAtto, settlementCurrency
+        );
     }
 
     /// @dev check hashes uniqueness and existence in CR contract

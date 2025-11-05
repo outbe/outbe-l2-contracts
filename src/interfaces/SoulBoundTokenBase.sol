@@ -133,8 +133,6 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
 
         _owners[tokenId] = to;
 
-        emit Minted(minter, to, tokenId);
-
         _afterTokenMint(minter, to, tokenId);
     }
 
