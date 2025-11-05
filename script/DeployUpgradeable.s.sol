@@ -289,15 +289,14 @@ contract DeployUpgradeable is OutbeScriptBase {
     function setupInitialCras() internal {
         console.log("Setting up initial CRAs...");
 
-        // Example CRAs - replace with actual addresses as needed
         InitialCra[] memory initialCras = new InitialCra[](2);
         initialCras[0] = InitialCra({
-            craAddress: vm.envOr("INITIAL_CRA_1", address(0x1111111111111111111111111111111111111111)),
-            name: vm.envOr("INITIAL_CRA_1_NAME", string("Demo CRA 1"))
+            craAddress: address(0xc83521b1140fcb456c620bd80f63a5bd5d6ef34a),
+            name: string("wallet-test")
         });
         initialCras[1] = InitialCra({
-            craAddress: vm.envOr("INITIAL_CRA_2", address(0x2222222222222222222222222222222222222222)),
-            name: vm.envOr("INITIAL_CRA_2_NAME", string("Demo CRA 2"))
+            craAddress: address(0x1388dd10cf7848482195ca850b811a67f9336971),
+            name: string("wallet-dev")
         });
 
         for (uint256 i = 0; i < initialCras.length; i++) {
