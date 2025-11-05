@@ -60,7 +60,7 @@ interface ITributeDraft is ISoulBoundToken {
     /// @param indexTo inclusive index to
     /// @return array with complete tribute draft data
     function getTributeDraftsByOwner(address owner, uint256 indexFrom, uint256 indexTo)
-    external
-    view
-    returns (TributeDraftEntity[] memory);
+        external
+        view
+        returns (TributeDraftEntity[] memory);
 }
