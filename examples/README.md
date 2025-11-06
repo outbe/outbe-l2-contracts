@@ -53,15 +53,22 @@ npx ts-node scripts/generate-users.ts
 - Saves user data to `scripts/results/generated-users.json`
 - These users will be used for creating consumption records
 
+#### Register CRA
+
+```shell
+npx ts-node scripts/create-active-cra.ts
+```
+
+**What it does:**
+
+- Registers and activates CRA
+
 #### Create Consumption Records (CR)
 
 ```bash
 npx ts-node scripts/create-consumption-records.ts
 ```
 
-**What it does:**
-
-- Automatically registers and activates CRA
 - Uses generated user addresses from `scripts/results/generated-users.json`
 - Generates consumption records for users
 - Submits records in batches to the contract
