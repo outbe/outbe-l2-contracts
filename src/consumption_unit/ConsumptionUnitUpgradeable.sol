@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol";
 import {IConsumptionUnit} from "../interfaces/IConsumptionUnit.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -68,7 +69,13 @@ contract ConsumptionUnitUpgradeable is
     }
 
     /// @inheritdoc SoulBoundTokenBase
-    function supportsInterface(bytes4 interfaceId) public view override(SoulBoundTokenBase) returns (bool) {
+    function supportsInterface(bytes4 interfaceId)
+    public
+    view
+    virtual
+    override(SoulBoundTokenBase, IERC165Upgradeable)
+    returns (bool)
+    {
         return interfaceId == type(IConsumptionUnit).interfaceId || super.supportsInterface(interfaceId);
     }
 

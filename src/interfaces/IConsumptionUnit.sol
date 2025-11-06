@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import {ISoulBoundToken} from "./ISoulBoundToken.sol";
+
+
 /// @title IConsumptionUnit Interface
 /// @notice Interface for storing and managing consumption unit records with settlement and nominal amounts
 /// @dev Mirrors IConsumptionRecord flow but with ConsumptionUnitEntity data structure
 /// @author Outbe Team
 /// @custom:version 0.0.1
-interface IConsumptionUnit {
+interface IConsumptionUnit is ISoulBoundToken {
     event Submitted(
         address indexed minter,
         address indexed to,
