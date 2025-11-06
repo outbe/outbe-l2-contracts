@@ -248,13 +248,14 @@ This project includes a Dockerized Anvil testnet preloaded with the Outbe L2 con
 - Run with auto-registering a CRA address and fund it with 1000 ETH on startup:
   ```sh
   docker run --rm -p 8545:8545 \
+    -e CRA_REGISTRY_PROXY=<RequiredToProvideHere> \
     -e CRA_ADDRESS=0xYourCraAddressHere \
     --name outbe-anvil outbe-l2-test
   ```
 ### Environment variables (with defaults in the image)
 - OWNER_PRIVATE_KEY: `0xac0974...ff80` (Anvil default first key)
 - OWNER_ADDRESS: `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
-- CRA_REGISTRY_PROXY: `0xEa1A0965aafA480e12cdC1a86a19DD1fB53B6c8c`
+- CRA_REGISTRY_PROXY: required to provide here
 - CRA_ADDRESS: if set, entrypoint registers this CRA in the registry and funds it
 
 ### Readiness and health
