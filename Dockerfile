@@ -25,8 +25,7 @@ COPY --from=builder /app/anvil-state.json ./anvil-state.json
 COPY --chown=foundry --chmod=740 entrypoint.sh ./
 
 ENV OWNER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
-    OWNER_ADDRESS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266 \
-    CRA_REGISTRY_PROXY=0xEa1A0965aafA480e12cdC1a86a19DD1fB53B6c8c
+    OWNER_ADDRESS=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
 
 EXPOSE 8545
 HEALTHCHECK --interval=2s --timeout=1s --retries=5 \
