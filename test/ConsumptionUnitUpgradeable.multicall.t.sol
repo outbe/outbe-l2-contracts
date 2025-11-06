@@ -10,7 +10,6 @@ import {ConsumptionRecordAmendmentUpgradeable} from "src/consumption_record/Cons
 import {IConsumptionUnit} from "src/interfaces/IConsumptionUnit.sol";
 import {ICRAAware} from "src/interfaces/ICRAAware.sol";
 import {MockCRARegistry} from "./helpers.t.sol";
-import {ISoulBoundToken} from "../src/interfaces/ISoulBoundToken.sol";
 
 contract ConsumptionUnitUpgradeableMulticallTest is Test {
     ConsumptionRecordUpgradeable cr;
@@ -118,10 +117,10 @@ contract ConsumptionUnitUpgradeableMulticallTest is Test {
         vm.warp(ts);
 
         // Expect two Submitted events in order
-        vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash1);
-        vm.expectEmit(true, true, false, true);
-        emit ISoulBoundToken.Minted(craActive, recordOwner, cuHash2);
+        vm.expectEmit(true, true, true, true);
+        emit IConsumptionUnit.Submitted(craActive, recordOwner, cuHash1, wday, baseAmt, attoAmt, currency);
+        vm.expectEmit(true, true, true, true);
+        emit IConsumptionUnit.Submitted(craActive, recordOwner, cuHash2, wday, baseAmt, attoAmt, currency);
 
         vm.prank(craActive);
         cu.multicall(calls);

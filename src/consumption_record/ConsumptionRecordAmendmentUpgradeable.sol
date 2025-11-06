@@ -109,6 +109,7 @@ contract ConsumptionRecordAmendmentUpgradeable is
             metadataKeys: keys,
             metadataValues: values
         });
+        emit Submitted(_msgSender(), tokenOwner, crId);
     }
 
     /// @inheritdoc IConsumptionRecordAmendment

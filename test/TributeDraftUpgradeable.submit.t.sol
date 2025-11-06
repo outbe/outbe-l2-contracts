@@ -101,7 +101,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         uint256 expectedId = uint256(keccak256(abi.encode(recordOwner, worldwideDay, cuHashes)));
 
         vm.expectEmit(true, true, true, true);
-        emit ISoulBoundToken.Minted(address(0), recordOwner, expectedId);
+        emit ITributeDraft.Submitted(address(0), recordOwner, expectedId, worldwideDay, 13, 5e17, currency, cuHashes);
 
         vm.prank(recordOwner);
         uint256 tdId = td.submit(cuHashes);

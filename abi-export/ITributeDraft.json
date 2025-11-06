@@ -310,7 +310,7 @@
   },
   {
     "type": "event",
-    "name": "Minted",
+    "name": "Submitted",
     "inputs": [
       {
         "name": "minter",
@@ -325,10 +325,40 @@
         "internalType": "address"
       },
       {
-        "name": "tokenId",
+        "name": "id",
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"
+      },
+      {
+        "name": "worldwideDay",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "settlementAmountBase",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "settlementAmountAtto",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "settlementCurrency",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      },
+      {
+        "name": "cuHashes",
+        "type": "uint256[]",
+        "indexed": false,
+        "internalType": "uint256[]"
       }
     ],
     "anonymous": false

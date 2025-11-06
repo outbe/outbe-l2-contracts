@@ -292,7 +292,7 @@
   },
   {
     "type": "event",
-    "name": "Minted",
+    "name": "Submitted",
     "inputs": [
       {
         "name": "minter",
@@ -307,7 +307,7 @@
         "internalType": "address"
       },
       {
-        "name": "tokenId",
+        "name": "id",
         "type": "uint256",
         "indexed": true,
         "internalType": "uint256"

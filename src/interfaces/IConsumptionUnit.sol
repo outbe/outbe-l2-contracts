@@ -7,6 +7,16 @@ pragma solidity ^0.8.27;
 /// @author Outbe Team
 /// @custom:version 0.0.1
 interface IConsumptionUnit {
+    event Submitted(
+        address indexed minter,
+        address indexed to,
+        uint256 indexed id,
+        uint32 worldwideDay,
+        uint64 settlementAmountBase,
+        uint128 settlementAmountAtto,
+        uint16 settlementCurrency
+    );
+
     /// @notice Record information for a consumption unit
     struct ConsumptionUnitEntity {
         /// @notice consumption unit hash id

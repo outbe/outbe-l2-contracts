@@ -120,6 +120,7 @@ contract TributeDraftUpgradeable is
             cuHashes: cuIds,
             createdAt: block.timestamp
         });
+        emit Submitted(address(0), owner_, tdId, worldwideDay_, baseAmt, attoAmt, currency_, cuIds);
     }
 
     function getData(uint256 tdId) public view returns (TributeDraftEntity memory) {
