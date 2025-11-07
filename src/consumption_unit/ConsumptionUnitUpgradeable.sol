@@ -70,11 +70,11 @@ contract ConsumptionUnitUpgradeable is
 
     /// @inheritdoc SoulBoundTokenBase
     function supportsInterface(bytes4 interfaceId)
-    public
-    view
-    virtual
-    override(SoulBoundTokenBase, IERC165Upgradeable)
-    returns (bool)
+        public
+        view
+        virtual
+        override(SoulBoundTokenBase, IERC165Upgradeable)
+        returns (bool)
     {
         return interfaceId == type(IConsumptionUnit).interfaceId || super.supportsInterface(interfaceId);
     }

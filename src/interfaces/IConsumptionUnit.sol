@@ -3,7 +3,6 @@ pragma solidity ^0.8.27;
 
 import {ISoulBoundToken} from "./ISoulBoundToken.sol";
 
-
 /// @title IConsumptionUnit Interface
 /// @notice Interface for storing and managing consumption unit records with settlement and nominal amounts
 /// @dev Mirrors IConsumptionRecord flow but with ConsumptionUnitEntity data structure
