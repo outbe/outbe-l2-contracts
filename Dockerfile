@@ -14,7 +14,7 @@ RUN anvil --state ./anvil-state.json --state-interval 1 & ANVIL_PID=$!; \
     if [ $attempts -eq 0 ]; then echo "Anvil is unavailable"; exit 1; fi; \
     echo "Anvil is up. Installing contracts..."; \
     forge script script/DeployUpgradeable.s.sol:DeployUpgradeable --rpc-url http://127.0.0.1:8545 --broadcast -vvvv  \
-    && echo "Contracts installed" || (echo "Contracts installation failed"; exit 1); \
+    && echo "Contracts installed" || exit 1; \
     sleep 1; # to give it time to save the state \
     kill "$ANVIL_PID"; wait "$ANVIL_PID"
 
