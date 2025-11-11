@@ -15,9 +15,6 @@ anvil
 ```bash
 # Full deployment with verification and logging
 forge script script/Deploy.s.sol:DeployScript --rpc-url http://localhost:8545 --broadcast
-
-# Quick deployment (minimal output)
-forge script script/Deploy.s.sol:QuickDeployScript --rpc-url http://localhost:8545 --broadcast
 ```
 
 ### Testnet Deployment
@@ -56,21 +53,6 @@ The main deployment script with comprehensive logging and verification:
 ```bash
 forge script script/Deploy.s.sol:DeployScript [OPTIONS]
 ```
-
-### QuickDeployScript (Minimal)
-
-Simplified deployment for quick testing:
-
-**Features:**
-- ✅ Fast deployment
-- ✅ Minimal logging
-- ✅ Essential contract addresses output
-
-**Usage:**
-```bash
-forge script script/Deploy.s.sol:QuickDeployScript [OPTIONS]
-```
-
 ## Environment Variables
 
 ### Required
