@@ -272,7 +272,6 @@ contract DeployUpgradeable is OutbeScriptBase {
 
         setupInitialCras();
 
-
         vm.stopBroadcast();
 
         // Post-deployment verification
