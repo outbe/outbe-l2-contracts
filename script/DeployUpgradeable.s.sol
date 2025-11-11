@@ -282,8 +282,8 @@ contract DeployUpgradeable is OutbeScriptBase {
     }
 
     /// @notice Setup initial CRAs from JSON file
-    /// @dev Only called if SETUP_INITIAL_CRAS=true in environment
-    /// @dev Reads from script/input/init-cras.json
+    /// @dev Reads from script/input/init-cras.json and registers all CRAs found
+    /// @dev Skips CRAs that are already registered
     function setupInitialCras() internal {
         console.log("Setting up initial CRAs");
 
@@ -373,14 +373,12 @@ contract DeployUpgradeable is OutbeScriptBase {
         console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
 
-        if (vm.envOr("SETUP_INITIAL_CRAS", false)) {
-            address[] memory allCras = craRegistry.getAllCRAs();
-            console.log("Initial CRAs registered:", allCras.length);
-            for (uint256 i = 0; i < allCras.length; i++) {
-                console.log("- CRA", i + 1, ":", allCras[i]);
-            }
-            console.log("");
+        address[] memory allCras = craRegistry.getAllCRAs();
+        console.log("Total CRAs registered:", allCras.length);
+        for (uint256 i = 0; i < allCras.length; i++) {
+            console.log("- CRA", i + 1, ":", allCras[i]);
         }
+        console.log("");
 
         console.log("Environment Variables:");
         console.log(string.concat("export CRA_REGISTRY_ADDRESS=", vm.toString(address(craRegistry))));
