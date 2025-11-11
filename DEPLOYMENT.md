@@ -78,11 +78,27 @@ forge script script/Deploy.s.sol:QuickDeployScript [OPTIONS]
 
 ### Optional
 - `RPC_URL` - RPC endpoint
-- `SETUP_INITIAL_CRAS` - Set to `true` to register demo CRAs
-- `INITIAL_CRA_1` - Address of first demo CRA
-- `INITIAL_CRA_1_NAME` - Name of first demo CRA
-- `INITIAL_CRA_2` - Address of second demo CRA
-- `INITIAL_CRA_2_NAME` - Name of second demo CRA
+
+## Initial CRA Setup
+
+To configure initial CRAs that will be registered during deployment, edit the `script/input/init-cras.json` file:
+
+```json
+{
+  "cras": [
+    {
+      "craAddress": "0xYourCRAAddress",
+      "name": "Your CRA Name"
+    }
+  ]
+}
+```
+
+**Notes:**
+- CRAs are registered automatically during deployment by `DeployUpgradeable.s.sol`
+- Leave the array empty `[]` if you don't want to register any CRAs during deployment
+- You can add/remove CRAs without recompiling contracts
+- Already registered CRAs will be skipped automatically
 
 ### Example .env file:
 ```bash
@@ -91,13 +107,6 @@ PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 # Network RPC URLs
 RPC_URL=https://rpc.dev.outbe.net
-
-# Optional: Demo CRA setup
-SETUP_INITIAL_CRAS=true
-INITIAL_CRA_1=0x1234567890123456789012345678901234567890
-INITIAL_CRA_1_NAME="Demo Energy CRA"
-INITIAL_CRA_2=0x2345678901234567890123456789012345678901
-INITIAL_CRA_2_NAME="Demo Carbon CRA"
 
 # Contract addresses (populated after deployment)
 CRA_REGISTRY_ADDRESS=0x...
@@ -113,9 +122,6 @@ anvil
 
 # Deploy to local node
 forge script script/Deploy.s.sol:DeployScript --rpc-url http://localhost:8545 --broadcast
-
-# Deploy with initial CRAs
-SETUP_INITIAL_CRAS=true forge script script/Deploy.s.sol:DeployScript --rpc-url http://localhost:8545 --broadcast
 ```
 
 ## Deployment Output

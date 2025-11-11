@@ -17,6 +17,9 @@ remappings = [
     "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
+# File system permissions for reading JSON fixtures
+fs_permissions = [{ access = "read", path = "./script/input/" }]
+
 [lint]
 # ... rest of lint config ...
 exclude_lints = ["mixed-case-function", "mixed-case-variable", "pascal-case-struct"]

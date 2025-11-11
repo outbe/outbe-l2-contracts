@@ -160,11 +160,6 @@ export SALT_SUFFIX="mainnet_v1"
 
 # Timestamp-based salt (for unique addresses)
 export USE_TIMESTAMP_SALT=true
-
-# Initial CRA setup
-export SETUP_INITIAL_CRAS=true
-export INITIAL_CRA_1=0x1234567890123456789012345678901234567890
-export INITIAL_CRA_1_NAME="Primary Energy CRA"
 ```
 
 ### Address Prediction
