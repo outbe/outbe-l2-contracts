@@ -44,17 +44,17 @@ jobs:
         # } >> "$GITHUB_OUTPUT"
         env:
           SALT_SUFFIX: ${{ github.event.inputs.environment }}_${{ github.sha }}
-      - name: Send message to Deploy channel
-        id: matrix-chat-message
-        uses: fadenb/matrix-chat-message@v0.0.6
-        with:
-          homeserver: ${{ secrets.MATRIC_SERVER }}
-          token: ${{ secrets.MATRIX_TOKEN }}
-          channel: "!SqJrmVXmqVLONxfaDe:matrix.joyslab.org"
-          message: |
-            # 📦 [EVM] L2 Contracts Deployment ✅
-
-            Smart-contract deployed
+#      - name: Send message to Deploy channel
+#        id: matrix-chat-message
+#        uses: fadenb/matrix-chat-message@v0.0.6
+#        with:
+#          homeserver: ${{ secrets.MATRIC_SERVER }}
+#          token: ${{ secrets.MATRIX_TOKEN }}
+#          channel: "!SqJrmVXmqVLONxfaDe:matrix.joyslab.org"
+#          message: |
+#            # 📦 [EVM] L2 Contracts Deployment ✅
+#
+#            Smart-contract deployed
           ## Details:
           # ```
           #   ${{ steps.deploy.outputs.msg }}
