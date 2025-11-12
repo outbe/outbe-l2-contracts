@@ -270,10 +270,7 @@ contract DeployUpgradeable is OutbeScriptBase {
         console.log("Tribute Draft CU:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
 
-        // Setup initial CRAs if environment variable is set
-        if (vm.envOr("SETUP_INITIAL_CRAS", false)) {
-            setupInitialCras();
-        }
+        setupInitialCras();
 
         vm.stopBroadcast();
 
@@ -284,19 +281,34 @@ contract DeployUpgradeable is OutbeScriptBase {
         logDeploymentSummary();
     }
 
-    /// @notice Setup initial CRAs for testing/demo purposes
-    /// @dev Only called if SETUP_INITIAL_CRAS=true in environment
+    /// @notice Setup initial CRAs from JSON file
+    /// @dev Reads from script/input/init-cras.json and registers all CRAs found
+    /// @dev Skips CRAs that are already registered
     function setupInitialCras() internal {
-        console.log("Setting up initial CRAs...");
+        console.log("Setting up initial CRAs");
 
-        InitialCra[] memory initialCras = new InitialCra[](2);
-        initialCras[0] =
-            InitialCra({craAddress: address(0xc83521B1140fcb456C620Bd80F63A5bD5D6Ef34a), name: string("wallet-test")});
-        initialCras[1] =
-            InitialCra({craAddress: address(0x1388dD10cF7848482195Ca850b811A67f9336971), name: string("wallet-dev")});
+        // Read and parse JSON file
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/script/input/init-cras.json");
+        string memory json = vm.readFile(path);
 
+        // Parse CRAs array from JSON
+        bytes memory crasData = vm.parseJson(json, ".cras");
+        InitialCra[] memory initialCras = abi.decode(crasData, (InitialCra[]));
+
+        // Check if CRAs array is empty
+        if (initialCras.length == 0) {
+            console.log("No CRAs found in init-cras.json, skipping registration");
+            console.log("");
+            return;
+        }
+
+        console.log("Found", initialCras.length, "CRA(s) in init-cras.json");
+
+        // Register each CRA
         for (uint256 i = 0; i < initialCras.length; i++) {
             if (craRegistry.isCRAActive(initialCras[i].craAddress)) {
+                console.log("Skipping already registered CRA:", initialCras[i].craAddress);
                 continue;
             }
             craRegistry.registerCRA(initialCras[i].craAddress, initialCras[i].name);
@@ -361,14 +373,12 @@ contract DeployUpgradeable is OutbeScriptBase {
         console.log("- TD -> Consumption Unit:", tributeDraft.getConsumptionUnitAddress());
         console.log("");
 
-        if (vm.envOr("SETUP_INITIAL_CRAS", false)) {
-            address[] memory allCras = craRegistry.getAllCRAs();
-            console.log("Initial CRAs registered:", allCras.length);
-            for (uint256 i = 0; i < allCras.length; i++) {
-                console.log("- CRA", i + 1, ":", allCras[i]);
-            }
-            console.log("");
+        address[] memory allCras = craRegistry.getAllCRAs();
+        console.log("Total CRAs registered:", allCras.length);
+        for (uint256 i = 0; i < allCras.length; i++) {
+            console.log("- CRA", i + 1, ":", allCras[i]);
         }
+        console.log("");
 
         console.log("Environment Variables:");
         console.log(string.concat("export CRA_REGISTRY_ADDRESS=", vm.toString(address(craRegistry))));

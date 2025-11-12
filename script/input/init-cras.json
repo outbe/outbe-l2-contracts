@@ -1,0 +1,20 @@
+{
+  "cras": [
+    {
+      "craAddress": "0x083c2756B14C57a0E84Db9c96d93d27c6140f13A",
+      "name": "CRA Agent 1"
+    },
+    {
+      "craAddress": "0xd5f6DB7f38b78A9d837cEaeaA1c23f45025C20d4",
+      "name": "CRA Agent 2"
+    },
+    {
+      "craAddress": "0xc83521B1140fcb456C620Bd80F63A5bD5D6Ef34a",
+      "name": "wallet-test"
+    },
+    {
+      "craAddress": "0x1388dD10cF7848482195Ca850b811A67f9336971",
+      "name": "wallet-dev"
+    }
+  ]
+}
