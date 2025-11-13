@@ -55,6 +55,8 @@ jobs:
             echo 'base_url = "https://openrouter.ai/api/v1"'
             echo 'env_key = "OPENROUTER_API_KEY"'
           } > ~/.codex/config.toml
+          echo "Check codex version:"
+          codex --version
 
       - name: Compute merge-base diff (compact)
         run: |

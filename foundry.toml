@@ -4,13 +4,17 @@ test = "test"
 script = "script"
 out = "out"
 libs = ["lib"]
+
+# -- Settings for CREATE2, see https://getfoundry.sh/guides/deterministic-deployments-using-create2/
 solc = "0.8.27"
+evm_version = "Prague"
 bytecode_hash = "none"
 cbor_metadata = false
 always_use_create_2_factory = true
-via_ir = true
 optimizer = true
 optimizer_runs = 200
+# --
+via_ir = true
 
 remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
