@@ -8,9 +8,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
     using Strings for uint256;
 
-    // @dev max value of 31 bytes length
-    uint256 private _max31bytes = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
     mapping(uint256 tokenId => address) private _owners;
 
     mapping(address owner => uint256) private _balances;
@@ -137,10 +134,11 @@ abstract contract SoulBoundTokenBase is ISoulBoundToken, ERC165Upgradeable {
     }
 
     /**
-     * @dev Validates a submitted tokenId by checking that it should fully consume 32 bytes length
+     * @dev Validates a submitted tokenId
      */
     function _validateTokenId(uint256 tokenId) internal view {
-        require(tokenId > _max31bytes, InvalidTokenId());
+        // TODO implement validation that the tokenId hash
+        require(tokenId > 0, InvalidTokenId());
     }
 
     /**
