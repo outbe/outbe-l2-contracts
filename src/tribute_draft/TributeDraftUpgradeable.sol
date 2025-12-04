@@ -54,7 +54,7 @@ contract TributeDraftUpgradeable is
         return interfaceId == type(ITributeDraft).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    function submit(uint256[] calldata cuIds) external returns (uint256 tdId) {
+    function submit(uint256 tributeDraftId, uint256[] calldata cuIds) external {
         uint32 n = uint32(cuIds.length);
         if (n == 0) revert EmptyArray();
 
@@ -105,13 +105,10 @@ contract TributeDraftUpgradeable is
             }
         }
 
-        // generate tribute draft id as hash of provided CU hashes
-        tdId = uint256(keccak256(abi.encode(owner_, worldwideDay_, cuIds)));
+        _mint(address(0), owner_, tributeDraftId);
 
-        _mint(address(0), owner_, tdId);
-
-        _data[tdId] = TributeDraftEntity({
-            tdId: tdId,
+        _data[tributeDraftId] = TributeDraftEntity({
+            tdId: tributeDraftId,
             owner: owner_,
             settlementCurrency: currency_,
             worldwideDay: worldwideDay_,
@@ -120,7 +117,7 @@ contract TributeDraftUpgradeable is
             cuHashes: cuIds,
             createdAt: block.timestamp
         });
-        emit Submitted(address(0), owner_, tdId, worldwideDay_, baseAmt, attoAmt, currency_, cuIds);
+        emit Submitted(address(0), owner_, tributeDraftId, worldwideDay_, baseAmt, attoAmt, currency_, cuIds);
     }
 
     function getData(uint256 tdId) public view returns (TributeDraftEntity memory) {
