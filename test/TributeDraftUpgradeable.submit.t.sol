@@ -104,11 +104,10 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         emit ITributeDraft.Submitted(address(0), recordOwner, expectedId, worldwideDay, 13, 5e17, currency, cuHashes);
 
         vm.prank(recordOwner);
-        uint256 tdId = td.submit(cuHashes);
-        assertEq(tdId, expectedId);
+        td.submit(expectedId, cuHashes);
 
         // Verify persisted entity
-        ITributeDraft.TributeDraftEntity memory e = td.getData(tdId);
+        ITributeDraft.TributeDraftEntity memory e = td.getData(expectedId);
         assertEq(e.owner, recordOwner);
         assertEq(e.settlementCurrency, currency);
         assertEq(e.worldwideDay, worldwideDay);
@@ -127,7 +126,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
     function test_submit_reverts_on_empty_array() public {
         uint256[] memory empty;
         vm.expectRevert(ITributeDraft.EmptyArray.selector);
-        td.submit(empty);
+        td.submit(uint256(1), empty);
     }
 
     function test_submit_reverts_on_duplicate_cu_in_input() public {
@@ -140,7 +139,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
 
         vm.prank(recordOwner);
         vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
-        td.submit(cuHashes);
+        td.submit(uint256(1), cuHashes);
     }
 
     function test_submit_reverts_when_cu_already_used_before() public {
@@ -156,7 +155,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         first[0] = cu1;
         first[1] = cu2;
         vm.prank(recordOwner);
-        td.submit(first);
+        td.submit(uint256(111), first);
 
         // Second submission tries to reuse CU1
         uint256[] memory second = new uint256[](2);
@@ -164,7 +163,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         second[1] = cu3;
         vm.prank(recordOwner);
         vm.expectRevert(ISoulBoundToken.AlreadyExists.selector);
-        td.submit(second);
+        td.submit(uint256(222), second);
     }
 
     function test_submit_reverts_when_cu_not_found() public {
@@ -173,7 +172,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         arr[0] = missing;
         vm.prank(recordOwner);
         vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotFound.selector, missing));
-        td.submit(arr);
+        td.submit(uint256(1), arr);
     }
 
     function test_submit_reverts_when_caller_not_owner_of_first_cu() public {
@@ -183,7 +182,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
         arr[0] = cu1;
         vm.prank(other);
         vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu1));
-        td.submit(arr);
+        td.submit(uint256(1), arr);
     }
 
     function test_submit_reverts_when_different_owner_in_list() public {
@@ -212,7 +211,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
 
         vm.prank(recordOwner);
         vm.expectRevert(abi.encodeWithSelector(ITributeDraft.NotSameOwner.selector, cu2));
-        td.submit(arr);
+        td.submit(uint256(1), arr);
     }
 
     function test_submit_reverts_on_currency_mismatch() public {
@@ -234,7 +233,7 @@ contract TributeDraftUpgradeableSubmitTest is Test {
 
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.NotSettlementCurrencyCurrency.selector);
-        td.submit(arr);
+        td.submit(uint256(1), arr);
     }
 
     function test_submit_reverts_on_worldwideDay_mismatch() public {
@@ -256,6 +255,6 @@ contract TributeDraftUpgradeableSubmitTest is Test {
 
         vm.prank(recordOwner);
         vm.expectRevert(ITributeDraft.NotSameWorldwideDay.selector);
-        td.submit(arr);
+        td.submit(uint256(1), arr);
     }
 }
