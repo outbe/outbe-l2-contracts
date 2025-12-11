@@ -47,7 +47,10 @@ interface ITributeDraft is ISoulBoundToken {
 
     function getConsumptionUnitAddress() external view returns (address);
 
-    function submit(uint256[] calldata cuIds) external returns (uint256 tdId);
+    /// @notice Submits a new Tribute Draft using the provided tribute draft id
+    /// @param tributeDraftId externally provided tribute draft id
+    /// @param cuIds list of consumption unit ids to aggregate
+    function submit(uint256 tributeDraftId, uint256[] calldata cuIds) external;
 
     /// @notice Returns full entity data by the given ID
     /// @param tdId The tribute draft hash to retrieve

@@ -328,18 +328,17 @@
     "name": "submit",
     "inputs": [
       {
+        "name": "tributeDraftId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
         "name": "cuIds",
         "type": "uint256[]",
         "internalType": "uint256[]"
       }
     ],
-    "outputs": [
-      {
-        "name": "tdId",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
