@@ -23,8 +23,7 @@ jobs:
         with:
           version: 'v1.4.1'
 
-      - name: Run Forge build
-        run: echo ${{ vars.RPC_URL }}
+      - run: echo ${{ vars.RPC_URL }}
 
       - name: Deploy CREATE2
         id: deploy
